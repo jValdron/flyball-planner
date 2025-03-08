@@ -28,16 +28,19 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Set lowercase repo name
+        run: echo "REPO_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Build and push API image
         uses: docker/build-push-action@v5
         with:
           context: ./api
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/flyball-practice-planner/api:latest
+          tags: ghcr.io/${{ env.REPO_NAME }}/api:latest
 
       - name: Build and push Frontend image
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/flyball-practice-planner/frontend:latest
+          tags: ghcr.io/${{ env.REPO_NAME }}/frontend:latest
