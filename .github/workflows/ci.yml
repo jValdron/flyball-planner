@@ -33,11 +33,11 @@ jobs:
         with:
           context: ./api
           push: true
-          tags: ghcr.io/${{ github.repository }}/api:latest
+          tags: ghcr.io/${{ github.repository_owner }}/flyball-practice-planner/api:latest
 
       - name: Build and push Frontend image
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
           push: true
-          tags: ghcr.io/${{ github.repository }}/frontend:latest
+          tags: ghcr.io/${{ github.repository_owner }}/flyball-practice-planner/frontend:latest
