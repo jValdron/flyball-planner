@@ -1,0 +1,24 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "flyball.fullname" . }}-frontend
+  labels:
+    {{- include "flyball.api.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "flyball.api.labels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "flyball.api.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: frontend
+          image: {{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}
+          imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+          env:
+            - name: API_BASE_URL
+              value: {{ .Values.frontend.env.API_BASE_URL }}

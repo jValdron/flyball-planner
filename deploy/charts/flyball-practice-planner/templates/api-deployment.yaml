@@ -1,0 +1,37 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "flyball.fullname" . }}-api
+  labels:
+    {{- include "flyball.api.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.api.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "flyball.api.labels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "flyball.api.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: api
+          image: {{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          env:
+            - name: DB_USER
+              value: {{ .Values.api.env.DB_USER }}
+            - name: DB_NAME
+              value: {{ .Values.api.env.DB_NAME }}
+            - name: DB_HOST
+              value: {{ .Values.api.env.DB_HOST }}
+            - name: DB_PORT
+              value: "{{ .Values.api.env.DB_PORT }}"
+            - name: DB_SSLMODE
+              value: {{ .Values.api.env.DB_SSLMODE }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "flyball.fullname" . }}-db-secret
+                  key: password

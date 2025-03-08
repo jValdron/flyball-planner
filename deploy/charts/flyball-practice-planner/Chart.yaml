@@ -1,0 +1,8 @@
+apiVersion: v2
+name: flyball-practice-planner
+version: 0.1.0
+dependencies:
+  - name: postgresql
+    version: 12.1.3
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
