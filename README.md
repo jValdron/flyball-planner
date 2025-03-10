@@ -79,16 +79,9 @@ helm install flyball-planner ./deploy/charts/flyball-practice-planner \
 
 If this step fails with a webhook error for the ingress validation, simply give some time for the ingress controller to start and retry (with `helm upgrade`). If it still doesn't work, troubleshoot the ingress controller.
 
-#### Verify Deployment
-```sh
-kubectl get pods
-kubectl get svc
-kubectl get ingress
-```
-
 #### Access the Application
 - Use `kubectl port-forward` to access services if needed.
-- If using Ingress, map `flyball.local` in `/etc/hosts` to your cluster IP.
+- If using Ingress, access your application [locally](http://localhost).
 
 ### Uninstall kind Cluster
 To clean up the kind cluster:
