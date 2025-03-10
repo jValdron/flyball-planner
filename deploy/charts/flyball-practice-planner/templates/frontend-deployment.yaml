@@ -4,16 +4,16 @@ kind: Deployment
 metadata:
   name: {{ include "flyball.fullname" . }}-frontend
   labels:
-    {{- include "flyball.api.labels" . | nindent 4 }}
+    {{- include "flyball.frontend.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.frontend.replicaCount }}
   selector:
     matchLabels:
-      {{- include "flyball.api.labels" . | nindent 6 }}
+      {{- include "flyball.frontend.labels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "flyball.api.labels" . | nindent 8 }}
+        {{- include "flyball.frontend.labels" . | nindent 8 }}
     spec:
       containers:
         - name: frontend
