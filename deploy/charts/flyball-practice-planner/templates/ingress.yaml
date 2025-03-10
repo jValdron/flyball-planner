@@ -1,0 +1,31 @@
+---
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "flyball.fullname" . }}
+  annotations:
+    {{- toYaml .Values.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - http:
+        host: {{ .Values.ingress.host }}
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "flyball.fullname" . }}-api
+                port:
+                  number: 8080
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "flyball.fullname" . }}-frontend
+                port:
+                  number: 80
+  tls:
+    {{- toYaml .Values.ingress.tls | nindent 4 }}
+{{- end }}

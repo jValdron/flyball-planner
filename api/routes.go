@@ -16,53 +16,55 @@ func RegisterRoutes(db *gorm.DB) *chi.Mux {
 
 	h := handlers.NewHandler(db)
 
-	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"}, // Allow all origins (to be changed)
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: false,
-		MaxAge:           300,
-	}))
+	r.Route("/api", func(r chi.Router) {
+		r.Use(cors.Handler(cors.Options{
+			AllowedOrigins:   []string{"*"}, // Allow all origins (to be changed)
+			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+			ExposedHeaders:   []string{"Link"},
+			AllowCredentials: false,
+			MaxAge:           300,
+		}))
 
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("OK"))
-	})
-
-	r.Route("/practices", func(r chi.Router) {
-		r.Post("/", h.CreatePractice)
-		r.Get("/", h.GetAllPractices)
-		r.Get("/{id}", h.GetPractice)
-		r.Put("/{id}", h.UpdatePractice)
-		r.Delete("/{id}", h.DeletePractice)
-
-		r.Route("/{practiceID}/sets", func(r chi.Router) {
-			r.Post("/", h.CreateSet)
-			r.Get("/", h.GetAllSets)
-			r.Get("/{id}", h.GetSet)
-			r.Put("/{id}", h.UpdateSet)
-			r.Delete("/{id}", h.DeleteSet)
+		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte("OK"))
 		})
-	})
 
-	r.Route("/owners", func(r chi.Router) {
-		r.Post("/", h.CreateOwner)
-		r.Get("/", h.GetAllOwners)
-		r.Get("/{id}", h.GetOwner)
-		r.Put("/{id}", h.UpdateOwner)
-		r.Delete("/{id}", h.DeleteOwner)
+		r.Route("/practices", func(r chi.Router) {
+			r.Post("/", h.CreatePractice)
+			r.Get("/", h.GetAllPractices)
+			r.Get("/{id}", h.GetPractice)
+			r.Put("/{id}", h.UpdatePractice)
+			r.Delete("/{id}", h.DeletePractice)
 
-		r.Route("/{ownerID}/dogs", func(r chi.Router) {
-			r.Post("/", h.CreateDog)
-			r.Get("/", h.GetAllDogs)
-			r.Get("/{id}", h.GetDog)
-			r.Put("/{id}", h.UpdateDog)
-			r.Delete("/{id}", h.DeleteDog)
+			r.Route("/{practiceID}/sets", func(r chi.Router) {
+				r.Post("/", h.CreateSet)
+				r.Get("/", h.GetAllSets)
+				r.Get("/{id}", h.GetSet)
+				r.Put("/{id}", h.UpdateSet)
+				r.Delete("/{id}", h.DeleteSet)
+			})
 		})
-	})
 
-	r.Put("/practices/{practiceID}/sets/reorder", h.ReorderSets)
-	r.Put("/practices/{practiceID}/sets/{setID}/setdogs/reorder", h.ReorderSetDogs)
+		r.Route("/owners", func(r chi.Router) {
+			r.Post("/", h.CreateOwner)
+			r.Get("/", h.GetAllOwners)
+			r.Get("/{id}", h.GetOwner)
+			r.Put("/{id}", h.UpdateOwner)
+			r.Delete("/{id}", h.DeleteOwner)
+
+			r.Route("/{ownerID}/dogs", func(r chi.Router) {
+				r.Post("/", h.CreateDog)
+				r.Get("/", h.GetAllDogs)
+				r.Get("/{id}", h.GetDog)
+				r.Put("/{id}", h.UpdateDog)
+				r.Delete("/{id}", h.DeleteDog)
+			})
+		})
+
+		r.Put("/practices/{practiceID}/sets/reorder", h.ReorderSets)
+		r.Put("/practices/{practiceID}/sets/{setID}/setdogs/reorder", h.ReorderSetDogs)
+	})
 
 	return r
 }

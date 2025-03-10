@@ -1,8 +1,8 @@
 ---
 api:
-  replicaCount: 1
+  replicaCount: 2
   image:
-    repository: my-registry/flyball-api
+    repository: ghcr.io/jvaldron/flyball-practice-planner/api
     tag: latest
     pullPolicy: IfNotPresent
   service:
@@ -11,17 +11,16 @@ api:
   env:
     DB_USER: flyball_user
     DB_NAME: flyball_practice
-    DB_HOST: postgresql
+    DB_HOST: flyball-planner-postgresql
     DB_PORT: 5432
     DB_SSLMODE: disable
   secret:
     enabled: true
-    DB_PASSWORD: "{{ .Values.postgresql.auth.password }}"
 
 frontend:
   replicaCount: 1
   image:
-    repository: my-registry/flyball-frontend
+    repository: ghcr.io/jvaldron/flyball-practice-planner/frontend
     tag: latest
     pullPolicy: IfNotPresent
   service:
@@ -30,9 +29,23 @@ frontend:
   env:
     API_BASE_URL: /api
 
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+  host: flyball.local
+
+httpRoute:
+  enabled: false
+  gateway:
+    name: "nginx"
+    namespace: "kube-system"
+  host: "flyball.local"
+
 postgresql:
   enabled: true
   auth:
     username: flyball_user
     database: flyball_practice
-    existingSecret: flyball-db-secret
+    # TODO: Update existingSecret to pull in release name automatically.
+    existingSecret: flyball-planner-flyball-practice-planner-db-secret

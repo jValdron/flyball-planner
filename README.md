@@ -23,7 +23,7 @@ The frontend is a simple **Alpine.js**-based web application that provides an in
 - Add, edit, or remove dogs under each owner.
 
 ## Running Locally
-There are two ways to run the application locally:
+There are 3 ways to run the application locally:
 
 ### 1. Using Docker Compose
 Ensure **Docker** and **Docker Compose** are installed, then run:
@@ -36,7 +36,67 @@ To rebuild components:
 docker-compose up --build api --build frontend
 ```
 
-### 2. Running Manually
+### 2. Using kind
+Ensure you have **Kind** and **Helm** installed.
+
+#### Create a kind cluster, with ingress support
+```sh
+cat <<EOF | kind create cluster --name flyball-cluster --config=-
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  extraPortMappings:
+  - containerPort: 80
+    hostPort: 80
+    protocol: TCP
+  - containerPort: 443
+    hostPort: 443
+    protocol: TCP
+EOF
+```
+
+Optionally, deploy an ingress controller:
+```sh
+kubectl apply -f https://kind.sigs.k8s.io/examples/ingress/deploy-ingress-nginx.yaml
+```
+
+#### Load Docker Images into kind
+```sh
+docker build -t ghcr.io/jvaldron/flyball-practice-planner/api:latest ./api
+kind load docker-image ghcr.io/jvaldron/flyball-practice-planner/api:latest --name flyball-cluster
+
+docker build -t ghcr.io/jvaldron/flyball-practice-planner/frontend:latest --build-arg API_BASE_URL=/api ./frontend
+kind load docker-image ghcr.io/jvaldron/flyball-practice-planner/frontend:latest --name flyball-cluster
+```
+
+#### Deploy Helm Chart
+```sh
+helm install flyball-planner ./deploy/charts/flyball-practice-planner \
+  --
+  --set ingress.enabled=true
+```
+
+If this step fails with a webhook error for the ingress validation, simply give some time for the ingress controller to start and retry (with `helm upgrade`). If it still doesn't work, troubleshoot the ingress controller.
+
+#### Verify Deployment
+```sh
+kubectl get pods
+kubectl get svc
+kubectl get ingress
+```
+
+#### Access the Application
+- Use `kubectl port-forward` to access services if needed.
+- If using Ingress, map `flyball.local` in `/etc/hosts` to your cluster IP.
+
+### Uninstall kind Cluster
+To clean up the kind cluster:
+```sh
+kind delete cluster --name flyball-cluster
+```
+
+### 3. Running Manually
 #### Start the API
 ```sh
 cd api
@@ -67,6 +127,14 @@ helm repo update
 ### 3. Deploy the Helm Chart
 ```sh
 helm install flyball-planner ./deploy/charts/flyball-practice-planner
+```
+
+Optionally, enable an ingress:
+```sh
+helm install flyball-planner ./deploy/charts/flyball-practice-planner \
+  --set ingress.enabled=true \
+  --set ingress.className=external \
+  --set ingress.host=flyball.domain.my
 ```
 This will deploy:
 - The API
