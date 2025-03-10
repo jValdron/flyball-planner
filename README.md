@@ -73,7 +73,6 @@ kind load docker-image ghcr.io/jvaldron/flyball-practice-planner/frontend:latest
 #### Deploy Helm Chart
 ```sh
 helm install flyball-planner ./deploy/charts/flyball-practice-planner \
-  --
   --set ingress.enabled=true
 ```
 
