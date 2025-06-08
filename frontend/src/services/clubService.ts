@@ -1,12 +1,7 @@
 import { config } from '../config'
+import type { Club } from '../contexts/ClubContext'
 
-export interface Club {
-  ID: string
-  Name: string
-  NAFAClubNumber: string
-  CreatedAt: string
-  UpdatedAt: string
-}
+export { type Club }
 
 export const clubService = {
   async getAllClubs(): Promise<Club[]> {

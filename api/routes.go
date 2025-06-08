@@ -53,12 +53,12 @@ func RegisterRoutes(db *gorm.DB) *chi.Mux {
 			r.Get("/{id}/dogs", h.GetAllClubDogs)
 			r.Get("/{id}/dogs/{dogId}", h.GetClubDog)
 
-			r.Route("/{clubID}/rooms", func(r chi.Router) {
-				r.Post("/", h.CreateRoom)
-				r.Get("/", h.GetAllRooms)
-				r.Get("/{id}", h.GetRoom)
-				r.Put("/{id}", h.UpdateRoom)
-				r.Delete("/{id}", h.DeleteRoom)
+			r.Route("/{clubID}/locations", func(r chi.Router) {
+				r.Post("/", h.CreateLocation)
+				r.Get("/", h.GetAllLocations)
+				r.Get("/{id}", h.GetLocation)
+				r.Put("/{id}", h.UpdateLocation)
+				r.Delete("/{id}", h.DeleteLocation)
 			})
 
 			r.Route("/{clubID}/practices", func(r chi.Router) {

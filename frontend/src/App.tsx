@@ -3,13 +3,12 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import Home from './pages/Home'
 import Dogs from './pages/Dogs'
 import Practices from './pages/Practices'
+import PracticeView from './pages/PracticeView'
 import DogView from './pages/DogView'
 import { ClubProvider, useClub } from './contexts/ClubContext'
 import { ClubPicker } from './components/ClubPicker'
 
 function Header() {
-  const { selectedClubId, setSelectedClubId } = useClub()
-
   return (
     <Navbar bg="dark" variant="dark" expand="lg" className="mb-4">
       <Container>
@@ -22,10 +21,7 @@ function Header() {
             <Nav.Link as={Link} to="/practices">Practices</Nav.Link>
           </Nav>
           <div className="d-flex align-items-center">
-            <ClubPicker
-              selectedClubId={selectedClubId}
-              onClubChange={setSelectedClubId}
-            />
+            <ClubPicker />
           </div>
         </Navbar.Collapse>
       </Container>
@@ -45,6 +41,8 @@ function App() {
             <Route path="/dogs/new" element={<DogView />} />
             <Route path="/dogs/:dogId" element={<DogView />} />
             <Route path="/practices" element={<Practices />} />
+            <Route path="/practices/new" element={<PracticeView />} />
+            <Route path="/practices/:practiceId" element={<PracticeView />} />
           </Routes>
         </Container>
       </ClubProvider>

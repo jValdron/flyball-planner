@@ -1,25 +1,32 @@
 import { config } from '../config'
 
 export interface Practice {
-  id: number
-  title: string
-  description: string
-  date: string
-  time: string
-  type: string
+  id: string
+  clubId: string
+  scheduledAt: string | null
+  createdAt: string
+  updatedAt: string
 }
 
 export const practiceService = {
-  async getPractices(): Promise<Practice[]> {
-    const response = await fetch(config.endpoints.practices)
+  async getPractices(clubId: string): Promise<Practice[]> {
+    const response = await fetch(`${config.endpoints.clubs}/${clubId}/practices`)
     if (!response.ok) {
       throw new Error('Failed to fetch practices')
     }
     return response.json()
   },
 
-  async createPractice(practice: Omit<Practice, 'id'>): Promise<Practice> {
-    const response = await fetch(config.endpoints.practices, {
+  async getPractice(clubId: string, id: string): Promise<Practice> {
+    const response = await fetch(`${config.endpoints.clubs}/${clubId}/practices/${id}`)
+    if (!response.ok) {
+      throw new Error('Failed to fetch practice')
+    }
+    return response.json()
+  },
+
+  async createPractice(clubId: string, practice: Omit<Practice, 'id' | 'createdAt' | 'updatedAt'>): Promise<Practice> {
+    const response = await fetch(`${config.endpoints.clubs}/${clubId}/practices`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -32,8 +39,8 @@ export const practiceService = {
     return response.json()
   },
 
-  async updatePractice(id: number, practice: Partial<Practice>): Promise<Practice> {
-    const response = await fetch(`${config.endpoints.practices}/${id}`, {
+  async updatePractice(clubId: string, id: string, practice: Partial<Practice>): Promise<Practice> {
+    const response = await fetch(`${config.endpoints.clubs}/${clubId}/practices/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -46,8 +53,8 @@ export const practiceService = {
     return response.json()
   },
 
-  async deletePractice(id: number): Promise<void> {
-    const response = await fetch(`${config.endpoints.practices}/${id}`, {
+  async deletePractice(clubId: string, id: string): Promise<void> {
+    const response = await fetch(`${config.endpoints.clubs}/${clubId}/practices/${id}`, {
       method: 'DELETE',
     })
     if (!response.ok) {

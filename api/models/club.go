@@ -7,10 +7,11 @@ import (
 )
 
 type Club struct {
-	ID             uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	Name           string    `gorm:"not null"`
-	NAFAClubNumber string    `gorm:"uniqueIndex;not null"`
-	Rooms          []Room    `gorm:"constraint:OnDelete:CASCADE;"`
-	CreatedAt      time.Time `gorm:"autoCreateTime"`
-	UpdatedAt      time.Time `gorm:"autoUpdateTime"`
+	ID                  uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	Name                string    `gorm:"not null"`
+	NAFAClubNumber      string    `gorm:"uniqueIndex;not null"`
+	DefaultPracticeTime string    `gorm:"not null;default:'10:00'"`
+	Rooms               []Room    `gorm:"constraint:OnDelete:CASCADE;"`
+	CreatedAt           time.Time `gorm:"autoCreateTime"`
+	UpdatedAt           time.Time `gorm:"autoUpdateTime"`
 }

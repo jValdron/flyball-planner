@@ -45,7 +45,7 @@ func main() {
 		&models.Owner{},
 		&models.Dog{},
 		&models.Club{},
-		&models.Room{},
+		&models.Location{},
 		&models.PracticeAttendance{},
 	)
 

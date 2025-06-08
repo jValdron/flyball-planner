@@ -1,13 +1,10 @@
 import { Form } from 'react-bootstrap'
 import { useEffect, useState } from 'react'
 import { clubService, type Club } from '../services/clubService'
+import { useClub } from '../contexts/ClubContext'
 
-interface ClubPickerProps {
-  selectedClubId: string
-  onClubChange: (clubId: string) => void
-}
-
-export function ClubPicker({ selectedClubId, onClubChange }: ClubPickerProps) {
+export function ClubPicker() {
+  const { selectedClubId, setSelectedClubId, setSelectedClub } = useClub()
   const [clubs, setClubs] = useState<Club[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -21,7 +18,9 @@ export function ClubPicker({ selectedClubId, onClubChange }: ClubPickerProps) {
         setClubs(data)
         // If no club is selected and we have clubs, select the first one
         if (!selectedClubId && data.length > 0) {
-          onClubChange(data[0].ID)
+          const firstClub = data[0]
+          setSelectedClubId(firstClub.ID)
+          setSelectedClub(firstClub)
         }
       } catch (err) {
         setError('Failed to load clubs')
@@ -31,10 +30,17 @@ export function ClubPicker({ selectedClubId, onClubChange }: ClubPickerProps) {
       }
     }
     loadClubs()
-  }, [selectedClubId, onClubChange])
+  }, [selectedClubId, setSelectedClubId, setSelectedClub])
 
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onClubChange(e.target.value)
+  const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const clubId = e.target.value
+    setSelectedClubId(clubId)
+    try {
+      const club = await clubService.getClub(clubId)
+      setSelectedClub(club)
+    } catch (err) {
+      console.error('Error loading club details:', err)
+    }
   }
 
   if (loading) {
@@ -47,7 +53,7 @@ export function ClubPicker({ selectedClubId, onClubChange }: ClubPickerProps) {
 
   return (
     <Form.Select
-      value={selectedClubId}
+      value={selectedClubId || ''}
       onChange={handleChange}
       aria-label="Select club"
       className="w-auto"
