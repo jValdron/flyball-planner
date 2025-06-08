@@ -5,6 +5,7 @@ export const config = {
   endpoints: {
     dogs: `${API_BASE_URL}/api/dogs`,
     clubs: `${API_BASE_URL}/api/clubs`,
-    owners: `${API_BASE_URL}/api/owners`
+    owners: `${API_BASE_URL}/api/owners`,
+    practices: `${API_BASE_URL}/api/practices`
   }
 }

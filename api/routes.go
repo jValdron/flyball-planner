@@ -18,7 +18,7 @@ func RegisterRoutes(db *gorm.DB) *chi.Mux {
 
 	r.Route("/api", func(r chi.Router) {
 		r.Use(cors.Handler(cors.Options{
-			AllowedOrigins:   []string{"*"}, // Allow all origins (to be changed)
+			AllowedOrigins:   []string{"*"}, // TODO: Allow all origins (remove)
 			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 			ExposedHeaders:   []string{"Link"},
@@ -28,22 +28,6 @@ func RegisterRoutes(db *gorm.DB) *chi.Mux {
 
 		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("OK"))
-		})
-
-		r.Route("/practices", func(r chi.Router) {
-			r.Post("/", h.CreatePractice)
-			r.Get("/", h.GetAllPractices)
-			r.Get("/{id}", h.GetPractice)
-			r.Put("/{id}", h.UpdatePractice)
-			r.Delete("/{id}", h.DeletePractice)
-
-			r.Route("/{practiceID}/sets", func(r chi.Router) {
-				r.Post("/", h.CreateSet)
-				r.Get("/", h.GetAllSets)
-				r.Get("/{id}", h.GetSet)
-				r.Put("/{id}", h.UpdateSet)
-				r.Delete("/{id}", h.DeleteSet)
-			})
 		})
 
 		r.Route("/owners", func(r chi.Router) {
@@ -68,10 +52,37 @@ func RegisterRoutes(db *gorm.DB) *chi.Mux {
 			r.Put("/{id}", h.UpdateClub)
 			r.Get("/{id}/dogs", h.GetAllClubDogs)
 			r.Get("/{id}/dogs/{dogId}", h.GetClubDog)
-		})
 
-		r.Put("/practices/{practiceID}/sets/reorder", h.ReorderSets)
-		r.Put("/practices/{practiceID}/sets/{setID}/setdogs/reorder", h.ReorderSetDogs)
+			r.Route("/{clubID}/rooms", func(r chi.Router) {
+				r.Post("/", h.CreateRoom)
+				r.Get("/", h.GetAllRooms)
+				r.Get("/{id}", h.GetRoom)
+				r.Put("/{id}", h.UpdateRoom)
+				r.Delete("/{id}", h.DeleteRoom)
+			})
+
+			r.Route("/{clubID}/practices", func(r chi.Router) {
+				r.Post("/", h.CreatePractice)
+				r.Get("/", h.GetAllPractices)
+				r.Get("/{id}", h.GetPractice)
+				r.Put("/{id}", h.UpdatePractice)
+				r.Delete("/{id}", h.DeletePractice)
+
+				r.Route("/{practiceID}/sets", func(r chi.Router) {
+					r.Post("/", h.CreateSet)
+					r.Get("/", h.GetAllSets)
+					r.Get("/{id}", h.GetSet)
+					r.Put("/{id}", h.UpdateSet)
+					r.Delete("/{id}", h.DeleteSet)
+				})
+
+				r.Put("/{practiceID}/sets/reorder", h.ReorderSets)
+				r.Put("/{practiceID}/sets/{setID}/dogs/reorder", h.ReorderSetDogs)
+
+				r.Get("/{practiceID}/attendance", h.GetAllAttendances)
+				r.Put("/{practiceID}/attendance/{dogID}", h.UpdateAttendance)
+			})
+		})
 	})
 
 	return r

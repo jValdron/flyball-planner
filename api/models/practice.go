@@ -9,6 +9,7 @@ import (
 
 type Practice struct {
 	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	ClubID      uuid.UUID `gorm:"type:uuid;not null"`
 	ScheduledAt sql.NullTime
 	Sets        []Set     `gorm:"constraint:OnDelete:CASCADE;"`
 	CreatedAt   time.Time `gorm:"autoCreateTime"`

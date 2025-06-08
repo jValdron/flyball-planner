@@ -10,36 +10,81 @@ import (
 )
 
 // @Summary Create a new practice
-// @Description Create a new practice session
+// @Description Create a new practice session for a club
 // @Tags practices
 // @Accept json
 // @Produce json
+// @Param clubID path string true "Club ID"
 // @Param practice body models.Practice true "Practice object"
 // @Success 201 {object} models.Practice
-// @Router /practices [post]
+// @Router /clubs/{clubID}/practices [post]
 func (h *Handler) CreatePractice(w http.ResponseWriter, r *http.Request) {
-	h.createEntity(w, r, &models.Practice{})
+	clubID := chi.URLParam(r, "clubID")
+	if _, err := uuid.Parse(clubID); err != nil {
+		http.Error(w, "Invalid club ID", http.StatusBadRequest)
+		return
+	}
+
+	var practice models.Practice
+	if err := json.NewDecoder(r.Body).Decode(&practice); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	practice.ClubID = uuid.MustParse(clubID)
+	if err := h.DB.Create(&practice).Error; err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(practice)
 }
 
-// @Summary Get all practices
-// @Description Get a list of all practice sessions
+// @Summary Get all practices for a club
+// @Description Get a list of all practice sessions for a specific club
 // @Tags practices
 // @Produce json
+// @Param clubID path string true "Club ID"
 // @Success 200 {array} models.Practice
-// @Router /practices [get]
+// @Router /clubs/{clubID}/practices [get]
 func (h *Handler) GetAllPractices(w http.ResponseWriter, r *http.Request) {
-	h.getAllEntities(w, r, &[]models.Practice{}, "", "")
+	clubID := chi.URLParam(r, "clubID")
+	if _, err := uuid.Parse(clubID); err != nil {
+		http.Error(w, "Invalid club ID", http.StatusBadRequest)
+		return
+	}
+	h.getAllEntities(w, r, &[]models.Practice{}, "club_id", clubID)
 }
 
 // @Summary Get a practice by ID
 // @Description Get a specific practice session by its ID
 // @Tags practices
 // @Produce json
+// @Param clubID path string true "Club ID"
 // @Param id path string true "Practice ID"
 // @Success 200 {object} models.Practice
-// @Router /practices/{id} [get]
+// @Router /clubs/{clubID}/practices/{id} [get]
 func (h *Handler) GetPractice(w http.ResponseWriter, r *http.Request) {
-	h.getEntity(w, r, &models.Practice{})
+	clubID := chi.URLParam(r, "clubID")
+	practiceID := chi.URLParam(r, "id")
+	
+	if _, err := uuid.Parse(clubID); err != nil {
+		http.Error(w, "Invalid club ID", http.StatusBadRequest)
+		return
+	}
+	if _, err := uuid.Parse(practiceID); err != nil {
+		http.Error(w, "Invalid practice ID", http.StatusBadRequest)
+		return
+	}
+
+	var practice models.Practice
+	if err := h.DB.Where("id = ? AND club_id = ?", practiceID, clubID).First(&practice).Error; err != nil {
+		http.Error(w, "Practice not found", http.StatusNotFound)
+		return
+	}
+
+	json.NewEncoder(w).Encode(practice)
 }
 
 // @Summary Update a practice
@@ -47,22 +92,67 @@ func (h *Handler) GetPractice(w http.ResponseWriter, r *http.Request) {
 // @Tags practices
 // @Accept json
 // @Produce json
+// @Param clubID path string true "Club ID"
 // @Param id path string true "Practice ID"
 // @Param practice body models.Practice true "Practice object"
 // @Success 200 {object} models.Practice
-// @Router /practices/{id} [put]
+// @Router /clubs/{clubID}/practices/{id} [put]
 func (h *Handler) UpdatePractice(w http.ResponseWriter, r *http.Request) {
-	h.updateEntity(w, r, &models.Practice{})
+	clubID := chi.URLParam(r, "clubID")
+	practiceID := chi.URLParam(r, "id")
+	
+	if _, err := uuid.Parse(clubID); err != nil {
+		http.Error(w, "Invalid club ID", http.StatusBadRequest)
+		return
+	}
+	if _, err := uuid.Parse(practiceID); err != nil {
+		http.Error(w, "Invalid practice ID", http.StatusBadRequest)
+		return
+	}
+
+	var practice models.Practice
+	if err := json.NewDecoder(r.Body).Decode(&practice); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	practice.ID = uuid.MustParse(practiceID)
+	practice.ClubID = uuid.MustParse(clubID)
+
+	if err := h.DB.Where("id = ? AND club_id = ?", practiceID, clubID).Updates(&practice).Error; err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(practice)
 }
 
 // @Summary Delete a practice
 // @Description Delete a practice session
 // @Tags practices
+// @Param clubID path string true "Club ID"
 // @Param id path string true "Practice ID"
 // @Success 204 "No Content"
-// @Router /practices/{id} [delete]
+// @Router /clubs/{clubID}/practices/{id} [delete]
 func (h *Handler) DeletePractice(w http.ResponseWriter, r *http.Request) {
-	h.deleteEntity(w, r, &models.Practice{})
+	clubID := chi.URLParam(r, "clubID")
+	practiceID := chi.URLParam(r, "id")
+	
+	if _, err := uuid.Parse(clubID); err != nil {
+		http.Error(w, "Invalid club ID", http.StatusBadRequest)
+		return
+	}
+	if _, err := uuid.Parse(practiceID); err != nil {
+		http.Error(w, "Invalid practice ID", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.DB.Where("id = ? AND club_id = ?", practiceID, clubID).Delete(&models.Practice{}).Error; err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // @Summary Create a new set

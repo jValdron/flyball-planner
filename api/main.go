@@ -7,8 +7,9 @@ import (
 	"net/http"
 	"os"
 
-	httpSwagger "github.com/swaggo/http-swagger"
 	_ "flyball-practice-planner/api/docs" // This will be generated
+
+	httpSwagger "github.com/swaggo/http-swagger"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -37,7 +38,16 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to connect to database: ", err)
 	}
-	db.AutoMigrate(&models.Practice{}, &models.Set{}, &models.SetDog{}, &models.Owner{}, &models.Dog{}, &models.Club{})
+	db.AutoMigrate(
+		&models.Practice{},
+		&models.Set{},
+		&models.SetDog{},
+		&models.Owner{},
+		&models.Dog{},
+		&models.Club{},
+		&models.Room{},
+		&models.PracticeAttendance{},
+	)
 
 	SeedData(db)
 
