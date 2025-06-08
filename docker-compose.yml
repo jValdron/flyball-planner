@@ -28,17 +28,5 @@ services:
     ports:
       - "8080:8080"
 
-  frontend:
-    build:
-      context: ./frontend
-      args:
-        API_BASE_URL: http://localhost:8080/api
-    container_name: flyball-frontend
-    restart: always
-    depends_on:
-      - api
-    ports:
-      - "80:80"
-
 volumes:
   db_data:

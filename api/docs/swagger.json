@@ -1,0 +1,436 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API for managing flyball practice sessions",
+        "title": "Flyball Practice Planner API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/api",
+    "paths": {
+        "/practices": {
+            "get": {
+                "description": "Get a list of all practice sessions",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "practices"
+                ],
+                "summary": "Get all practices",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Practice"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new practice session",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "practices"
+                ],
+                "summary": "Create a new practice",
+                "parameters": [
+                    {
+                        "description": "Practice object",
+                        "name": "practice",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Practice"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.Practice"
+                        }
+                    }
+                }
+            }
+        },
+        "/practices/{id}": {
+            "get": {
+                "description": "Get a specific practice session by its ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "practices"
+                ],
+                "summary": "Get a practice by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Practice ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Practice"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update an existing practice session",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "practices"
+                ],
+                "summary": "Update a practice",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Practice ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Practice object",
+                        "name": "practice",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Practice"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Practice"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a practice session",
+                "tags": [
+                    "practices"
+                ],
+                "summary": "Delete a practice",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Practice ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/practices/{practiceID}/sets": {
+            "get": {
+                "description": "Get a list of all sets within a practice",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sets"
+                ],
+                "summary": "Get all sets in a practice",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Practice ID",
+                        "name": "practiceID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Set"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new set within a practice",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sets"
+                ],
+                "summary": "Create a new set",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Practice ID",
+                        "name": "practiceID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Set object",
+                        "name": "set",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Set"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.Set"
+                        }
+                    }
+                }
+            }
+        },
+        "/practices/{practiceID}/sets/reorder": {
+            "put": {
+                "description": "Update the order of sets within a practice",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sets"
+                ],
+                "summary": "Reorder sets in a practice",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Practice ID",
+                        "name": "practiceID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Array of set orders",
+                        "name": "setOrder",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/practices/{practiceID}/sets/{id}": {
+            "get": {
+                "description": "Get a specific set by its ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sets"
+                ],
+                "summary": "Get a set by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Set ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Set"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update an existing set",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sets"
+                ],
+                "summary": "Update a set",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Set ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Set object",
+                        "name": "set",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Set"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Set"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a set",
+                "tags": [
+                    "sets"
+                ],
+                "summary": "Delete a set",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Set ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/practices/{practiceID}/sets/{setID}/setdogs/reorder": {
+            "put": {
+                "description": "Update the order of dogs within a set",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sets"
+                ],
+                "summary": "Reorder dogs in a set",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Practice ID",
+                        "name": "practiceID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Set ID",
+                        "name": "setID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Array of dog orders",
+                        "name": "dogOrder",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "models.Practice": {
+            "type": "object"
+        },
+        "models.Set": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "order": {
+                    "type": "integer"
+                },
+                "practiceID": {
+                    "type": "string"
+                },
+                "setDogs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.SetDog"
+                    }
+                }
+            }
+        },
+        "models.SetDog": {
+            "type": "object",
+            "properties": {
+                "dogID": {
+                    "type": "string"
+                },
+                "lane": {
+                    "type": "string"
+                },
+                "order": {
+                    "type": "integer"
+                },
+                "setID": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

@@ -7,10 +7,17 @@ import (
 	"net/http"
 	"os"
 
+	httpSwagger "github.com/swaggo/http-swagger"
+	_ "flyball-practice-planner/api/docs" // This will be generated
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
+// @title Flyball Practice Planner API
+// @version 1.0
+// @description API for managing flyball practice sessions
+// @host localhost:8080
+// @BasePath /api
 var db *gorm.DB
 
 func main() {
@@ -30,11 +37,16 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to connect to database: ", err)
 	}
-	db.AutoMigrate(&models.Practice{}, &models.Set{}, &models.SetDog{}, &models.Owner{}, &models.Dog{})
+	db.AutoMigrate(&models.Practice{}, &models.Set{}, &models.SetDog{}, &models.Owner{}, &models.Dog{}, &models.Club{})
 
 	SeedData(db)
 
 	r := RegisterRoutes(db)
+
+	// Swagger documentation endpoint
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"), // The url pointing to API definition
+	))
 
 	log.Println("Starting server on :8080...")
 	if err := http.ListenAndServe(":8080", r); err != nil {

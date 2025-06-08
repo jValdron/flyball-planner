@@ -20,6 +20,14 @@ func SeedData(db *gorm.DB) {
 
 	log.Println("Seeding database...")
 
+	// Create club
+	club := models.Club{
+		ID:             uuid.New(),
+		Name:           "On My Go!",
+		NAFAClubNumber: "1002",
+	}
+	db.Create(&club)
+
 	ownersCSV := `givenName,surname
 Andrea,Donovan
 Brit,Walton
@@ -90,6 +98,7 @@ Scooter,Carrie`
 			ID:        uuid.New(),
 			GivenName: row[0],
 			Surname:   row[1],
+			ClubID:    club.ID,
 		})
 	}
 	db.Create(&owners)
@@ -107,6 +116,7 @@ Scooter,Carrie`
 			ID:      uuid.New(),
 			Name:    row[0],
 			OwnerID: owner.ID,
+			ClubID:  club.ID,
 		})
 	}
 	db.Create(&dogs)

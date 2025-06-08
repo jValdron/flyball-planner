@@ -62,6 +62,14 @@ func RegisterRoutes(db *gorm.DB) *chi.Mux {
 			})
 		})
 
+		r.Route("/clubs", func(r chi.Router) {
+			r.Get("/", h.GetAllClubs)
+			r.Get("/{id}", h.GetClub)
+			r.Put("/{id}", h.UpdateClub)
+			r.Get("/{id}/dogs", h.GetAllClubDogs)
+			r.Get("/{id}/dogs/{dogId}", h.GetClubDog)
+		})
+
 		r.Put("/practices/{practiceID}/sets/reorder", h.ReorderSets)
 		r.Put("/practices/{practiceID}/sets/{setID}/setdogs/reorder", h.ReorderSetDogs)
 	})
