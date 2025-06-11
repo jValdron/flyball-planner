@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import { Container, Button, Card, Spinner, Alert, Badge, Form } from 'react-bootstrap'
+import { Container, Button, Card, Spinner, Alert, Badge, Form, ListGroup } from 'react-bootstrap'
 import { practiceService } from '../services/practiceService'
 import type { Practice } from '../services/practiceService'
 import { useClub } from '../contexts/ClubContext'
 import { Link, useNavigate } from 'react-router-dom'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
-import { Pencil, PlusLg, Trash } from 'react-bootstrap-icons'
-import { formatDateHeader, formatRelativeTime, isPastDay } from '../utils/dateUtils'
+import { CalendarCheck, CalendarX, Pencil, PlusLg, Trash } from 'react-bootstrap-icons'
+import { formatRelativeTime, isPastDay } from '../utils/dateUtils'
 
 function Practices() {
   const { selectedClub } = useClub()
@@ -146,25 +146,28 @@ function Practices() {
                   )}
                   <div key={practice.ID} className="col-md-4 mb-4">
                     <Card
-                      className={`${practiceIsPast ? 'border-secondary bg-light' : practice.Status === 'Draft' ? 'border-warning' : practice.Status === 'Ready' ? 'border-success' : ''} cursor-pointer`}
                       onClick={() => navigate(`/practices/${practice.ID}`)}
                       style={{ cursor: 'pointer' }}
                     >
-                      <Card.Header className={practiceIsPast ? 'bg-secondary text-white' : practice.Status === 'Draft' ? 'bg-warning' : 'bg-success text-white'}>
-                        {formatDateHeader(practice.ScheduledAt)}
-                        {!practiceIsPast && practice.Status === 'Draft' && (
-                          <Badge bg="warning" className="ms-2 float-end">Draft</Badge>
-                        )}
-                      </Card.Header>
-                      <Card.Body>
-                        <Card.Subtitle className={`mb-2 ${practiceIsPast ? 'text-secondary' : 'text-muted'}`}>
+                      <Card.Body className={practiceIsPast ? 'bg-past' : practice.Status === 'Draft' ? 'bg-warning-subtle' : 'bg-primary-subtle'}>
+                        <Card.Title>
                           {formatRelativeTime(practice.ScheduledAt)}
-                        </Card.Subtitle>
+                        </Card.Title>
+                        <Card.Text>
+                          {practice.Status === 'Ready' && <Badge bg="primary" className="d-inline-block me-2"><CalendarCheck /> Ready</Badge>}
+                          {practice.Status === 'Draft' && <Badge bg="warning" className="d-inline-block me-2 text-dark"><Pencil /> Draft</Badge>}
+                          {practiceIsPast && <Badge bg="past" className="d-inline-block me-2 text-dark"><CalendarX /> Past</Badge>}
+                        </Card.Text>
+                      </Card.Body>
+                      <ListGroup className="list-group-flush">
+                        <ListGroup.Item>10 attending</ListGroup.Item>
+                        <ListGroup.Item>20 sets</ListGroup.Item>
+                      </ListGroup>
+                      <Card.Body className="d-flex justify-content-between">
                         {practiceIsPast ? "" : (
                           <Button
                             variant="outline-primary"
                             size="sm"
-                            className="me-2"
                             onClick={(e) => {
                               e.stopPropagation();
                               navigate(`/practices/${practice.ID}`);
@@ -182,8 +185,7 @@ function Practices() {
                             handleDeleteClick(practice.ID);
                           }}
                         >
-                          <Trash className="me-1" />
-                          {practiceIsPast ? 'Delete' : 'Cancel'}
+                          <Trash />
                         </Button>
                       </Card.Body>
                     </Card>

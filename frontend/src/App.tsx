@@ -1,5 +1,6 @@
 import { Container, Navbar, Nav } from 'react-bootstrap'
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
+import { useEffect } from 'react'
 import Home from './pages/Home'
 import Dogs from './pages/Dogs'
 import Practices from './pages/Practices'
@@ -8,6 +9,7 @@ import DogView from './pages/DogView'
 import OwnerView from './pages/OwnerView'
 import { ClubProvider } from './contexts/ClubContext'
 import { ClubPicker } from './components/ClubPicker'
+import { websocketService } from './services/websocketService'
 
 function Header() {
   return (
@@ -31,6 +33,16 @@ function Header() {
 }
 
 function App() {
+  useEffect(() => {
+    // Initialize WebSocket connection
+    websocketService.connect();
+
+    // Cleanup on unmount
+    return () => {
+      websocketService.disconnect();
+    };
+  }, []);
+
   return (
     <Router>
       <ClubProvider>

@@ -1,29 +1,17 @@
 import { useState, useEffect, useCallback } from 'react'
 import React from 'react'
-import { Container, Form, Button, Alert, Spinner, Breadcrumb, Tabs, Tab } from 'react-bootstrap'
+import { Container, Form, Button, Alert, Spinner, Breadcrumb, Tabs, Tab, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { practiceService } from '../services/practiceService'
 import type { Practice, PracticeStatus } from '../services/practiceService'
-import { dogService } from '../services/dogService'
-import { ownerService } from '../services/ownerService'
-import type { Owner } from '../services/ownerService'
 import { useClub } from '../contexts/ClubContext'
 import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
 import { CALENDAR_TYPES } from 'react-calendar/dist/shared/const.js'
 import { SaveSpinner } from '../components/SaveSpinner'
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, CalendarCheck, CalendarX } from 'react-bootstrap-icons'
-import { formatDateHeader, formatTime, isPastDay } from '../utils/dateUtils'
+import { formatRelativeTime, formatTime, isPastDay } from '../utils/dateUtils'
 import { PracticeAttendance } from '../components/PracticeAttendance'
-import { AttendanceStatus } from '../services/attendanceService'
-
-interface DogAttendance {
-  dogId: string
-  name: string
-  ownerId: string
-  ownerName: string
-  status: AttendanceStatus
-}
 
 function PracticeView() {
   const navigate = useNavigate()
@@ -34,13 +22,11 @@ function PracticeView() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
-  const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [scheduledDate, setScheduledDate] = useState<Date | null>(null)
   const [scheduledTime, setScheduledTime] = useState<string>('')
   const [isDirty, setIsDirty] = useState(false)
   const isPastPractice = practiceId ? isPastDay(practice?.ScheduledAt ?? null) : false
 
-  // Get the current tab from the URL
   const getCurrentTab = () => {
     if (!practiceId) return 'date'
     const pathParts = location.pathname.split('/')
@@ -114,7 +100,6 @@ function PracticeView() {
           Status: 'Draft'
         })
         setPractice(newPractice)
-        setSaveMessage('Saving new practice...')
         setIsDirty(false)
         navigate(`/practices/${newPractice.ID}`, {
           replace: true,
@@ -194,12 +179,7 @@ function PracticeView() {
       <div className="d-flex justify-content-between align-items-center mb-2">
         <h1>
           {practice?.ScheduledAt ? <>
-              {formatDateHeader(practice.ScheduledAt)}
-              <div className="d-block d-md-inline ms-md-2 ms-0">
-                <small className="text-muted fs-3">
-                  at {formatTime(practice.ScheduledAt)}
-                </small>
-              </div>
+              {formatRelativeTime(practice.ScheduledAt)}
             </>
           : 'New Practice'}
         </h1>
@@ -228,15 +208,10 @@ function PracticeView() {
               <div className="col-md-6">
                 <Form.Group className="mb-3">
                   <Calendar
-                    onChange={(value) => {
-                      if (!isPastPractice && value instanceof Date) {
-                        handleDateChange(value)
-                      }
-                    }}
-                    value={scheduledDate}
-                    minDate={isPastPractice ? undefined : new Date()}
-                    className="w-100"
                     calendarType={CALENDAR_TYPES.GREGORY}
+                    className="w-100"
+                    minDate={isPastPractice ? undefined : new Date()}
+                    showNavigation={!isPastPractice}
                     prevLabel={<ChevronLeft />}
                     nextLabel={<ChevronRight />}
                     tileClassName={({ date }) => {
@@ -249,21 +224,18 @@ function PracticeView() {
                       }
                       return null
                     }}
-                    showNavigation={!isPastPractice}
                     tileDisabled={({date}) => isPastPractice && scheduledDate?.toDateString() !== date.toDateString()}
+                    onChange={(value) => {
+                      if (!isPastPractice && value instanceof Date) {
+                        handleDateChange(value)
+                      }
+                    }}
+                    value={scheduledDate}
                   />
                   <div className="mt-2">
-                    <small className="text-muted">
-                      <span className="d-inline-block me-1">
-                        <span className="badge bg-success me-1"><CalendarIcon className="me-1" />Today</span>
-                      </span>
-                      <span className="d-inline-block me-2">
-                        <span className="badge bg-primary me-1"><CalendarCheck className="me-1" />Selected</span>
-                      </span>
-                      <span className="d-inline-block">
-                        <span className="badge bg-past me-1"><CalendarX className="me-1" />Past</span>
-                      </span>
-                    </small>
+                    <Badge bg="success" className="d-inline-block me-2"><CalendarIcon /> Today</Badge>
+                    <Badge bg="primary" className="d-inline-block me-2"><CalendarCheck /> Selected</Badge>
+                    <Badge bg="past" className="d-inline-block me-2"><CalendarX /> Past</Badge>
                   </div>
                 </Form.Group>
               </div>
@@ -279,16 +251,29 @@ function PracticeView() {
                 </Form.Group>
               </div>
             </div>
-
-            <div className="d-flex justify-content-end">
+          </Form>
+          <div className="d-flex justify-content-end">
+            {!practiceId ? (
+              <OverlayTrigger overlay={<Tooltip>Practice must be scheduled first.</Tooltip>} placement="left">
+                <span className="d-inline-block">
+                  <Button
+                    variant="primary"
+                    disabled
+                    onClick={() => handleTabChange('attendance')}
+                  >
+                    Attendance <ChevronRight className="ms-1" />
+                  </Button>
+                </span>
+              </OverlayTrigger>
+            ) : (
               <Button
                 variant="primary"
                 onClick={() => handleTabChange('attendance')}
               >
                 Attendance <ChevronRight className="ms-1" />
               </Button>
-            </div>
-          </Form>
+            )}
+          </div>
         </Tab>
 
         <Tab eventKey="attendance" title="Attendance">
@@ -296,12 +281,28 @@ function PracticeView() {
             <PracticeAttendance
               practiceId={practiceId}
               isPastPractice={isPastPractice}
-              onTabChange={handleTabChange}
             />
           )}
+          <div className="d-flex justify-content-between mb-3">
+            <Button
+              variant="secondary"
+              onClick={() => handleTabChange('date')}
+            >
+              <ChevronLeft className="me-1" /> Date & Time
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => handleTabChange('sets')}
+            >
+              Sets <ChevronRight className="ms-1" />
+            </Button>
+          </div>
         </Tab>
 
         <Tab eventKey="sets" title="Sets">
+          <Alert variant="info">
+            Practice sets management will be implemented in a future update.
+          </Alert>
           <div className="d-flex justify-content-start mb-3">
             <Button
               variant="secondary"
@@ -310,13 +311,10 @@ function PracticeView() {
               <ChevronLeft className="me-1" /> Attendance
             </Button>
           </div>
-          <Alert variant="info">
-            Practice sets management will be implemented in a future update.
-          </Alert>
         </Tab>
       </Tabs>
 
-      <SaveSpinner show={isSaving} message={saveMessage} />
+      <SaveSpinner show={isSaving} />
     </Container>
   )
 }

@@ -28,5 +28,21 @@ services:
     ports:
       - "8080:8080"
 
+  graphql:
+    build: ./graphql
+    container_name: flyball-graphql
+    restart: always
+    depends_on:
+      - db
+    environment:
+      DB_USER: flyball_user
+      DB_PASSWORD: flyball_password
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: flyball_practice
+      DB_SSLMODE: disable
+    ports:
+      - "4000:4000"
+
 volumes:
   db_data:

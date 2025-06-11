@@ -1,0 +1,57 @@
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { ObjectType, Field, ID, registerEnumType } from 'type-graphql';
+import { Practice } from './Practice';
+import { Dog } from './Dog';
+
+export enum AttendanceStatus {
+  ATTENDING = 'ATTENDING',
+  NOT_ATTENDING = 'NOT_ATTENDING',
+  UNKNOWN = 'UNKNOWN'
+}
+
+registerEnumType(AttendanceStatus, {
+  name: 'AttendanceStatus',
+  description: 'The attendance status of a dog for a practice'
+});
+
+@ObjectType()
+@Entity('practice_attendances')
+export class PracticeAttendance {
+  @Field(() => ID)
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Field(() => ID)
+  @Column('uuid')
+  practiceId: string;
+
+  @Field(() => ID)
+  @Column('uuid')
+  dogId: string;
+
+  @Field(() => AttendanceStatus)
+  @Column({
+    type: 'enum',
+    enum: AttendanceStatus,
+    default: AttendanceStatus.UNKNOWN
+  })
+  attending: AttendanceStatus;
+
+  @Field()
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @Field()
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @Field(() => Practice)
+  @ManyToOne(() => Practice, practice => practice.attendances)
+  @JoinColumn({ name: 'practiceId' })
+  practice: Practice;
+
+  @Field(() => Dog)
+  @ManyToOne(() => Dog)
+  @JoinColumn({ name: 'dogId' })
+  dog: Dog;
+}

@@ -1,22 +1,30 @@
 package main
 
 import (
+	"flyball-practice-planner/api/graph"
 	"flyball-practice-planner/api/models"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 
-	_ "flyball-practice-planner/api/docs" // This will be generated
-
-	httpSwagger "github.com/swaggo/http-swagger"
+	"github.com/go-chi/chi/v5"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 // @title Flyball Practice Planner API
 // @version 1.0
-// @description API for managing flyball practice sessions
+// @description This is the API for the Flyball Practice Planner application.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
 // @host localhost:8080
 // @BasePath /api
 var db *gorm.DB
@@ -51,15 +59,11 @@ func main() {
 
 	SeedData(db)
 
-	r := RegisterRoutes(db)
+	r := chi.NewRouter()
 
-	// Swagger documentation endpoint
-	r.Get("/swagger/*", httpSwagger.Handler(
-		httpSwagger.URL("/swagger/doc.json"), // The url pointing to API definition
-	))
+	// Setup GraphQL server
+	graph.SetupGraphQLServer(r, db)
 
-	log.Println("Starting server on :8080...")
-	if err := http.ListenAndServe(":8080", r); err != nil {
-		log.Fatal("Server failed: ", err)
-	}
+	log.Println("Server starting on :8080")
+	log.Fatal(http.ListenAndServe(":8080", r))
 }

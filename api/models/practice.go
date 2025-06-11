@@ -18,6 +18,7 @@ type Practice struct {
 	ClubID      uuid.UUID      `gorm:"type:uuid;not null;column:club_id"`
 	ScheduledAt time.Time      `gorm:"not null"`
 	Status      PracticeStatus `gorm:"type:varchar(10);default:'Draft'"`
+	Attendances []PracticeAttendance `gorm:"constraint:OnDelete:CASCADE;"`
 	Sets        []Set          `gorm:"constraint:OnDelete:CASCADE;"`
 	CreatedAt   time.Time      `gorm:"autoCreateTime"`
 	UpdatedAt   time.Time      `gorm:"autoUpdateTime"`

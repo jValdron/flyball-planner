@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button, Table } from 'react-bootstrap'
-import { ChevronLeft, ChevronRight, CheckLg, XLg, DashLg } from 'react-bootstrap-icons'
+import { CheckLg, XLg } from 'react-bootstrap-icons'
 import { attendanceService, AttendanceStatus, type AttendanceUpdate } from '../services/attendanceService'
 import { useClub } from '../contexts/ClubContext'
 import { SaveSpinner } from './SaveSpinner'
@@ -13,20 +13,33 @@ const SAVE_DELAY = 2000
 interface PracticeAttendanceProps {
   practiceId: string
   isPastPractice: boolean
-  onTabChange: (tab: string) => void
 }
 
 interface DogWithOwner extends Dog {
   ownerName: string
 }
 
-export function PracticeAttendance({ practiceId, isPastPractice, onTabChange }: PracticeAttendanceProps) {
+export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAttendanceProps) {
   const { selectedClub } = useClub()
   const [isSaving, setIsSaving] = useState(false)
   const [pendingUpdates, setPendingUpdates] = useState<AttendanceUpdate[]>([])
   const [owners, setOwners] = useState<Owner[]>([])
   const [dogs, setDogs] = useState<DogWithOwner[]>([])
   const [attendances, setAttendances] = useState<Map<string, AttendanceStatus>>(new Map())
+
+  // Load owners, dogs and attendances
+  useEffect(() => {
+    if (owners && owners.length > 0 && selectedClub) {
+      loadDogs(owners)
+    }
+  }, [selectedClub, owners])
+
+  useEffect(() => {
+    if (selectedClub && practiceId) {
+      loadOwners()
+      loadAttendances()
+    }
+  }, [selectedClub, practiceId])
 
   const loadOwners = async () => {
     try {
@@ -36,12 +49,6 @@ export function PracticeAttendance({ practiceId, isPastPractice, onTabChange }: 
       console.error('Error loading owners:', err)
     }
   }
-
-  useEffect(() => {
-    if (owners && owners.length > 0 && selectedClub) {
-      loadDogs(owners)
-    }
-  }, [selectedClub, owners])
 
   const loadDogs = async (ownersList: Owner[]) => {
     try {
@@ -68,13 +75,6 @@ export function PracticeAttendance({ practiceId, isPastPractice, onTabChange }: 
     }
   }
 
-  useEffect(() => {
-    if (selectedClub && practiceId) {
-      loadOwners()
-      loadAttendances()
-    }
-  }, [selectedClub, practiceId])
-
   const loadAttendances = async () => {
     if (!selectedClub || !practiceId) return
     try {
@@ -86,6 +86,7 @@ export function PracticeAttendance({ practiceId, isPastPractice, onTabChange }: 
     }
   }
 
+  // Save attendances
   useEffect(() => {
     if (pendingUpdates.length === 0) {
       return
@@ -161,25 +162,11 @@ export function PracticeAttendance({ practiceId, isPastPractice, onTabChange }: 
 
   return (
     <>
-      <div className="d-flex justify-content-between mb-3">
-        <Button
-          variant="secondary"
-          onClick={() => onTabChange('details')}
-        >
-          <ChevronLeft className="me-1" /> Date & Time
-        </Button>
-        <Button
-          variant="primary"
-          onClick={() => onTabChange('sets')}
-        >
-          Sets <ChevronRight className="ms-1" />
-        </Button>
-      </div>
-      <Table striped bordered>
+      <Table striped bordered hover>
         <thead>
           <tr>
-            <th style={{ width: '100px' }}>Attendance</th>
-            <th>Owner / Dog</th>
+            <th className="w-100">Owner / Dog</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -193,22 +180,38 @@ export function PracticeAttendance({ practiceId, isPastPractice, onTabChange }: 
 
             return (
               <React.Fragment key={ownerId}>
-                <tr className="table-Secondary">
+                <tr
+                  className="table-secondary"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => {
+                    if (!isPastPractice && !isSaving) {
+                      const newStatus = ownerStatus === AttendanceStatus.Yes ? AttendanceStatus.No : AttendanceStatus.Yes
+                      handleOwnerAttendanceChange(ownerId, newStatus)
+                    }
+                  }}
+                >
+                  <td><strong>{ownerName}</strong></td>
                   <td className="text-left">
                     <div className="btn-group" role="group">
                       <Button
-                        variant={ownerStatus === AttendanceStatus.Yes ? 'success' : 'outline-success'}
+                        variant={ownerStatus === AttendanceStatus.Yes ? 'primary' : 'outline-primary'}
                         size="sm"
-                        onClick={() => handleOwnerAttendanceChange(ownerId, AttendanceStatus.Yes)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleOwnerAttendanceChange(ownerId, AttendanceStatus.Yes)
+                        }}
                         title="All Attending"
                         disabled={isPastPractice || isSaving}
                       >
                         <CheckLg />
                       </Button>
                       <Button
-                        variant={ownerStatus === AttendanceStatus.No ? 'danger' : 'outline-danger'}
+                        variant={ownerStatus === AttendanceStatus.No ? 'secondary' : 'outline-secondary'}
                         size="sm"
-                        onClick={() => handleOwnerAttendanceChange(ownerId, AttendanceStatus.No)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleOwnerAttendanceChange(ownerId, AttendanceStatus.No)
+                        }}
                         title="All Not Attending"
                         disabled={isPastPractice || isSaving}
                       >
@@ -216,42 +219,47 @@ export function PracticeAttendance({ practiceId, isPastPractice, onTabChange }: 
                       </Button>
                     </div>
                   </td>
-                  <td><strong>{ownerName}</strong></td>
                 </tr>
                 {ownerDogs.map((dog) => (
-                  <tr key={dog.ID}>
+                  <tr
+                    key={dog.ID}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => {
+                      if (!isPastPractice && !isSaving) {
+                        const newStatus = attendances.get(dog.ID) === AttendanceStatus.Yes ? AttendanceStatus.No : AttendanceStatus.Yes
+                        handleAttendanceChange(dog.ID, newStatus)
+                      }
+                    }}
+                  >
+                    <td className="ps-4">{dog.Name}</td>
                     <td className="text-left">
                       <div className="btn-group" role="group">
                         <Button
-                          variant={attendances.get(dog.ID) === AttendanceStatus.Yes ? 'success' : 'outline-success'}
+                          variant={attendances.get(dog.ID) === AttendanceStatus.Yes ? 'primary' : 'outline-primary'}
                           size="sm"
-                          onClick={() => handleAttendanceChange(dog.ID, AttendanceStatus.Yes)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleAttendanceChange(dog.ID, AttendanceStatus.Yes)
+                          }}
                           title="Attending"
                           disabled={isPastPractice || isSaving}
                         >
                           <CheckLg />
                         </Button>
                         <Button
-                          variant={attendances.get(dog.ID) === AttendanceStatus.No ? 'danger' : 'outline-danger'}
+                          variant={attendances.get(dog.ID) === AttendanceStatus.No ? 'secondary' : 'outline-secondary'}
                           size="sm"
-                          onClick={() => handleAttendanceChange(dog.ID, AttendanceStatus.No)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleAttendanceChange(dog.ID, AttendanceStatus.No)
+                          }}
                           title="Not Attending"
                           disabled={isPastPractice || isSaving}
                         >
                           <XLg />
                         </Button>
-                        <Button
-                          variant={attendances.get(dog.ID) === AttendanceStatus.Unknown ? 'secondary' : 'outline-secondary'}
-                          size="sm"
-                          onClick={() => handleAttendanceChange(dog.ID, AttendanceStatus.Unknown)}
-                          title="Unknown"
-                          disabled={isPastPractice || isSaving}
-                        >
-                          <DashLg />
-                        </Button>
                       </div>
                     </td>
-                    <td className="ps-4">{dog.Name}</td>
                   </tr>
                 ))}
               </React.Fragment>
