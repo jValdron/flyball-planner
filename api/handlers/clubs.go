@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 // @Summary Get all clubs
@@ -34,6 +35,30 @@ func (h *Handler) GetClub(w http.ResponseWriter, r *http.Request) {
 	h.getEntity(w, r, &models.Club{})
 }
 
+// @Summary Create a club
+// @Description Create a new club
+// @Tags clubs
+// @Accept json
+// @Produce json
+// @Param club body models.Club true "Club object"
+// @Success 201 {object} models.Club
+// @Router /clubs [post]
+func (h *Handler) CreateClub(w http.ResponseWriter, r *http.Request) {
+	var club models.Club
+	if err := json.NewDecoder(r.Body).Decode(&club); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.DB.Create(&club).Error; err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(club)
+}
+
 // @Summary Update a club
 // @Description Update an existing club's information
 // @Tags clubs
@@ -44,7 +69,26 @@ func (h *Handler) GetClub(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} models.Club
 // @Router /clubs/{id} [put]
 func (h *Handler) UpdateClub(w http.ResponseWriter, r *http.Request) {
-	h.updateEntity(w, r, &models.Club{})
+	clubID := chi.URLParam(r, "id")
+	if _, err := uuid.Parse(clubID); err != nil {
+		http.Error(w, "Invalid club ID", http.StatusBadRequest)
+		return
+	}
+
+	var club models.Club
+	if err := json.NewDecoder(r.Body).Decode(&club); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	club.ID = uuid.MustParse(clubID)
+
+	if err := h.DB.Save(&club).Error; err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(club)
 }
 
 // @Summary Get all dogs in a club

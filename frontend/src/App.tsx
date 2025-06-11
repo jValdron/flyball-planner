@@ -5,7 +5,8 @@ import Dogs from './pages/Dogs'
 import Practices from './pages/Practices'
 import PracticeView from './pages/PracticeView'
 import DogView from './pages/DogView'
-import { ClubProvider, useClub } from './contexts/ClubContext'
+import OwnerView from './pages/OwnerView'
+import { ClubProvider } from './contexts/ClubContext'
 import { ClubPicker } from './components/ClubPicker'
 
 function Header() {
@@ -17,8 +18,8 @@ function Header() {
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
             <Nav.Link as={Link} to="/">Home</Nav.Link>
-            <Nav.Link as={Link} to="/dogs">Dogs</Nav.Link>
             <Nav.Link as={Link} to="/practices">Practices</Nav.Link>
+            <Nav.Link as={Link} to="/dogs">Dogs</Nav.Link>
           </Nav>
           <div className="d-flex align-items-center">
             <ClubPicker />
@@ -40,9 +41,12 @@ function App() {
             <Route path="/dogs" element={<Dogs />} />
             <Route path="/dogs/new" element={<DogView />} />
             <Route path="/dogs/:dogId" element={<DogView />} />
+            <Route path="/owners/:ownerId" element={<OwnerView />} />
             <Route path="/practices" element={<Practices />} />
             <Route path="/practices/new" element={<PracticeView />} />
             <Route path="/practices/:practiceId" element={<PracticeView />} />
+            <Route path="/practices/:practiceId/attendance" element={<PracticeView />} />
+            <Route path="/practices/:practiceId/sets" element={<PracticeView />} />
           </Routes>
         </Container>
       </ClubProvider>

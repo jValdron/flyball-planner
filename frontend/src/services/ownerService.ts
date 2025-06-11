@@ -20,40 +20,40 @@ export const ownerService = {
     return response.json()
   },
 
-  async createDog(ownerId: string, dog: Omit<Dog, 'ID' | 'CreatedAt' | 'UpdatedAt'>): Promise<Dog> {
-    const response = await fetch(`${config.endpoints.owners}/${ownerId}/dogs`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(dog),
+  async deleteOwner(ownerId: string): Promise<void> {
+    const response = await fetch(`${config.endpoints.owners}/${ownerId}`, {
+      method: 'DELETE',
     })
     if (!response.ok) {
-      throw new Error('Failed to create dog')
+      throw new Error('Failed to delete owner')
     }
-    return response.json()
   },
 
-  async updateDog(ownerId: string, dogId: string, dog: Partial<Dog>): Promise<Dog> {
-    const response = await fetch(`${config.endpoints.owners}/${ownerId}/dogs/${dogId}`, {
+  async updateOwner(ownerId: string, owner: Partial<Owner>): Promise<Owner> {
+    const response = await fetch(`${config.endpoints.owners}/${ownerId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(dog),
+      body: JSON.stringify(owner),
     })
     if (!response.ok) {
-      throw new Error('Failed to update dog')
+      throw new Error('Failed to update owner')
     }
     return response.json()
   },
 
-  async deleteDog(ownerId: string, dogId: string): Promise<void> {
-    const response = await fetch(`${config.endpoints.owners}/${ownerId}/dogs/${dogId}`, {
-      method: 'DELETE',
+  async createOwner(owner: Omit<Owner, 'ID' | 'CreatedAt' | 'UpdatedAt'>): Promise<Owner> {
+    const response = await fetch(`${config.endpoints.owners}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(owner),
     })
     if (!response.ok) {
-      throw new Error('Failed to delete dog')
+      throw new Error('Failed to create owner')
     }
+    return response.json()
   }
 }

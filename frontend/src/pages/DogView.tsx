@@ -1,39 +1,42 @@
 import { Container, Form, Button, Alert, Spinner, Breadcrumb } from 'react-bootstrap'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { dogService, type Dog } from '../services/dogService'
 import { ownerService, type Owner } from '../services/ownerService'
 import { useClub } from '../contexts/ClubContext'
+import { ChevronLeft, Save, Trash } from 'react-bootstrap-icons'
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 
 type DogFormData = Omit<Dog, 'ID' | 'CreatedAt' | 'UpdatedAt'>
 
 function DogView() {
   const navigate = useNavigate()
   const { dogId } = useParams()
-  const { selectedClubId } = useClub()
+  const [searchParams] = useSearchParams()
+  const { selectedClub } = useClub()
   const [dog, setDog] = useState<Dog | null>(null)
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isEditMode, setIsEditMode] = useState(false)
   const [owners, setOwners] = useState<Owner[]>([])
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [formData, setFormData] = useState<DogFormData>({
     Name: '',
     CRN: '',
     TrainingLevel: 1,
-    ClubID: selectedClubId || '',
-    OwnerID: ''
+    ClubID: selectedClub?.ID || '',
+    OwnerID: searchParams.get('ownerId') || '',
+    Status: 'Active'
   })
 
   useEffect(() => {
-    if (dogId) {
+    if (dogId && selectedClub) {
       loadDog()
     } else {
-      // New dog mode
       setLoading(false)
-      setIsEditMode(true)
     }
     loadOwners()
-  }, [dogId])
+  }, [dogId, selectedClub])
 
   const loadOwners = async () => {
     try {
@@ -48,14 +51,16 @@ function DogView() {
     try {
       setLoading(true)
       setError(null)
-      let data: Dog = await dogService.getDogByClub(selectedClubId, dogId!)
+      if (!selectedClub) return
+      let data: Dog = await dogService.getDogByClub(selectedClub.ID, dogId!)
       setDog(data)
       setFormData({
         Name: data.Name,
         CRN: data.CRN,
         TrainingLevel: data.TrainingLevel,
         ClubID: data.ClubID,
-        OwnerID: data.OwnerID
+        OwnerID: data.OwnerID,
+        Status: data.Status
       })
     } catch (err) {
       setError('Failed to load dog details. Please try again later.')
@@ -76,22 +81,42 @@ function DogView() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
+      setSaving(true)
       setError(null)
       if (dogId) {
-        await ownerService.updateDog(formData.OwnerID, dogId, formData)
+        await dogService.updateDog(formData.OwnerID, dogId, formData)
       } else {
-        await ownerService.createDog(formData.OwnerID, {
+        await dogService.createDog(formData.OwnerID, {
           Name: formData.Name,
           CRN: formData.CRN,
           ClubID: formData.ClubID,
           TrainingLevel: formData.TrainingLevel,
-          OwnerID: formData.OwnerID
+          OwnerID: formData.OwnerID,
+          Status: formData.Status
         })
       }
       navigate('/dogs')
     } catch (err) {
       setError('Failed to save dog. Please try again later.')
       console.error('Error saving dog:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    try {
+      setSaving(true)
+      setError(null)
+      if (!dogId || !selectedClub) return
+      await dogService.deleteDog(selectedClub.ID, dogId)
+      navigate('/dogs')
+    } catch (err) {
+      setError('Failed to delete dog. Please try again later.')
+      console.error('Error deleting dog:', err)
+    } finally {
+      setSaving(false)
+      setShowDeleteConfirm(false)
     }
   }
 
@@ -110,17 +135,19 @@ function DogView() {
       <Breadcrumb className="mt-3">
         <div className="breadcrumb-item" onClick={() => navigate('/dogs')} style={{ cursor: 'pointer' }}>Dogs</div>
         <Breadcrumb.Item active>
-          {dogId ? (isEditMode ? 'Edit Dog' : 'View Dog') : 'Add New Dog'}
+          {dogId ? 'Edit Dog' : 'Add New Dog'}
         </Breadcrumb.Item>
       </Breadcrumb>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1>{dogId ? (isEditMode ? 'Edit Dog' : 'View Dog') : 'Add New Dog'}</h1>
+        <h1>{dogId ? 'Edit Dog' : 'Add New Dog'}</h1>
         {dogId && (
           <Button
-            variant={isEditMode ? 'secondary' : 'primary'}
-            onClick={() => setIsEditMode(!isEditMode)}
+            variant="danger"
+            onClick={() => setShowDeleteConfirm(true)}
+            disabled={saving}
           >
-            {isEditMode ? 'Cancel Edit' : 'Edit Dog'}
+            <Trash className="me-2" />
+            Delete Dog
           </Button>
         )}
       </div>
@@ -131,13 +158,6 @@ function DogView() {
         </Alert>
       )}
 
-      {!isEditMode && dog && (
-        <div className="mb-4">
-          <p><strong>Created:</strong> {new Date(dog.CreatedAt).toLocaleString()}</p>
-          <p><strong>Last Updated:</strong> {new Date(dog.UpdatedAt).toLocaleString()}</p>
-        </div>
-      )}
-
       <Form onSubmit={handleSubmit}>
         <Form.Group className="mb-3">
           <Form.Label>Name</Form.Label>
@@ -146,9 +166,21 @@ function DogView() {
             name="Name"
             value={formData.Name}
             onChange={handleInputChange}
-            disabled={!isEditMode}
             required
           />
+        </Form.Group>
+
+        <Form.Group className="mb-3">
+          <Form.Label>Status</Form.Label>
+          <Form.Select
+            name="Status"
+            value={formData.Status}
+            onChange={handleInputChange}
+            required
+          >
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </Form.Select>
         </Form.Group>
 
         <Form.Group className="mb-3">
@@ -158,7 +190,6 @@ function DogView() {
             name="CRN"
             value={formData.CRN}
             onChange={handleInputChange}
-            disabled={!isEditMode}
             className="font-monospace"
           />
         </Form.Group>
@@ -169,7 +200,6 @@ function DogView() {
             name="TrainingLevel"
             value={formData.TrainingLevel}
             onChange={handleInputChange}
-            disabled={!isEditMode}
             required
           >
             <option value={1}>Beginner</option>
@@ -186,7 +216,6 @@ function DogView() {
             name="OwnerID"
             value={formData.OwnerID}
             onChange={handleInputChange}
-            disabled={!isEditMode}
             required
           >
             <option value="">Select an owner</option>
@@ -198,21 +227,37 @@ function DogView() {
           </Form.Select>
         </Form.Group>
 
-        {isEditMode && (
-          <div className="d-flex gap-2">
-            <Button type="submit" variant="primary">
-              {dogId ? 'Save Changes' : 'Create Dog'}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => navigate('/dogs')}
-            >
-              Cancel
-            </Button>
-          </div>
-        )}
+        <div className="d-flex gap-2 mt-4 justify-content-end">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => navigate('/dogs')}
+            disabled={saving}
+          >
+            <ChevronLeft className="me-2" />
+            Cancel
+          </Button>
+          <Button type="submit" variant="success">
+            <Save className="me-2" />
+            {dogId ? 'Save Changes' : 'Create Dog'}
+          </Button>
+        </div>
       </Form>
+
+      <DeleteConfirmationModal
+        show={showDeleteConfirm}
+        onHide={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        title="Delete Dog"
+        message={`Are you sure you want to delete ${dog?.Name}? This action cannot be undone.`}
+      />
+
+      {dog && (
+        <div className="text-muted">
+          <p><strong>Created:</strong> {new Date(dog.CreatedAt).toLocaleString()}</p>
+          <p><strong>Last Updated:</strong> {new Date(dog.UpdatedAt).toLocaleString()}</p>
+        </div>
+      )}
     </Container>
   )
 }

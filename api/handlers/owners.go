@@ -19,7 +19,27 @@ import (
 // @Success 201 {object} models.Owner
 // @Router /owners [post]
 func (h *Handler) CreateOwner(w http.ResponseWriter, r *http.Request) {
-	h.createEntity(w, r, &models.Owner{})
+	clubID := chi.URLParam(r, "clubID")
+	if _, err := uuid.Parse(clubID); err != nil {
+		http.Error(w, "Invalid club ID", http.StatusBadRequest)
+		return
+	}
+
+	var owner models.Owner
+	if err := json.NewDecoder(r.Body).Decode(&owner); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	owner.ClubID = uuid.MustParse(clubID)
+
+	if err := h.DB.Create(&owner).Error; err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(owner)
 }
 
 // @Summary Get all owners
@@ -60,7 +80,33 @@ func (h *Handler) GetOwner(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} models.Owner
 // @Router /owners/{id} [put]
 func (h *Handler) UpdateOwner(w http.ResponseWriter, r *http.Request) {
-	h.updateEntity(w, r, &models.Owner{})
+	clubID := chi.URLParam(r, "clubID")
+	ownerID := chi.URLParam(r, "id")
+
+	if _, err := uuid.Parse(clubID); err != nil {
+		http.Error(w, "Invalid club ID", http.StatusBadRequest)
+		return
+	}
+	if _, err := uuid.Parse(ownerID); err != nil {
+		http.Error(w, "Invalid owner ID", http.StatusBadRequest)
+		return
+	}
+
+	var owner models.Owner
+	if err := json.NewDecoder(r.Body).Decode(&owner); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	owner.ID = uuid.MustParse(ownerID)
+	owner.ClubID = uuid.MustParse(clubID)
+
+	if err := h.DB.Save(&owner).Error; err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(owner)
 }
 
 // @Summary Delete an owner
@@ -83,7 +129,36 @@ func (h *Handler) DeleteOwner(w http.ResponseWriter, r *http.Request) {
 // @Success 201 {object} models.Dog
 // @Router /owners/{ownerID}/dogs [post]
 func (h *Handler) CreateDog(w http.ResponseWriter, r *http.Request) {
-	h.createEntity(w, r, &models.Dog{})
+	ownerID := chi.URLParam(r, "ownerID")
+	if _, err := uuid.Parse(ownerID); err != nil {
+		http.Error(w, "Invalid owner ID", http.StatusBadRequest)
+		return
+	}
+
+	var dog models.Dog
+	if err := json.NewDecoder(r.Body).Decode(&dog); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	dog.OwnerID = uuid.MustParse(ownerID)
+
+	// Handle empty CRN
+	if dog.CRN != nil && *dog.CRN == "" {
+		dog.CRN = nil
+	}
+
+	if err := h.DB.Create(&dog).Error; err != nil {
+		if err.Error() == "ERROR: duplicate key value violates unique constraint \"idx_dogs_crn\" (SQLSTATE 23505)" {
+			http.Error(w, "A dog with this CRN already exists", http.StatusConflict)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(dog)
 }
 
 // @Summary Get all dogs for an owner
@@ -123,7 +198,38 @@ func (h *Handler) GetDog(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} models.Dog
 // @Router /owners/{ownerID}/dogs/{id} [put]
 func (h *Handler) UpdateDog(w http.ResponseWriter, r *http.Request) {
-	h.updateEntity(w, r, &models.Dog{})
+	ownerID := chi.URLParam(r, "ownerID")
+	dogID := chi.URLParam(r, "id")
+
+	if _, err := uuid.Parse(ownerID); err != nil {
+		http.Error(w, "Invalid owner ID", http.StatusBadRequest)
+		return
+	}
+	if _, err := uuid.Parse(dogID); err != nil {
+		http.Error(w, "Invalid dog ID", http.StatusBadRequest)
+		return
+	}
+
+	var dog models.Dog
+	if err := json.NewDecoder(r.Body).Decode(&dog); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	dog.ID = uuid.MustParse(dogID)
+	dog.OwnerID = uuid.MustParse(ownerID)
+
+	// Handle empty CRN
+	if dog.CRN != nil && *dog.CRN == "" {
+		dog.CRN = nil
+	}
+
+	if err := h.DB.Save(&dog).Error; err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(dog)
 }
 
 // @Summary Delete a dog

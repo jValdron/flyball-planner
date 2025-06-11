@@ -11,7 +11,6 @@ type Club struct {
 	Name                string    `gorm:"not null"`
 	NAFAClubNumber      string    `gorm:"uniqueIndex;not null"`
 	DefaultPracticeTime string    `gorm:"not null;default:'10:00'"`
-	Rooms               []Room    `gorm:"constraint:OnDelete:CASCADE;"`
 	CreatedAt           time.Time `gorm:"autoCreateTime"`
 	UpdatedAt           time.Time `gorm:"autoUpdateTime"`
 }

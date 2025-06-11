@@ -27,25 +27,14 @@ func (h *Handler) CreateLocation(w http.ResponseWriter, r *http.Request) {
 
 	var location models.Location
 	if err := json.NewDecoder(r.Body).Decode(&location); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
 	location.ClubID = uuid.MustParse(clubID)
 
-	// If this is the first location, make it the default
-	var count int64
-	if err := h.DB.Model(&models.Location{}).Where("club_id = ?", clubID).Count(&count).Error; err != nil {
-		http.Error(w, "Failed to check existing locations", http.StatusInternalServerError)
-		return
-	}
-
-	if count == 0 {
-		location.IsDefault = true
-	}
-
 	if err := h.DB.Create(&location).Error; err != nil {
-		http.Error(w, "Failed to create location", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -125,7 +114,6 @@ func (h *Handler) UpdateLocation(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid club ID", http.StatusBadRequest)
 		return
 	}
-
 	if _, err := uuid.Parse(locationID); err != nil {
 		http.Error(w, "Invalid location ID", http.StatusBadRequest)
 		return
@@ -133,23 +121,15 @@ func (h *Handler) UpdateLocation(w http.ResponseWriter, r *http.Request) {
 
 	var location models.Location
 	if err := json.NewDecoder(r.Body).Decode(&location); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
 	location.ID = uuid.MustParse(locationID)
 	location.ClubID = uuid.MustParse(clubID)
 
-	// If this location is being set as default, unset any other default locations
-	if location.IsDefault {
-		if err := h.DB.Model(&models.Location{}).Where("club_id = ? AND id != ?", clubID, locationID).Update("is_default", false).Error; err != nil {
-			http.Error(w, "Failed to update other locations", http.StatusInternalServerError)
-			return
-		}
-	}
-
-	if err := h.DB.Where("id = ? AND club_id = ?", locationID, clubID).Updates(&location).Error; err != nil {
-		http.Error(w, "Failed to update location", http.StatusInternalServerError)
+	if err := h.DB.Save(&location).Error; err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

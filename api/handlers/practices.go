@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flyball-practice-planner/api/models"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -31,7 +32,14 @@ func (h *Handler) CreatePractice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate that the practice is not in the past
+	if practice.ScheduledAt.Before(time.Now()) {
+		http.Error(w, "Cannot create a practice in the past", http.StatusBadRequest)
+		return
+	}
+
 	practice.ClubID = uuid.MustParse(clubID)
+
 	if err := h.DB.Create(&practice).Error; err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -68,7 +76,7 @@ func (h *Handler) GetAllPractices(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetPractice(w http.ResponseWriter, r *http.Request) {
 	clubID := chi.URLParam(r, "clubID")
 	practiceID := chi.URLParam(r, "id")
-	
+
 	if _, err := uuid.Parse(clubID); err != nil {
 		http.Error(w, "Invalid club ID", http.StatusBadRequest)
 		return
@@ -100,7 +108,7 @@ func (h *Handler) GetPractice(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdatePractice(w http.ResponseWriter, r *http.Request) {
 	clubID := chi.URLParam(r, "clubID")
 	practiceID := chi.URLParam(r, "id")
-	
+
 	if _, err := uuid.Parse(clubID); err != nil {
 		http.Error(w, "Invalid club ID", http.StatusBadRequest)
 		return
@@ -116,11 +124,33 @@ func (h *Handler) UpdatePractice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	practice.ID = uuid.MustParse(practiceID)
-	practice.ClubID = uuid.MustParse(clubID)
+	if !practice.ScheduledAt.IsZero() && practice.ScheduledAt.Before(time.Now()) {
+		http.Error(w, "Cannot update a practice to be in the past", http.StatusBadRequest)
+		return
+	}
 
-	if err := h.DB.Where("id = ? AND club_id = ?", practiceID, clubID).Updates(&practice).Error; err != nil {
+	var existingPractice models.Practice
+	if err := h.DB.Where("id = ? AND club_id = ?", practiceID, clubID).First(&existingPractice).Error; err != nil {
+		http.Error(w, "Practice not found", http.StatusNotFound)
+		return
+	}
+
+	updates := make(map[string]any)
+	if practice.Status != "" {
+		updates["status"] = practice.Status
+	}
+	if !practice.ScheduledAt.IsZero() {
+		updates["scheduled_at"] = practice.ScheduledAt
+	}
+
+	if err := h.DB.Model(&existingPractice).Updates(updates).Error; err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Get the updated practice
+	if err := h.DB.Where("id = ? AND club_id = ?", practiceID, clubID).First(&practice).Error; err != nil {
+		http.Error(w, "Practice not found", http.StatusNotFound)
 		return
 	}
 
@@ -137,7 +167,7 @@ func (h *Handler) UpdatePractice(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) DeletePractice(w http.ResponseWriter, r *http.Request) {
 	clubID := chi.URLParam(r, "clubID")
 	practiceID := chi.URLParam(r, "id")
-	
+
 	if _, err := uuid.Parse(clubID); err != nil {
 		http.Error(w, "Invalid club ID", http.StatusBadRequest)
 		return

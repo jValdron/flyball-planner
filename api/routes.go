@@ -80,7 +80,7 @@ func RegisterRoutes(db *gorm.DB) *chi.Mux {
 				r.Put("/{practiceID}/sets/{setID}/dogs/reorder", h.ReorderSetDogs)
 
 				r.Get("/{practiceID}/attendance", h.GetAllAttendances)
-				r.Put("/{practiceID}/attendance/{dogID}", h.UpdateAttendance)
+				r.Put("/{practiceID}/attendance", h.UpdateAttendances)
 			})
 		})
 	})

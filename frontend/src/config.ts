@@ -6,6 +6,7 @@ export const config = {
     dogs: `${API_BASE_URL}/api/dogs`,
     clubs: `${API_BASE_URL}/api/clubs`,
     owners: `${API_BASE_URL}/api/owners`,
-    practices: `${API_BASE_URL}/api/practices`
+    practices: `${API_BASE_URL}/api/practices`,
+    attendance: `${API_BASE_URL}/api/clubs/{clubID}/practices/{practiceID}/attendance`
   }
 }

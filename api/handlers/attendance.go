@@ -9,13 +9,26 @@ import (
 	"github.com/google/uuid"
 )
 
+type AttendanceUpdate struct {
+	DogID     uuid.UUID               `json:"DogID"`
+	Attending models.AttendanceStatus `json:"Attending"`
+}
+
+type UpdateAttendancesRequest struct {
+	Updates []AttendanceUpdate `json:"updates"`
+}
+
+type AttendanceResponse struct {
+	Attendances map[string]models.AttendanceStatus `json:"attendances"`
+}
+
 // @Summary Get all attendances for a practice
-// @Description Get a list of all attendance records for a specific practice
+// @Description Get a map of dog IDs to their attendance status for a specific practice
 // @Tags attendance
 // @Produce json
 // @Param clubID path string true "Club ID"
 // @Param practiceID path string true "Practice ID"
-// @Success 200 {array} models.PracticeAttendance
+// @Success 200 {object} AttendanceResponse
 // @Router /clubs/{clubID}/practices/{practiceID}/attendance [get]
 func (h *Handler) GetAllAttendances(w http.ResponseWriter, r *http.Request) {
 	clubID := chi.URLParam(r, "clubID")
@@ -43,24 +56,31 @@ func (h *Handler) GetAllAttendances(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(attendances)
+	attendanceMap := make(map[string]models.AttendanceStatus)
+	for _, attendance := range attendances {
+		attendanceMap[attendance.DogID.String()] = attendance.Attending
+	}
+
+	response := AttendanceResponse{
+		Attendances: attendanceMap,
+	}
+
+	json.NewEncoder(w).Encode(response)
 }
 
-// @Summary Update attendance for a dog
-// @Description Update or create attendance record for a dog in a practice
+// @Summary Update multiple attendances
+// @Description Update or create multiple attendance records for dogs in a practice
 // @Tags attendance
 // @Accept json
 // @Produce json
 // @Param clubID path string true "Club ID"
 // @Param practiceID path string true "Practice ID"
-// @Param dogID path string true "Dog ID"
-// @Param attendance body models.PracticeAttendance true "Attendance object"
-// @Success 200 {object} models.PracticeAttendance
-// @Router /clubs/{clubID}/practices/{practiceID}/attendance/{dogID} [put]
-func (h *Handler) UpdateAttendance(w http.ResponseWriter, r *http.Request) {
+// @Param request body UpdateAttendancesRequest true "Attendance updates"
+// @Success 200 {array} models.PracticeAttendance
+// @Router /clubs/{clubID}/practices/{practiceID}/attendance [put]
+func (h *Handler) UpdateAttendances(w http.ResponseWriter, r *http.Request) {
 	clubID := chi.URLParam(r, "clubID")
 	practiceID := chi.URLParam(r, "practiceID")
-	dogID := chi.URLParam(r, "dogID")
 
 	if _, err := uuid.Parse(clubID); err != nil {
 		http.Error(w, "Invalid club ID", http.StatusBadRequest)
@@ -68,10 +88,6 @@ func (h *Handler) UpdateAttendance(w http.ResponseWriter, r *http.Request) {
 	}
 	if _, err := uuid.Parse(practiceID); err != nil {
 		http.Error(w, "Invalid practice ID", http.StatusBadRequest)
-		return
-	}
-	if _, err := uuid.Parse(dogID); err != nil {
-		http.Error(w, "Invalid dog ID", http.StatusBadRequest)
 		return
 	}
 
@@ -82,36 +98,55 @@ func (h *Handler) UpdateAttendance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var attendance models.PracticeAttendance
-	if err := json.NewDecoder(r.Body).Decode(&attendance); err != nil {
+	var req UpdateAttendancesRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	// Ensure the IDs match the URL parameters
-	attendance.PracticeID = uuid.MustParse(practiceID)
-	attendance.DogID = uuid.MustParse(dogID)
-
-	// Try to find existing attendance record
-	var existingAttendance models.PracticeAttendance
-	result := h.DB.Where("practice_id = ? AND dog_id = ?", practiceID, dogID).First(&existingAttendance)
-
-	if result.Error == nil {
-		// Update existing record
-		if err := h.DB.Model(&existingAttendance).Updates(map[string]interface{}{
-			"attending": attendance.Attending,
-		}).Error; err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		attendance = existingAttendance
-	} else {
-		// Create new record
-		if err := h.DB.Create(&attendance).Error; err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+	// Start a transaction
+	tx := h.DB.Begin()
+	if tx.Error != nil {
+		http.Error(w, "Failed to start transaction", http.StatusInternalServerError)
+		return
 	}
 
-	json.NewEncoder(w).Encode(attendance)
+	var updatedAttendances []models.PracticeAttendance
+
+	// Process each update
+	for _, update := range req.Updates {
+		var attendance models.PracticeAttendance
+		result := tx.Where("practice_id = ? AND dog_id = ?", practiceID, update.DogID).First(&attendance)
+
+		if result.Error == nil {
+			// Update existing record
+			attendance.Attending = update.Attending
+			if err := tx.Save(&attendance).Error; err != nil {
+				tx.Rollback()
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			// Create new record
+			attendance = models.PracticeAttendance{
+				PracticeID: uuid.MustParse(practiceID),
+				DogID:      update.DogID,
+				Attending:  update.Attending,
+			}
+			if err := tx.Create(&attendance).Error; err != nil {
+				tx.Rollback()
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+		updatedAttendances = append(updatedAttendances, attendance)
+	}
+
+	// Commit the transaction
+	if err := tx.Commit().Error; err != nil {
+		http.Error(w, "Failed to commit changes", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(updatedAttendances)
 }

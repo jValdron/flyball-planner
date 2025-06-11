@@ -11,8 +11,6 @@ export interface Club {
 }
 
 interface ClubContextType {
-  selectedClubId: string | null
-  setSelectedClubId: (id: string) => void
   selectedClub: Club | null
   setSelectedClub: (club: Club | null) => void
 }
@@ -20,11 +18,10 @@ interface ClubContextType {
 const ClubContext = createContext<ClubContextType | undefined>(undefined)
 
 export function ClubProvider({ children }: { children: ReactNode }) {
-  const [selectedClubId, setSelectedClubId] = useState<string | null>(null)
   const [selectedClub, setSelectedClub] = useState<Club | null>(null)
 
   return (
-    <ClubContext.Provider value={{ selectedClubId, setSelectedClubId, selectedClub, setSelectedClub }}>
+    <ClubContext.Provider value={{ selectedClub, setSelectedClub }}>
       {children}
     </ClubContext.Provider>
   )

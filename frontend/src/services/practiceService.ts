@@ -1,11 +1,14 @@
 import { config } from '../config'
 
+export type PracticeStatus = 'Draft' | 'Ready'
+
 export interface Practice {
-  id: string
-  clubId: string
-  scheduledAt: string | null
-  createdAt: string
-  updatedAt: string
+  ID: string
+  ClubId: string
+  ScheduledAt: string
+  Status: PracticeStatus
+  CreatedAt: string
+  UpdatedAt: string
 }
 
 export const practiceService = {
@@ -25,7 +28,7 @@ export const practiceService = {
     return response.json()
   },
 
-  async createPractice(clubId: string, practice: Omit<Practice, 'id' | 'createdAt' | 'updatedAt'>): Promise<Practice> {
+  async createPractice(clubId: string, practice: Omit<Practice, 'ID' | 'CreatedAt' | 'UpdatedAt'>): Promise<Practice> {
     const response = await fetch(`${config.endpoints.clubs}/${clubId}/practices`, {
       method: 'POST',
       headers: {
@@ -34,7 +37,7 @@ export const practiceService = {
       body: JSON.stringify(practice),
     })
     if (!response.ok) {
-      throw new Error('Failed to create practice')
+      throw new Error('Failed to create practice: ' + await response.text())
     }
     return response.json()
   },
