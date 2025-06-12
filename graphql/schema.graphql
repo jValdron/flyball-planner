@@ -5,15 +5,24 @@
 
 """The attendance status of a dog for a practice"""
 enum AttendanceStatus {
-  ATTENDING
-  NOT_ATTENDING
-  UNKNOWN
+  Attending
+  NotAttending
+  Unknown
+}
+
+input AttendanceUpdate {
+  attending: AttendanceStatus!
+  dogId: ID!
 }
 
 type Club {
   createdAt: DateTimeISO!
+
+  """Default practice time in 24-hour format (HH:mm)"""
+  defaultPracticeTime: String!
   dogs: [Dog!]!
   id: ID!
+  nafaClubNumber: String!
   name: String!
   practices: [Practice!]!
   updatedAt: DateTimeISO!
@@ -31,7 +40,7 @@ type Dog {
   crn: String
   id: ID!
   name: String!
-  owner: Owner!
+  owner: Handler!
   ownerId: ID!
   status: DogStatus!
   trainingLevel: Int!
@@ -44,21 +53,31 @@ enum DogStatus {
   Inactive
 }
 
-type Mutation {
-  createDog(clubId: String!, crn: String, name: String!, ownerId: String!, status: String!, trainingLevel: Float!): Dog!
-  createOwner(name: String!): Owner!
-  deleteDog(id: String!): Boolean!
-  deleteOwner(id: String!): Boolean!
-  updateDog(clubId: String, crn: String, id: String!, name: String, ownerId: String, status: String, trainingLevel: Float): Dog
-  updateOwner(id: String!, name: String): Owner
-}
-
-type Owner {
+type Handler {
+  club: Club!
+  clubId: ID!
   createdAt: DateTimeISO!
   dogs: [Dog!]!
+  givenName: String!
   id: ID!
-  name: String!
+  surname: String!
   updatedAt: DateTimeISO!
+}
+
+type Mutation {
+  createClub(name: String!): Club!
+  createDog(clubId: String!, crn: String, name: String!, ownerId: String!, status: DogStatus!, trainingLevel: Float!): Dog!
+  createHandler(clubId: ID!, givenName: String!, surname: String!): Handler!
+  createPractice(clubId: String!, scheduledAt: DateTimeISO!, status: PracticeStatus!): Practice!
+  deleteClub(id: String!): Boolean!
+  deleteDog(id: String!): Boolean!
+  deleteHandler(id: String!): Boolean!
+  deletePractice(id: String!): Boolean!
+  updateAttendances(practiceId: String!, updates: [AttendanceUpdate!]!): [PracticeAttendance!]!
+  updateClub(id: String!, name: String): Club
+  updateDog(clubId: String, crn: String, id: String!, name: String, ownerId: String, status: DogStatus, trainingLevel: Float): Dog
+  updateHandler(givenName: String, id: String!, surname: String): Handler
+  updatePractice(clubId: String, id: String!, scheduledAt: DateTimeISO, status: PracticeStatus): Practice
 }
 
 type Practice {
@@ -91,10 +110,18 @@ enum PracticeStatus {
 }
 
 type Query {
+  activeDogsInClub(clubId: ID!): Int!
+  club(id: String!): Club
+  clubs: [Club!]!
   dog(id: String!): Dog
   dogs: [Dog!]!
-  owner(id: String!): Owner
-  owners: [Owner!]!
+  dogsByHandlersInClub(clubId: ID!): [Handler!]
+  handler(id: String!): Handler
+  handlers: [Handler!]!
+  practice(id: String!): Practice
+  practiceAttendances(practiceId: String!): [PracticeAttendance!]!
+  practices: [Practice!]!
+  practicesByClub(clubId: String!): [Practice!]!
 }
 
 type Set {

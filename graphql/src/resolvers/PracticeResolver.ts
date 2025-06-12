@@ -11,6 +11,14 @@ export class PracticeResolver {
     return await this.practiceRepository.find();
   }
 
+  @Query(() => [Practice])
+  async practicesByClub(@Arg('clubId') clubId: string): Promise<Practice[]> {
+    return await this.practiceRepository.find({
+      where: { clubId },
+      relations: ['attendances', 'sets']
+    });
+  }
+
   @Query(() => Practice, { nullable: true })
   async practice(@Arg('id') id: string): Promise<Practice | null> {
     return await this.practiceRepository.findOneBy({ id });
@@ -20,7 +28,7 @@ export class PracticeResolver {
   async createPractice(
     @Arg('clubId') clubId: string,
     @Arg('scheduledAt') scheduledAt: Date,
-    @Arg('status') status: PracticeStatus
+    @Arg('status', () => PracticeStatus) status: PracticeStatus
   ): Promise<Practice> {
     const practice = this.practiceRepository.create({
       clubId,
@@ -35,7 +43,7 @@ export class PracticeResolver {
     @Arg('id') id: string,
     @Arg('clubId', { nullable: true }) clubId?: string,
     @Arg('scheduledAt', { nullable: true }) scheduledAt?: Date,
-    @Arg('status', { nullable: true }) status?: PracticeStatus
+    @Arg('status', () => PracticeStatus, { nullable: true }) status?: PracticeStatus
   ): Promise<Practice | null> {
     const practice = await this.practiceRepository.findOneBy({ id });
     if (!practice) return null;

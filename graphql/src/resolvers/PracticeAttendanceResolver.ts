@@ -17,7 +17,7 @@ export class PracticeAttendanceResolver {
   private practiceAttendanceRepository = AppDataSource.getRepository(PracticeAttendance);
 
   @Query(() => [PracticeAttendance])
-  async practiceAttendancesByPractice(@Arg('practiceId') practiceId: string): Promise<PracticeAttendance[]> {
+  async practiceAttendances(@Arg('practiceId') practiceId: string): Promise<PracticeAttendance[]> {
     return await this.practiceAttendanceRepository.find({
       where: { practiceId },
       relations: ['practice', 'dog']

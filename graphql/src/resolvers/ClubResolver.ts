@@ -1,10 +1,12 @@
 import { Resolver, Query, Mutation, Arg } from 'type-graphql';
 import { Club } from '../models/Club';
 import { AppDataSource } from '../db';
+import { Dog } from '../models/Dog';
 
 @Resolver(Club)
 export class ClubResolver {
   private clubRepository = AppDataSource.getRepository(Club);
+  private dogRepository = AppDataSource.getRepository(Dog);
 
   @Query(() => [Club])
   async clubs(): Promise<Club[]> {

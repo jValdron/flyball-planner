@@ -1,59 +1,36 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Container, Button, Card, Spinner, Alert, Badge, Form, ListGroup } from 'react-bootstrap'
-import { practiceService } from '../services/practiceService'
-import type { Practice } from '../services/practiceService'
 import { useClub } from '../contexts/ClubContext'
 import { Link, useNavigate } from 'react-router-dom'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
-import { CalendarCheck, CalendarX, Pencil, PlusLg, Trash } from 'react-bootstrap-icons'
+import { CalendarCheck, CalendarX, CheckLg, Pencil, PlusLg, Trash, FileText, XLg, QuestionLg } from 'react-bootstrap-icons'
 import { formatRelativeTime, isPastDay } from '../utils/dateUtils'
+import { useQuery, useMutation } from '@apollo/client'
+import { GetPracticesByClub, DeletePractice} from '../graphql/practice'
+import { GetActiveDogsInClub } from '../graphql/dogs'
+import { compareDesc, isAfter, isBefore } from 'date-fns'
+import { compareAsc } from 'date-fns'
 
 function Practices() {
   const { selectedClub } = useClub()
-  const [practices, setPractices] = useState<Practice[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [practiceToDelete, setPracticeToDelete] = useState<string | null>(null)
   const [showDraftsOnly, setShowDraftsOnly] = useState(false)
   const navigate = useNavigate()
 
-  useEffect(() => {
-    if (selectedClub) {
-      loadPractices()
-    } else {
-      setPractices([])
-      setLoading(false)
-    }
-  }, [selectedClub])
+  const { loading, error, data } = useQuery(GetPracticesByClub, {
+    variables: { clubId: selectedClub?.id ?? '' },
+    skip: !selectedClub
+  })
 
-  const loadPractices = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      if (!selectedClub) return
-      const data = await practiceService.getPractices(selectedClub.ID)
-      const now = new Date().getTime()
-      const sortedData = data.sort((a, b) => {
-        const dateA = a.ScheduledAt ? new Date(a.ScheduledAt).getTime() : 0
-        const dateB = b.ScheduledAt ? new Date(b.ScheduledAt).getTime() : 0
+  const { data: activeDogsData } = useQuery(GetActiveDogsInClub, {
+    variables: { clubId: selectedClub?.id ?? '' },
+    skip: !selectedClub
+  })
 
-        if (dateA >= now && dateB >= now) {
-          return dateA - dateB
-        }
-        if (dateA < now && dateB < now) {
-          return dateB - dateA
-        }
-        return dateA >= now ? -1 : 1
-      })
-      setPractices(sortedData)
-    } catch (err) {
-      setError('Failed to load practices')
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [deletePractice] = useMutation(DeletePractice, {
+    refetchQueries: [{ query: GetPracticesByClub, variables: { clubId: selectedClub?.id ?? '' } }]
+  })
 
   const handleDeleteClick = (id: string) => {
     setPracticeToDelete(id)
@@ -63,10 +40,8 @@ function Practices() {
   const handleDeleteConfirm = async () => {
     if (!selectedClub || !practiceToDelete) return
     try {
-      await practiceService.deletePractice(selectedClub.ID, practiceToDelete)
-      setPractices(prev => prev.filter(p => p.ID !== practiceToDelete))
+      await deletePractice({ variables: { id: practiceToDelete } })
     } catch (err) {
-      setError('Failed to delete practice')
       console.error(err)
     } finally {
       setShowDeleteModal(false)
@@ -74,8 +49,23 @@ function Practices() {
     }
   }
 
-  const filteredPractices = practices.filter(practice =>
-    !showDraftsOnly || practice.Status === 'Draft'
+  const practices = data?.practicesByClub || []
+  const now = new Date()
+  const sortedPractices = [...practices].sort((a, b) => {
+    const dateA = a.scheduledAt ? new Date(a.scheduledAt) : new Date(0)
+    const dateB = b.scheduledAt ? new Date(b.scheduledAt) : new Date(0)
+
+    if (isAfter(dateA, now) && isAfter(dateB, now)) {
+      return compareAsc(dateA, dateB)
+    }
+    if (isBefore(dateA, now) && isBefore(dateB, now)) {
+      return compareDesc(dateA, dateB)
+    }
+    return isAfter(dateA, now) ? -1 : 1
+  })
+
+  const filteredPractices = sortedPractices.filter(practice =>
+    !showDraftsOnly || practice.status === 'Draft'
   )
 
   if (!selectedClub) {
@@ -101,7 +91,7 @@ function Practices() {
   if (error) {
     return (
       <Container>
-        <Alert variant="danger">{error}</Alert>
+        <Alert variant="danger">Failed to load practices</Alert>
       </Container>
     )
   }
@@ -132,45 +122,50 @@ function Practices() {
 
           <div className="row">
             {filteredPractices.map((practice, index) => {
-              const practiceIsPast = isPastDay(practice.ScheduledAt)
+              const practiceIsPast = isPastDay(practice.scheduledAt)
               const previousPractice = index > 0 ? filteredPractices[index - 1] : null
-              const showPastDivider = practiceIsPast && (!previousPractice || !isPastDay(previousPractice.ScheduledAt))
+              const showPastDivider = practiceIsPast && (!previousPractice || !isPastDay(previousPractice.scheduledAt))
 
               return (
-                <React.Fragment key={practice.ID}>
+                <React.Fragment key={practice.id}>
                   {showPastDivider && (
                     <div className="col-12 mb-4">
                       <hr className="border-secondary" />
                       <h3 className="text-secondary">Past Practices</h3>
                     </div>
                   )}
-                  <div key={practice.ID} className="col-md-4 mb-4">
+                  <div key={practice.id} className="col-md-4 mb-4">
                     <Card
-                      onClick={() => navigate(`/practices/${practice.ID}`)}
+                      onClick={() => navigate(`/practices/${practice.id}`)}
                       style={{ cursor: 'pointer' }}
                     >
-                      <Card.Body className={practiceIsPast ? 'bg-past' : practice.Status === 'Draft' ? 'bg-warning-subtle' : 'bg-primary-subtle'}>
+                      <Card.Body className={practiceIsPast ? 'bg-past' : practice.status === 'Draft' ? 'bg-warning-subtle' : 'bg-primary-subtle'}>
                         <Card.Title>
-                          {formatRelativeTime(practice.ScheduledAt)}
+                          {formatRelativeTime(practice.scheduledAt)}
                         </Card.Title>
                         <Card.Text>
-                          {practice.Status === 'Ready' && <Badge bg="primary" className="d-inline-block me-2"><CalendarCheck /> Ready</Badge>}
-                          {practice.Status === 'Draft' && <Badge bg="warning" className="d-inline-block me-2 text-dark"><Pencil /> Draft</Badge>}
+                          {practice.status === 'Ready' && <Badge bg="primary" className="d-inline-block me-2"><CalendarCheck /> Ready</Badge>}
+                          {practice.status === 'Draft' && <Badge bg="warning" className="d-inline-block me-2 text-dark"><Pencil /> Draft</Badge>}
                           {practiceIsPast && <Badge bg="past" className="d-inline-block me-2 text-dark"><CalendarX /> Past</Badge>}
                         </Card.Text>
                       </Card.Body>
                       <ListGroup className="list-group-flush">
-                        <ListGroup.Item>10 attending</ListGroup.Item>
-                        <ListGroup.Item>20 sets</ListGroup.Item>
+                        <ListGroup.Item><CheckLg className="me-1" /> {practice.attendances.filter(a => a.attending === 'Attending').length} attending</ListGroup.Item>
+                        <ListGroup.Item><XLg className="me-1" /> {practice.attendances.filter(a => a.attending === 'NotAttending').length} not attending</ListGroup.Item>
+                        <ListGroup.Item><QuestionLg className="me-1" /> {
+                          (activeDogsData?.activeDogsInClub ?? 0) -
+                          practice.attendances.filter(a => a.attending === 'Attending' || a.attending === 'NotAttending').length
+                        } unconfirmed</ListGroup.Item>
+                        <ListGroup.Item><FileText className="me-1" /> {practice.sets.length} sets</ListGroup.Item>
                       </ListGroup>
-                      <Card.Body className="d-flex justify-content-between">
+                      <Card.Body className="bg-light d-flex justify-content-between">
                         {practiceIsPast ? "" : (
                           <Button
                             variant="outline-primary"
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/practices/${practice.ID}`);
+                              navigate(`/practices/${practice.id}`);
                             }}
                           >
                             <Pencil className="me-1" />
@@ -182,7 +177,7 @@ function Practices() {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteClick(practice.ID);
+                            handleDeleteClick(practice.id);
                           }}
                         >
                           <Trash />
@@ -202,7 +197,7 @@ function Practices() {
         onHide={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteConfirm}
         title="Confirm Practice Cancellation"
-        message="Are you sure you want to cancel this practice?"
+        message="Are you sure you want to cancel this practice? This action cannot be undone."
         confirmButtonText="Cancel Practice"
       />
     </Container>

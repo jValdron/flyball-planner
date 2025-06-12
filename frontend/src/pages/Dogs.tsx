@@ -1,29 +1,31 @@
 import React from 'react'
 import { Container, Table, Button, Badge, Alert, Spinner, Form, InputGroup } from 'react-bootstrap'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import { dogService } from '../services/dogService'
-import type { Dog, DogStatus } from '../services/dogService'
-import { ownerService } from '../services/ownerService'
-import type { Owner } from '../services/ownerService'
+import { useState } from 'react'
+import { useQuery, useMutation } from '@apollo/client'
 import { useClub } from '../contexts/ClubContext'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import { PlusLg, Trash, PersonPlus } from 'react-bootstrap-icons'
+import { GetDogsByHandlersInClub, DeleteDog } from '../graphql/dogs'
+import type { DogStatus } from '../graphql/generated/graphql'
+import type { DocumentType } from '../graphql/generated/gql'
 
-// Helper function to get training level badge
+type HandlerWithDogs = NonNullable<DocumentType<typeof GetDogsByHandlersInClub>['dogsByHandlersInClub']>[number]
+type DogWithBasicInfo = NonNullable<HandlerWithDogs['dogs']>[number]
+
 const getTrainingLevelBadge = (level: number) => {
   const levels = {
     1: { text: 'Beginner', variant: 'secondary' },
     2: { text: 'Novice', variant: 'info' },
     3: { text: 'Intermediate', variant: 'primary' },
-    4: { text: 'Advanced', variant: 'warning' },
-    5: { text: 'Solid', variant: 'success' }
+    4: { text: 'Advanced', variant: 'warning text-dark' },
+    5: { text: 'Solid', variant: 'primary' }
   }
   const { text, variant } = levels[level as keyof typeof levels]
   return <Badge bg={variant}>{text}</Badge>
 }
 
-const getStatusBadge = (status: string) => {
+const getStatusBadge = (status: DogStatus) => {
   const variants = {
     Active: { text: 'Active', variant: 'success' },
     Inactive: { text: 'Inactive', variant: 'secondary' }
@@ -36,14 +38,24 @@ function Dogs() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const { selectedClub } = useClub()
-  const [dogs, setDogs] = useState<Dog[]>([])
-  const [owners, setOwners] = useState<Owner[]>([])
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [dogToDelete, setDogToDelete] = useState<Dog | null>(null)
+  const [dogToDelete, setDogToDelete] = useState<DogWithBasicInfo | null>(null)
   const [showInactive, setShowInactive] = useState(searchParams.get('showInactive') === 'true')
   const [searchQuery, setSearchQuery] = useState('')
+
+  const { loading, data } = useQuery<DocumentType<typeof GetDogsByHandlersInClub>>(GetDogsByHandlersInClub, {
+    variables: { clubId: selectedClub?.id },
+    skip: !selectedClub,
+    onError: (err) => {
+      setError('Failed to load dogs. Please try again later.')
+      console.error('Error loading dogs:', err)
+    }
+  })
+
+  const [deleteDog] = useMutation(DeleteDog, {
+    refetchQueries: [{ query: GetDogsByHandlersInClub, variables: { clubId: selectedClub?.id } }]
+  })
 
   const handleShowInactiveChange = (checked: boolean) => {
     setShowInactive(checked)
@@ -57,48 +69,11 @@ function Dogs() {
     })
   }
 
-  useEffect(() => {
-    if (selectedClub) {
-      loadDogs()
-      loadOwners()
-    } else {
-      setLoading(false)
-      setDogs([])
-      setOwners([])
-    }
-  }, [selectedClub])
-
-  const loadOwners = async () => {
-    try {
-      const data = await ownerService.getOwners()
-      setOwners(data)
-    } catch (err) {
-      console.error('Error loading owners:', err)
-    }
-  }
-
-  const loadDogs = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      if (!selectedClub) return
-      const data = await dogService.getDogsByClub(selectedClub.ID)
-      const sortedDogs = [...(data || [])].sort((a, b) => a.Name.localeCompare(b.Name))
-      setDogs(sortedDogs)
-    } catch (err) {
-      setError('Failed to load dogs. Please try again later.')
-      console.error('Error loading dogs:', err)
-      setDogs([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleRowClick = (dogId: string) => {
     navigate(`/dogs/${dogId}`)
   }
 
-  const handleDelete = async (e: React.MouseEvent, dog: Dog) => {
+  const handleDelete = async (e: React.MouseEvent, dog: DogWithBasicInfo) => {
     e.stopPropagation()
     setDogToDelete(dog)
     setShowDeleteModal(true)
@@ -107,8 +82,7 @@ function Dogs() {
   const handleDeleteConfirm = async () => {
     if (!dogToDelete) return
     try {
-      await dogService.deleteDog(dogToDelete.OwnerID, dogToDelete.ID)
-      setDogs(dogs.filter(d => d.ID !== dogToDelete.ID))
+      await deleteDog({ variables: { id: dogToDelete.id } })
     } catch (err) {
       setError('Failed to delete dog. Please try again later.')
       console.error('Error deleting dog:', err)
@@ -118,95 +92,45 @@ function Dogs() {
     }
   }
 
-  const getOwnerName = (owner: Owner | undefined) => {
-    return owner ? `${owner.GivenName} ${owner.Surname}` : 'Unknown'
+  const getHandlerName = (handler: HandlerWithDogs) => {
+    return `${handler.givenName} ${handler.surname}`
   }
 
-  const getDogsByOwner = () => {
-    const dogsByOwner = new Map<string, Dog[]>()
-    dogs.forEach(dog => {
-      const ownerDogs = dogsByOwner.get(dog.OwnerID) || []
-      ownerDogs.push(dog)
-      dogsByOwner.set(dog.OwnerID, ownerDogs)
-    })
+  const getFilteredAndSortedDogsByHandlers = () => {
+    if (!data?.dogsByHandlersInClub) return []
 
-    const filteredAndSorted = Array.from(dogsByOwner.entries())
-      .filter(([ownerId, ownerDogs]) => {
-        const owner = owners.find(o => o.ID === ownerId)
-        const ownerName = getOwnerName(owner).toLowerCase()
-        const searchLower = searchQuery.toLowerCase()
+    const searchLower = searchQuery.toLowerCase()
+    const dogsByHandlers = data.dogsByHandlersInClub
+      .filter((handler: HandlerWithDogs) => {
+        const handlerName = getHandlerName(handler).toLowerCase()
 
-        const ownerMatches = ownerName.includes(searchLower)
-
-        if (ownerMatches) {
+        if (searchLower && handlerName.includes(searchLower)) {
           return true
         }
 
-        const hasMatchingDogs = ownerDogs.some(dog => {
-          const matchesInactive = showInactive || dog.Status === 'Active'
+        return (!searchLower && !handler.dogs?.length) || handler.dogs?.some((dog: DogWithBasicInfo) => {
+          const matchesInactive = showInactive || dog.status === 'Active'
           const matchesSearch = searchQuery === '' ||
-            dog.Name.toLowerCase().includes(searchLower) ||
-            (dog.CRN?.toLowerCase() || '').includes(searchLower)
+            dog.name.toLowerCase().includes(searchLower) ||
+            (dog.crn?.toLowerCase() || '').includes(searchLower)
           return matchesInactive && matchesSearch
         })
-
-        return hasMatchingDogs
       })
-      .map(([ownerId, ownerDogs]) => {
-        const owner = owners.find(o => o.ID === ownerId)
-        const ownerName = getOwnerName(owner).toLowerCase()
-        const searchLower = searchQuery.toLowerCase()
-        const ownerMatches = ownerName.includes(searchLower)
-
-        if (ownerMatches) {
-          const filteredDogs = ownerDogs.filter(dog => showInactive || dog.Status === 'Active')
-          return [ownerId, filteredDogs] as const
-        }
-
-        const filteredDogs = ownerDogs.filter(dog => {
-          const matchesInactive = showInactive || dog.Status === 'Active'
+      .map((handler: HandlerWithDogs) => ({
+        ...handler,
+        dogs: handler.dogs?.filter((dog: DogWithBasicInfo) => {
+          const handlerName = getHandlerName(handler).toLowerCase()
+          const matchesHandler = searchLower && handlerName.includes(searchLower)
+          const matchesInactive = showInactive || dog.status === 'Active'
           const matchesSearch = searchQuery === '' ||
-            dog.Name.toLowerCase().includes(searchLower) ||
-            (dog.CRN?.toLowerCase() || '').includes(searchLower)
-          return matchesInactive && matchesSearch
-        })
-        return [ownerId, filteredDogs] as const
-      })
-      .filter(([_, dogs]) => dogs.length > 0)
-      .sort(([ownerIdA], [ownerIdB]) => {
-        const ownerA = owners.find(o => o.ID === ownerIdA)
-        const ownerB = owners.find(o => o.ID === ownerIdB)
-        const nameA = ownerA ? `${ownerA.GivenName} ${ownerA.Surname}` : ''
-        const nameB = ownerB ? `${ownerB.GivenName} ${ownerB.Surname}` : ''
-        return nameA.localeCompare(nameB)
-      })
-      .map(([ownerId, ownerDogs]) => {
-        return [ownerId, ownerDogs.sort((a, b) => a.Name.localeCompare(b.Name))] as const
-      })
+            dog.name.toLowerCase().includes(searchLower) ||
+            (dog.crn?.toLowerCase() || '').includes(searchLower)
+          return (matchesHandler && matchesInactive) || matchesInactive && matchesSearch
+        }).sort((a: DogWithBasicInfo, b: DogWithBasicInfo) => a.name.localeCompare(b.name)) || []
+      }))
+      .sort((a: HandlerWithDogs, b: HandlerWithDogs) => getHandlerName(a).localeCompare(getHandlerName(b)))
 
-    return new Map(filteredAndSorted)
-  }
-
-  const handleStatusChange = async (dog: Dog, newStatus: DogStatus) => {
-    try {
-      const updatedDog = await dogService.updateDog(dog.OwnerID, dog.ID, {
-        Status: newStatus
-      })
-      setDogs(prev => prev.map(d => d.ID === dog.ID ? updatedDog : d))
-    } catch (err) {
-      setError('Failed to update dog status')
-      console.error(err)
-    }
-  }
-
-  if (loading) {
-    return (
-      <Container className="text-center mt-5">
-        <Spinner animation="border" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </Spinner>
-      </Container>
-    )
+    return dogsByHandlers
   }
 
   if (!selectedClub) {
@@ -222,11 +146,11 @@ function Dogs() {
   return (
     <Container>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1>Owners & Dogs</h1>
+        <h1>Handlers & Dogs</h1>
         <div>
-          <Button variant="primary" className="me-2" onClick={() => navigate('/owners/new')}>
+          <Button variant="primary" className="me-2" onClick={() => navigate('/handlers/new')}>
             <PersonPlus className="me-2" />
-            New Owner
+            New Handler
           </Button>
           <Button variant="success" onClick={() => navigate('/dogs/new')}>
             <PlusLg className="me-2" />
@@ -239,13 +163,13 @@ function Dogs() {
         <InputGroup style={{ maxWidth: '300px' }}>
           <Form.Control
             type="text"
-            placeholder="Search owners or dogs..."
+            placeholder="Search handlers or dogs..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </InputGroup>
         <Form.Check
-          type="checkbox"
+          type="switch"
           id="show-inactive"
           label="Show inactive dogs"
           checked={showInactive}
@@ -259,84 +183,98 @@ function Dogs() {
         </Alert>
       )}
 
-      <Table striped bordered hover responsive>
-        <thead>
-          <tr>
-            <th className="col-6 col-md-4">Name</th>
-            <th className="col-3 col-md-2">CRN</th>
-            <th className="d-none d-md-table-cell col-md-2">Status</th>
-            <th className="col-2 col-md-2">Training Level</th>
-            <th className="col-1 text-end">
-              <span className="d-none d-md-inline">Actions</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {Array.from(getDogsByOwner()).length === 0 ? (
+      {loading ? (
+        <Container className="text-center mt-5">
+          <Spinner animation="border" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </Spinner>
+        </Container>
+      ) : (
+        <Table striped bordered hover responsive>
+          <thead>
             <tr>
-              <td colSpan={5} className="text-center text-muted py-4">
-                No matching owners or dogs found
-              </td>
+              <th className="col-6 col-md-4">Name</th>
+              <th className="col-3 col-md-2">CRN</th>
+              <th className="d-none d-md-table-cell col-md-2">Status</th>
+              <th className="col-2 col-md-2">Level</th>
+              <th className="col-1 text-end">
+                <span className="d-none d-md-inline">Actions</span>
+              </th>
             </tr>
-          ) : (
-            Array.from(getDogsByOwner()).map(([ownerId, ownerDogs]) => {
-              const owner = owners.find(o => o.ID === ownerId)
-              const ownerName = getOwnerName(owner)
-              const sortedDogs = [...ownerDogs].sort((a, b) => a.Name.localeCompare(b.Name))
+          </thead>
+          <tbody>
+            {getFilteredAndSortedDogsByHandlers().length === 0 ? (
+              <tr>
+                <td colSpan={5} className="text-center text-muted py-4">
+                  No matching handlers or dogs found
+                </td>
+              </tr>
+            ) : (
+              getFilteredAndSortedDogsByHandlers().map((handler: HandlerWithDogs) => {
+                const handlerName = getHandlerName(handler)
 
-              return (
-                <React.Fragment key={ownerId}>
-                  <tr
-                    className="table-secondary"
-                    onClick={() => navigate(`/owners/${ownerId}`)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <td colSpan={5}>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <strong>{ownerName}</strong>
-                        <Button
-                          variant="outline-success"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            navigate(`/dogs/new?ownerId=${ownerId}`)
-                          }}
-                        >
-                          <PlusLg className="me-1" />
-                          New Dog
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                  {sortedDogs.map((dog) => (
+                return (
+                  <React.Fragment key={handler.id}>
                     <tr
-                      key={dog.ID}
-                      onClick={() => handleRowClick(dog.ID)}
+                      className="table-secondary"
+                      onClick={() => navigate(`/handlers/${handler.id}`)}
                       style={{ cursor: 'pointer' }}
-                      className={`align-middle`}
                     >
-                      <td className={`ps-4 ${dog.Status === 'Inactive' ? 'text-muted' : ''} col-6 col-md-4`}>{dog.Name}</td>
-                      <td className="font-monospace col-3 col-md-2">{dog.CRN}</td>
-                      <td className="d-none d-md-table-cell col-md-2">{getStatusBadge(dog.Status)}</td>
-                      <td className="col-2 col-md-2">{getTrainingLevelBadge(dog.TrainingLevel)}</td>
-                      <td className="col-1" style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={(e) => handleDelete(e, dog)}
-                        >
-                          <Trash className="me-md-1" />
-                          <span className="d-none d-md-inline">Delete</span>
-                        </Button>
+                      <td colSpan={5}>
+                        <div className="d-flex justify-content-between align-items-center">
+                          <strong>{handlerName}</strong>
+                          <Button
+                            variant="outline-success"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              navigate(`/dogs/new?ownerId=${handler.id}`)
+                            }}
+                          >
+                            <PlusLg className="me-1" />
+                            New Dog
+                          </Button>
+                        </div>
                       </td>
                     </tr>
-                  ))}
-                </React.Fragment>
-              )
-            })
-          )}
-        </tbody>
-      </Table>
+                    {handler.dogs?.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="ps-4 text-muted">
+                          No active dogs
+                        </td>
+                      </tr>
+                    ) : (
+                      handler.dogs?.map((dog: DogWithBasicInfo) => (
+                        <tr
+                          key={dog.id}
+                          onClick={() => handleRowClick(dog.id)}
+                          style={{ cursor: 'pointer' }}
+                          className={`align-middle`}
+                        >
+                          <td className={`ps-4 ${dog.status === 'Inactive' ? 'text-muted' : ''} col-6 col-md-4`}>{dog.name}</td>
+                          <td className="font-monospace col-3 col-md-2">{dog.crn}</td>
+                          <td className="d-none d-md-table-cell col-md-2">{getStatusBadge(dog.status)}</td>
+                          <td className="col-2 col-md-2">{getTrainingLevelBadge(dog.trainingLevel)}</td>
+                          <td className="col-1 text-nowrap text-end">
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              onClick={(e) => handleDelete(e, dog)}
+                            >
+                              <Trash className="me-md-1" />
+                              <span className="d-none d-md-inline">Delete</span>
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </React.Fragment>
+                )
+              })
+            )}
+          </tbody>
+        </Table>
+      )}
 
       <DeleteConfirmationModal
         show={showDeleteModal}

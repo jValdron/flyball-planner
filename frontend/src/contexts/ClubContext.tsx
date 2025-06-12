@@ -1,24 +1,16 @@
 import { createContext, useContext, useState } from 'react'
 import type { ReactNode } from 'react'
-
-export interface Club {
-  ID: string
-  Name: string
-  NAFAClubNumber: string
-  DefaultPracticeTime: string
-  CreatedAt: string
-  UpdatedAt: string
-}
+import type { Club } from '../graphql/generated/graphql'
 
 interface ClubContextType {
-  selectedClub: Club | null
-  setSelectedClub: (club: Club | null) => void
+  selectedClub: Partial<Club> | null
+  setSelectedClub: (club: Partial<Club> | null) => void
 }
 
 const ClubContext = createContext<ClubContextType | undefined>(undefined)
 
 export function ClubProvider({ children }: { children: ReactNode }) {
-  const [selectedClub, setSelectedClub] = useState<Club | null>(null)
+  const [selectedClub, setSelectedClub] = useState<Partial<Club> | null>(null)
 
   return (
     <ClubContext.Provider value={{ selectedClub, setSelectedClub }}>

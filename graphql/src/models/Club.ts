@@ -15,6 +15,14 @@ export class Club {
   name: string;
 
   @Field()
+  @Column()
+  nafaClubNumber: string;
+
+  @Field({ description: 'Default practice time in 24-hour format (HH:mm)' })
+  @Column()
+  defaultPracticeTime: string;
+
+  @Field()
   @CreateDateColumn()
   createdAt: Date;
 

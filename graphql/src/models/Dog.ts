@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { ObjectType, Field, ID, Int, registerEnumType } from 'type-graphql';
-import { Owner } from './Owner';
+import { Handler } from './Handler';
 import { Club } from './Club';
 
 export enum DogStatus {
@@ -56,10 +56,10 @@ export class Dog {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Field(() => Owner)
-  @ManyToOne(() => Owner)
+  @Field(() => Handler)
+  @ManyToOne(() => Handler, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'ownerId' })
-  owner: Owner;
+  owner: Handler;
 
   @Field(() => Club)
   @ManyToOne(() => Club)

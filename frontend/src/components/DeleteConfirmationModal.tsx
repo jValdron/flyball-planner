@@ -34,7 +34,7 @@ function DeleteConfirmationModal({
         <Modal.Title>{title}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {message}
+        <div dangerouslySetInnerHTML={{ __html: message }} />
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onHide}>

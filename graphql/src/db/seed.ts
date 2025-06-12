@@ -1,30 +1,30 @@
 import { DataSource } from 'typeorm';
 import { Club } from '../models/Club';
-import { Owner } from '../models/Owner';
+import { Handler } from '../models/Handler';
 import { Dog, DogStatus } from '../models/Dog';
 
 const ownersData = [
-  { name: 'Andrea Donovan' },
-  { name: 'Brit Walton' },
-  { name: 'Christine NT' },
-  { name: 'Gerry Teed' },
-  { name: 'Jack Brown' },
-  { name: 'Janice Aubé' },
-  { name: 'Jason Valdron' },
-  { name: 'Kelly Hogg' },
-  { name: 'Karen Jacobson' },
-  { name: 'Kendra DeWitt' },
-  { name: 'Nicole Kerr' },
-  { name: 'Patti Breaker' },
-  { name: 'Sandra-Sam Foster' },
-  { name: 'Stefani Chouinard' },
-  { name: 'Victoria Perron' },
-  { name: 'Whitney Yapp' },
-  { name: 'Nadia Miller' },
-  { name: 'Hilary Fegan' },
-  { name: 'Emily Totton' },
-  { name: 'Julia Khoury' },
-  { name: 'Carrie MacAllister' },
+  { givenName: 'Andrea', surname: 'Donovan' },
+  { givenName: 'Brit', surname: 'Walton' },
+  { givenName: 'Christine', surname: 'NT' },
+  { givenName: 'Gerry', surname: 'Teed' },
+  { givenName: 'Jack', surname: 'Brown' },
+  { givenName: 'Janice', surname: 'Aubé' },
+  { givenName: 'Jason', surname: 'Valdron' },
+  { givenName: 'Kelly', surname: 'Hogg' },
+  { givenName: 'Karen', surname: 'Jacobson' },
+  { givenName: 'Kendra', surname: 'DeWitt' },
+  { givenName: 'Nicole', surname: 'Kerr' },
+  { givenName: 'Patti', surname: 'Breaker' },
+  { givenName: 'Sandra-Sam', surname: 'Foster' },
+  { givenName: 'Stefani', surname: 'Chouinard' },
+  { givenName: 'Victoria', surname: 'Perron' },
+  { givenName: 'Whitney', surname: 'Yapp' },
+  { givenName: 'Nadia', surname: 'Miller' },
+  { givenName: 'Hilary', surname: 'Fegan' },
+  { givenName: 'Emily', surname: 'Totton' },
+  { givenName: 'Julia', surname: 'Khoury' },
+  { givenName: 'Carrie', surname: 'MacAllister' },
 ];
 
 const dogsData = [
@@ -78,20 +78,24 @@ export async function seedDatabase(dataSource: DataSource) {
   // Create club
   const club = dataSource.getRepository(Club).create({
     name: 'On My Go!',
+    nafaClubNumber: '1002',
+    defaultPracticeTime: '10:00',
   });
   await dataSource.getRepository(Club).save(club);
 
   // Create owners
   const owners = ownersData.map(ownerData =>
-    dataSource.getRepository(Owner).create({
-      name: ownerData.name,
+    dataSource.getRepository(Handler).create({
+      givenName: ownerData.givenName,
+      surname: ownerData.surname,
+      clubId: club.id,
     })
   );
-  await dataSource.getRepository(Owner).save(owners);
+  await dataSource.getRepository(Handler).save(owners);
 
   // Create dogs
   const dogs = await Promise.all(dogsData.map(async dogData => {
-    const owner = owners.find(o => o.name === dogData.ownerName);
+    const owner = owners.find(o => o.givenName === dogData.ownerName.split(' ')[0] && o.surname === dogData.ownerName.split(' ')[1]);
     if (!owner) {
       throw new Error(`Owner not found for dog ${dogData.name}`);
     }

@@ -1,0 +1,49 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "flyball.fullname" . }}-graphql
+  labels:
+    {{- include "flyball.graphql.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.graphql.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "flyball.graphql.labels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "flyball.graphql.labels" . | nindent 8 }}
+    spec:
+      initContainers:
+        - name: wait-for-db
+          image: busybox
+          command: ["sh", "-c", "until nc -z {{ .Values.graphql.env.DB_HOST }} {{ .Values.graphql.env.DB_PORT }}; do echo waiting for database; sleep 2; done;"]
+      containers:
+        - name: graphql
+          image: {{ .Values.graphql.image.repository }}:{{ .Values.graphql.image.tag }}
+          imagePullPolicy: {{ .Values.graphql.image.pullPolicy }}
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+          env:
+            - name: DB_USER
+              value: {{ .Values.graphql.env.DB_USER }}
+            - name: DB_NAME
+              value: {{ .Values.graphql.env.DB_NAME }}
+            - name: DB_HOST
+              value: {{ .Values.graphql.env.DB_HOST }}
+            - name: DB_PORT
+              value: "{{ .Values.graphql.env.DB_PORT }}"
+            - name: DB_SSLMODE
+              value: {{ .Values.graphql.env.DB_SSLMODE }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "flyball.fullname" . }}-db-secret
+                  key: password

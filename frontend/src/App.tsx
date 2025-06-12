@@ -1,15 +1,16 @@
 import { Container, Navbar, Nav } from 'react-bootstrap'
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
-import { useEffect } from 'react'
+import { ApolloProvider } from '@apollo/client'
+import { client } from './apollo/client'
 import Home from './pages/Home'
+import HandlerDetails from './pages/HandlerDetails'
 import Dogs from './pages/Dogs'
+import DogDetails from './pages/DogDetails'
 import Practices from './pages/Practices'
-import PracticeView from './pages/PracticeView'
-import DogView from './pages/DogView'
-import OwnerView from './pages/OwnerView'
+import PracticeDetails from './pages/PracticeDetails'
 import { ClubProvider } from './contexts/ClubContext'
+import { PracticeProvider } from './contexts/PracticeContext'
 import { ClubPicker } from './components/ClubPicker'
-import { websocketService } from './services/websocketService'
 
 function Header() {
   return (
@@ -33,36 +34,31 @@ function Header() {
 }
 
 function App() {
-  useEffect(() => {
-    // Initialize WebSocket connection
-    websocketService.connect();
-
-    // Cleanup on unmount
-    return () => {
-      websocketService.disconnect();
-    };
-  }, []);
-
   return (
-    <Router>
-      <ClubProvider>
-        <Header />
-        <Container>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/dogs" element={<Dogs />} />
-            <Route path="/dogs/new" element={<DogView />} />
-            <Route path="/dogs/:dogId" element={<DogView />} />
-            <Route path="/owners/:ownerId" element={<OwnerView />} />
-            <Route path="/practices" element={<Practices />} />
-            <Route path="/practices/new" element={<PracticeView />} />
-            <Route path="/practices/:practiceId" element={<PracticeView />} />
-            <Route path="/practices/:practiceId/attendance" element={<PracticeView />} />
-            <Route path="/practices/:practiceId/sets" element={<PracticeView />} />
-          </Routes>
-        </Container>
-      </ClubProvider>
-    </Router>
+    <ApolloProvider client={client}>
+      <Router>
+        <ClubProvider>
+          <PracticeProvider>
+            <Header />
+            <Container>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/dogs" element={<Dogs />} />
+                <Route path="/dogs/new" element={<DogDetails />} />
+                <Route path="/dogs/:dogId" element={<DogDetails />} />
+                <Route path="/handlers/:handlerId" element={<HandlerDetails />} />
+                <Route path="/practices" element={<Practices />} />
+                <Route path="/practices/new" element={<PracticeDetails />} />
+                <Route path="/practices/:practiceId" element={<PracticeDetails />} />
+                <Route path="/practices/:practiceId/attendance" element={<PracticeDetails />} />
+                <Route path="/practices/:practiceId/sets" element={<PracticeDetails />} />
+                <Route path="/practices/:practiceId/checks" element={<PracticeDetails />} />
+              </Routes>
+            </Container>
+          </PracticeProvider>
+        </ClubProvider>
+      </Router>
+    </ApolloProvider>
   )
 }
 

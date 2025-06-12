@@ -4,31 +4,45 @@ import { config } from 'dotenv';
 import { buildSchema } from 'type-graphql';
 import { AppDataSource } from './db';
 import { DogResolver } from './resolvers/DogResolver';
-import { OwnerResolver } from './resolvers/OwnerResolver';
+import { HandlerResolver } from './resolvers/HandlerResolver';
+import { ClubResolver } from './resolvers/ClubResolver';
+import { PracticeResolver } from './resolvers/PracticeResolver';
+import { PracticeAttendanceResolver } from './resolvers/PracticeAttendanceResolver';
 
 config();
 
 async function startServer() {
   try {
-    // Initialize database connection
     await AppDataSource.initialize();
     console.log('Database connection established');
 
-    // Build TypeGraphQL schema
     const schema = await buildSchema({
-      resolvers: [DogResolver, OwnerResolver],
+      resolvers: [
+        ClubResolver,
+        DogResolver,
+        HandlerResolver,
+        PracticeResolver,
+        PracticeAttendanceResolver,
+      ],
       emitSchemaFile: true,
       validate: false,
     });
 
-    // Create Apollo Server
     const server = new ApolloServer({
-      schema,
+      schema
     });
 
-    // Start the server
     const { url } = await startStandaloneServer(server, {
       listen: { port: Number(process.env.PORT) || 4000 },
+      context: async ({ req, res }) => {
+        if (process.env.NODE_ENV === 'development') {
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Access-Control-Allow-Credentials', 'true');
+          res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
+          res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        }
+        return {};
+      }
     });
 
     console.log(`🚀 Server ready at ${url}`);

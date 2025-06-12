@@ -1,124 +1,129 @@
 import { Container, Form, Button, Alert, Spinner, Breadcrumb } from 'react-bootstrap'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import { dogService, type Dog } from '../services/dogService'
-import { ownerService, type Owner } from '../services/ownerService'
+import { useState } from 'react'
 import { useClub } from '../contexts/ClubContext'
 import { ChevronLeft, Save, Trash } from 'react-bootstrap-icons'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
+import { useQuery, useMutation } from '@apollo/client'
+import { GetDogById, GetDogsByHandlersInClub, CreateDog, UpdateDog, DeleteDog } from '../graphql/dogs'
+import { DogStatus } from '../graphql/generated/graphql'
+import type { Dog } from '../graphql/generated/graphql'
+import { formatFullDateTime } from '../utils/dateUtils'
 
-type DogFormData = Omit<Dog, 'ID' | 'CreatedAt' | 'UpdatedAt'>
-
-function DogView() {
+function DogDetails() {
   const navigate = useNavigate()
   const { dogId } = useParams()
   const [searchParams] = useSearchParams()
   const { selectedClub } = useClub()
-  const [dog, setDog] = useState<Dog | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [owners, setOwners] = useState<Owner[]>([])
+  const [formData, setFormData] = useState<Partial<Dog>>({
+    name: '',
+    crn: '',
+    trainingLevel: 1,
+    clubId: selectedClub?.id || '',
+    ownerId: searchParams.get('ownerId') || '',
+    status: DogStatus.Active
+  })
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [formData, setFormData] = useState<DogFormData>({
-    Name: '',
-    CRN: '',
-    TrainingLevel: 1,
-    ClubID: selectedClub?.ID || '',
-    OwnerID: searchParams.get('ownerId') || '',
-    Status: 'Active'
+  const [error, setError] = useState<string | null>(null)
+
+  const { data: dogData, loading: loadingDog } = useQuery(GetDogById, {
+    variables: { id: dogId || '' },
+    skip: !dogId,
+    onCompleted: (data) => {
+      if (data.dog) {
+        setFormData({
+          name: data.dog.name,
+          crn: data.dog.crn,
+          trainingLevel: data.dog.trainingLevel,
+          ownerId: data.dog.ownerId,
+          status: data.dog.status
+        })
+      }
+    },
+    onError: (error) => {
+      setError('Failed to load dog details. Please try again later.')
+      console.error('Error loading dog:', error)
+    }
   })
 
-  useEffect(() => {
-    if (dogId && selectedClub) {
-      loadDog()
-    } else {
-      setLoading(false)
+  const { data: ownersData, loading: loadingOwners } = useQuery(GetDogsByHandlersInClub, {
+    variables: { clubId: selectedClub?.id || '' },
+    skip: !selectedClub?.id,
+    onError: (error) => {
+      console.error('Error loading owners:', error)
     }
-    loadOwners()
-  }, [dogId, selectedClub])
+  })
 
-  const loadOwners = async () => {
-    try {
-      const data = await ownerService.getOwners()
-      setOwners(data)
-    } catch (err) {
-      console.error('Error loading owners:', err)
+  const [createDog, { loading: creating }] = useMutation(CreateDog, {
+    onCompleted: () => navigate('/dogs'),
+    onError: (error) => {
+      setError('Failed to create dog. Please try again later.')
+      console.error('Error creating dog:', error)
     }
-  }
+  })
 
-  const loadDog = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      if (!selectedClub) return
-      let data: Dog = await dogService.getDogByClub(selectedClub.ID, dogId!)
-      setDog(data)
-      setFormData({
-        Name: data.Name,
-        CRN: data.CRN,
-        TrainingLevel: data.TrainingLevel,
-        ClubID: data.ClubID,
-        OwnerID: data.OwnerID,
-        Status: data.Status
-      })
-    } catch (err) {
-      setError('Failed to load dog details. Please try again later.')
-      console.error('Error loading dog:', err)
-    } finally {
-      setLoading(false)
+  const [updateDog, { loading: updating }] = useMutation(UpdateDog, {
+    onCompleted: () => navigate('/dogs'),
+    onError: (error) => {
+      setError('Failed to update dog. Please try again later.')
+      console.error('Error updating dog:', error)
     }
-  }
+  })
+
+  const [deleteDog, { loading: deleting }] = useMutation(DeleteDog, {
+    onCompleted: () => navigate('/dogs'),
+    onError: (error) => {
+      setError('Failed to delete dog. Please try again later.')
+      console.error('Error deleting dog:', error)
+    }
+  })
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'TrainingLevel' ? parseInt(value) : value
+      [name]: name === 'trainingLevel' ? parseInt(value) : value
     }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      setSaving(true)
       setError(null)
       if (dogId) {
-        await dogService.updateDog(formData.OwnerID, dogId, formData)
+        await updateDog({
+          variables: {
+            id: dogId,
+            ...formData
+          }
+        })
       } else {
-        await dogService.createDog(formData.OwnerID, {
-          Name: formData.Name,
-          CRN: formData.CRN,
-          ClubID: formData.ClubID,
-          TrainingLevel: formData.TrainingLevel,
-          OwnerID: formData.OwnerID,
-          Status: formData.Status
+        await createDog({
+          variables: {
+            ...formData,
+            clubId: selectedClub?.id || ''
+          } as any
         })
       }
-      navigate('/dogs')
     } catch (err) {
-      setError('Failed to save dog. Please try again later.')
-      console.error('Error saving dog:', err)
-    } finally {
-      setSaving(false)
     }
   }
 
   const handleDelete = async () => {
     try {
-      setSaving(true)
       setError(null)
-      if (!dogId || !selectedClub) return
-      await dogService.deleteDog(selectedClub.ID, dogId)
-      navigate('/dogs')
+      if (!dogId) return
+      await deleteDog({
+        variables: { id: dogId }
+      })
     } catch (err) {
-      setError('Failed to delete dog. Please try again later.')
-      console.error('Error deleting dog:', err)
     } finally {
-      setSaving(false)
       setShowDeleteConfirm(false)
     }
   }
+
+  const loading = loadingDog || loadingOwners
+  const saving = creating || updating || deleting
 
   if (loading) {
     return (
@@ -163,8 +168,8 @@ function DogView() {
           <Form.Label>Name</Form.Label>
           <Form.Control
             type="text"
-            name="Name"
-            value={formData.Name}
+            name="name"
+            value={formData.name}
             onChange={handleInputChange}
             required
           />
@@ -173,13 +178,13 @@ function DogView() {
         <Form.Group className="mb-3">
           <Form.Label>Status</Form.Label>
           <Form.Select
-            name="Status"
-            value={formData.Status}
+            name="status"
+            value={formData.status}
             onChange={handleInputChange}
             required
           >
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
+            <option value={DogStatus.Active}>Active</option>
+            <option value={DogStatus.Inactive}>Inactive</option>
           </Form.Select>
         </Form.Group>
 
@@ -187,8 +192,8 @@ function DogView() {
           <Form.Label>CRN</Form.Label>
           <Form.Control
             type="text"
-            name="CRN"
-            value={formData.CRN}
+            name="crn"
+            value={formData.crn || ''}
             onChange={handleInputChange}
             className="font-monospace"
           />
@@ -197,8 +202,8 @@ function DogView() {
         <Form.Group className="mb-3">
           <Form.Label>Training Level</Form.Label>
           <Form.Select
-            name="TrainingLevel"
-            value={formData.TrainingLevel}
+            name="trainingLevel"
+            value={formData.trainingLevel}
             onChange={handleInputChange}
             required
           >
@@ -213,15 +218,15 @@ function DogView() {
         <Form.Group className="mb-3">
           <Form.Label>Owner</Form.Label>
           <Form.Select
-            name="OwnerID"
-            value={formData.OwnerID}
+            name="ownerId"
+            value={formData.ownerId}
             onChange={handleInputChange}
             required
           >
             <option value="">Select an owner</option>
-            {owners.map(owner => (
-              <option key={owner.ID} value={owner.ID}>
-                {`${owner.GivenName} ${owner.Surname}`}
+            {ownersData?.dogsByHandlersInClub?.map(handler => (
+              <option key={handler.id} value={handler.id}>
+                {`${handler.givenName} ${handler.surname}`}
               </option>
             ))}
           </Form.Select>
@@ -237,7 +242,7 @@ function DogView() {
             <ChevronLeft className="me-2" />
             Cancel
           </Button>
-          <Button type="submit" variant="success">
+          <Button type="submit" variant="success" disabled={saving}>
             <Save className="me-2" />
             {dogId ? 'Save Changes' : 'Create Dog'}
           </Button>
@@ -249,17 +254,17 @@ function DogView() {
         onHide={() => setShowDeleteConfirm(false)}
         onConfirm={handleDelete}
         title="Delete Dog"
-        message={`Are you sure you want to delete ${dog?.Name}? This action cannot be undone.`}
+        message={`Are you sure you want to delete ${dogData?.dog?.name}? This action cannot be undone.`}
       />
 
-      {dog && (
-        <div className="text-muted">
-          <p><strong>Created:</strong> {new Date(dog.CreatedAt).toLocaleString()}</p>
-          <p><strong>Last Updated:</strong> {new Date(dog.UpdatedAt).toLocaleString()}</p>
+      {dogData?.dog && (
+        <div className="mt-4 text-muted">
+          <p><strong>Created:</strong> {formatFullDateTime(dogData.dog.createdAt)}</p>
+          <p><strong>Last Updated:</strong> {formatFullDateTime(dogData.dog.updatedAt)}</p>
         </div>
       )}
     </Container>
   )
 }
 
-export default DogView
+export default DogDetails

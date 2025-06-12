@@ -4,9 +4,9 @@ import { Practice } from './Practice';
 import { Dog } from './Dog';
 
 export enum AttendanceStatus {
-  ATTENDING = 'ATTENDING',
-  NOT_ATTENDING = 'NOT_ATTENDING',
-  UNKNOWN = 'UNKNOWN'
+  Attending = 'Attending',
+  NotAttending = 'NotAttending',
+  Unknown = 'Unknown'
 }
 
 registerEnumType(AttendanceStatus, {
@@ -33,7 +33,7 @@ export class PracticeAttendance {
   @Column({
     type: 'enum',
     enum: AttendanceStatus,
-    default: AttendanceStatus.UNKNOWN
+    default: AttendanceStatus.Unknown
   })
   attending: AttendanceStatus;
 

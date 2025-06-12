@@ -1,5 +1,5 @@
-import { Resolver, Query, Mutation, Arg } from 'type-graphql';
-import { Dog } from '../models/Dog';
+import { Resolver, Query, Mutation, Arg, ID, Int } from 'type-graphql';
+import { Dog, DogStatus } from '../models/Dog';
 import { AppDataSource } from '../db';
 
 @Resolver(Dog)
@@ -16,13 +16,23 @@ export class DogResolver {
     return await this.dogRepository.findOneBy({ id });
   }
 
+  @Query(() => Int)
+  async activeDogsInClub(@Arg('clubId', () => ID) clubId: string): Promise<number> {
+    return await this.dogRepository.count({
+      where: {
+        clubId,
+        status: DogStatus.Active
+      }
+    });
+  }
+
   @Mutation(() => Dog)
   async createDog(
     @Arg('name') name: string,
     @Arg('ownerId') ownerId: string,
     @Arg('clubId') clubId: string,
     @Arg('trainingLevel') trainingLevel: number,
-    @Arg('status') status: string,
+    @Arg('status', () => DogStatus) status: DogStatus,
     @Arg('crn', { nullable: true }) crn?: string
   ): Promise<Dog> {
     const dog = this.dogRepository.create({
@@ -31,7 +41,7 @@ export class DogResolver {
       clubId,
       trainingLevel,
       status,
-      crn
+      crn: crn === '' ? null : crn
     });
     return await this.dogRepository.save(dog);
   }
@@ -43,7 +53,7 @@ export class DogResolver {
     @Arg('ownerId', { nullable: true }) ownerId?: string,
     @Arg('clubId', { nullable: true }) clubId?: string,
     @Arg('trainingLevel', { nullable: true }) trainingLevel?: number,
-    @Arg('status', { nullable: true }) status?: string,
+    @Arg('status', () => DogStatus, { nullable: true }) status?: DogStatus,
     @Arg('crn', { nullable: true }) crn?: string
   ): Promise<Dog | null> {
     const dog = await this.dogRepository.findOneBy({ id });
@@ -55,7 +65,7 @@ export class DogResolver {
       clubId: clubId ?? dog.clubId,
       trainingLevel: trainingLevel ?? dog.trainingLevel,
       status: status ?? dog.status,
-      crn: crn ?? dog.crn
+      crn: crn ?? (crn === '' ? null : crn)
     });
 
     return await this.dogRepository.save(dog);

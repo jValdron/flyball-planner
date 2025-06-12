@@ -1,37 +1,80 @@
 import { useState, useEffect, useCallback } from 'react'
-import React from 'react'
-import { Container, Form, Button, Alert, Spinner, Breadcrumb, Tabs, Tab, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap'
+import { Container, Form, Button, Alert, Spinner, Breadcrumb, Tabs, Tab, Badge, OverlayTrigger, Tooltip, Modal, ListGroup } from 'react-bootstrap'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { practiceService } from '../services/practiceService'
-import type { Practice, PracticeStatus } from '../services/practiceService'
 import { useClub } from '../contexts/ClubContext'
+import { PracticeProvider, usePractice } from '../contexts/PracticeContext'
 import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
 import { CALENDAR_TYPES } from 'react-calendar/dist/shared/const.js'
 import { SaveSpinner } from '../components/SaveSpinner'
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, CalendarCheck, CalendarX } from 'react-bootstrap-icons'
-import { formatRelativeTime, formatTime, isPastDay } from '../utils/dateUtils'
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, CalendarCheck, CalendarX, Trash, ExclamationTriangle } from 'react-bootstrap-icons'
+import { formatRelativeTime, isPastDay } from '../utils/dateUtils'
 import { PracticeAttendance } from '../components/PracticeAttendance'
+import { useQuery, useMutation } from '@apollo/client'
+import { GetPractice, CreatePractice, UpdatePractice, DeletePractice } from '../graphql/practice'
+import { PracticeStatus } from '../graphql/generated/graphql'
+import type { Practice, GetPracticeQuery, CreatePracticeMutation, UpdatePracticeMutation, DeletePracticeMutation, PracticeAttendance as PracticeAttendanceType } from '../graphql/generated/graphql'
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
+import { PracticeValidationService, type ValidationError } from '../services/practiceValidation'
+import { PracticeValidation } from '../components/PracticeValidation'
 
-function PracticeView() {
+function PracticeDetailsContent() {
   const navigate = useNavigate()
   const { practiceId } = useParams()
   const location = useLocation()
   const { selectedClub } = useClub()
-  const [practice, setPractice] = useState<Practice | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [isSaving, setIsSaving] = useState(false)
+  const { attendances, isAttendancesLoading } = usePractice()
   const [scheduledDate, setScheduledDate] = useState<Date | null>(null)
   const [scheduledTime, setScheduledTime] = useState<string>('')
   const [isDirty, setIsDirty] = useState(false)
-  const isPastPractice = practiceId ? isPastDay(practice?.ScheduledAt ?? null) : false
+  const [error, setError] = useState<string | null>(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([])
+
+  const { data: practiceData, loading: isPracticeLoading } = useQuery<GetPracticeQuery>(GetPractice, {
+    variables: { id: practiceId! },
+    skip: !practiceId,
+    onError: (err) => {
+      setError('Failed to load practice details. Please try again later.')
+      console.error('Error loading practice:', err)
+    }
+  })
+
+  const [createPractice, { loading: isCreating }] = useMutation<CreatePracticeMutation>(CreatePractice, {
+    onError: (err) => {
+      setError(err.message)
+      setIsDirty(false)
+      console.error('Error creating practice:', err)
+    }
+  })
+
+  const [updatePractice, { loading: isUpdating }] = useMutation<UpdatePracticeMutation>(UpdatePractice, {
+    onError: (err) => {
+      setError(err.message)
+      setIsDirty(false)
+      console.error('Error updating practice:', err)
+    }
+  })
+
+  const [deletePractice, { loading: isDeleting }] = useMutation<DeletePracticeMutation>(DeletePractice, {
+    onError: (err) => {
+      setError('Failed to delete practice')
+      console.error('Error deleting practice:', err)
+    },
+    onCompleted: () => {
+      navigate('/practices')
+    }
+  })
+
+  const practice = practiceData?.practice
+  const isPastPractice = practiceId ? isPastDay(practice?.scheduledAt ?? null) : false
+  const isSaving = isCreating || isUpdating
 
   const getCurrentTab = () => {
     if (!practiceId) return 'date'
     const pathParts = location.pathname.split('/')
     const tab = pathParts[pathParts.length - 1]
-    return ['date', 'attendance', 'sets'].includes(tab) ? tab : 'date'
+    return ['date', 'attendance', 'sets', 'checks'].includes(tab) ? tab : 'date'
   }
 
   const handleTabChange = (tab: string) => {
@@ -40,42 +83,29 @@ function PracticeView() {
   }
 
   useEffect(() => {
-    if (!selectedClub) {
-      return;
-    }
-
-    if (practiceId) {
-      loadPractice()
-    } else {
-      setLoading(false)
-    }
-  }, [practiceId, selectedClub])
-
-  useEffect(() => {
-    if (selectedClub?.DefaultPracticeTime && !practiceId) {
-      setScheduledTime(selectedClub.DefaultPracticeTime)
+    if (selectedClub?.defaultPracticeTime && !practiceId) {
+      setScheduledTime(selectedClub.defaultPracticeTime)
     }
   }, [selectedClub, practiceId])
 
-  const loadPractice = async () => {
-    try {
-      if (!selectedClub || !practiceId) return
-      setLoading(true)
-      setError(null)
-      const data = await practiceService.getPractice(selectedClub.ID, practiceId)
-      setPractice(data)
-      if (data?.ScheduledAt) {
-        const date = new Date(data.ScheduledAt)
-        setScheduledDate(date)
-        setScheduledTime(date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }))
-      }
-    } catch (err) {
-      setError('Failed to load practice details. Please try again later.')
-      console.error('Error loading practice:', err)
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    if (practice?.scheduledAt) {
+      const date = new Date(practice.scheduledAt)
+      setScheduledDate(date)
+      setScheduledTime(date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }))
     }
-  }
+  }, [practice])
+
+  useEffect(() => {
+    if (practice) {
+      const practiceToValidate: Partial<Practice> = {
+        ...practice,
+        attendances: attendances as PracticeAttendanceType[]
+      }
+      const validationResult = PracticeValidationService.validatePractice(practiceToValidate)
+      setValidationErrors(validationResult.errors)
+    }
+  }, [practice, attendances])
 
   const savePractice = useCallback(async () => {
     if (!selectedClub || !scheduledDate || !scheduledTime) return
@@ -86,34 +116,38 @@ function PracticeView() {
     const scheduledAt = combinedDate.toISOString()
 
     try {
-      setIsSaving(true)
       if (practiceId) {
-        const updatedPractice = await practiceService.updatePractice(selectedClub.ID, practiceId, {
-          ScheduledAt: scheduledAt
+        await updatePractice({
+          variables: {
+            id: practiceId,
+            clubId: selectedClub.id,
+            scheduledAt
+          }
         })
-        setPractice(updatedPractice)
         setIsDirty(false)
       } else {
-        const newPractice = await practiceService.createPractice(selectedClub.ID, {
-          ClubId: selectedClub.ID,
-          ScheduledAt: scheduledAt,
-          Status: 'Draft'
+        const result = await createPractice({
+          variables: {
+            clubId: selectedClub.id,
+            scheduledAt,
+            status: PracticeStatus.Draft
+          }
         })
-        setPractice(newPractice)
         setIsDirty(false)
-        navigate(`/practices/${newPractice.ID}`, {
+        const newPracticeId = result.data?.createPractice.id
+        if (!newPracticeId) {
+          throw new Error('Failed to create practice - no ID returned')
+        }
+        navigate(`/practices/${newPracticeId}`, {
           replace: true,
-          state: { practiceId: newPractice.ID }
+          state: { practiceId: newPracticeId }
         })
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save practice')
       setIsDirty(false)
-      console.error('Error saving practice:', err)
-    } finally {
-      setIsSaving(false)
     }
-  }, [selectedClub, practiceId, navigate, scheduledDate, scheduledTime])
+  }, [selectedClub, practiceId, navigate, scheduledDate, scheduledTime, createPractice, updatePractice])
 
   useEffect(() => {
     if (isDirty && !isSaving) {
@@ -147,17 +181,32 @@ function PracticeView() {
   const handleStatusChange = async (newStatus: PracticeStatus) => {
     if (!selectedClub || !practiceId) return
     try {
-      const updatedPractice = await practiceService.updatePractice(selectedClub.ID, practiceId, {
-        Status: newStatus
+      await updatePractice({
+        variables: {
+          id: practiceId,
+          clubId: selectedClub.id,
+          status: newStatus
+        }
       })
-      setPractice(updatedPractice)
     } catch (err) {
       setError('Failed to update practice status')
       console.error(err)
     }
   }
 
-  if (loading) {
+  const handleDelete = async () => {
+    if (!practiceId) return
+    try {
+      await deletePractice({
+        variables: { id: practiceId }
+      })
+    } catch (err) {
+      setError('Failed to delete practice')
+      console.error(err)
+    }
+  }
+
+  if (isPracticeLoading) {
     return (
       <Container className="text-center mt-5">
         <Spinner animation="border" role="status">
@@ -176,24 +225,43 @@ function PracticeView() {
         </Breadcrumb.Item>
       </Breadcrumb>
 
-      <div className="d-flex justify-content-between align-items-center mb-2">
+      <div className="d-flex justify-content-between align-items-start mb-2">
         <h1>
-          {practice?.ScheduledAt ? <>
-              {formatRelativeTime(practice.ScheduledAt)}
-            </>
-          : 'New Practice'}
+          {practice?.scheduledAt ? formatRelativeTime(practice.scheduledAt) : 'New Practice'}
         </h1>
-        {!isPastPractice && practice && (
-          <Form.Check
-            type="switch"
-            id="status-toggle"
-            label="Mark as Ready"
-            className="fs-5"
-            checked={practice.Status === 'Ready'}
-            onChange={(e) => handleStatusChange(e.target.checked ? 'Ready' : 'Draft')}
-          />
-        )}
+        <div className="d-flex flex-column align-items-end gap-2">
+          {practiceId && (
+            <Button
+              variant="outline-danger"
+              size="sm"
+              onClick={() => setShowDeleteModal(true)}
+              disabled={isDeleting}
+            >
+              <Trash className="me-2" /> {isPastPractice ? 'Delete' : 'Cancel'}
+            </Button>
+          )}
+          {!isPastPractice && practice && (
+            <Form.Check
+              type="switch"
+              id="status-toggle"
+              label="Mark as Ready"
+              className="fs-5"
+              checked={practice.status === PracticeStatus.Ready}
+              onChange={(e) => handleStatusChange(e.target.checked ? PracticeStatus.Ready : PracticeStatus.Draft)}
+              disabled={validationErrors.some(error => error.severity === 'error')}
+            />
+          )}
+        </div>
       </div>
+
+      <DeleteConfirmationModal
+        show={showDeleteModal}
+        onHide={() => setShowDeleteModal(false)}
+        onConfirm={handleDelete}
+        title="Confirm Practice Cancellation"
+        message="Are you sure you want to cancel this practice? This action cannot be undone."
+        confirmButtonText="Cancel Practice"
+      />
 
       {error && (
         <Alert variant="danger" className="mb-4" onClose={() => setError(null)} dismissible>
@@ -303,12 +371,49 @@ function PracticeView() {
           <Alert variant="info">
             Practice sets management will be implemented in a future update.
           </Alert>
-          <div className="d-flex justify-content-start mb-3">
+          <div className="d-flex justify-content-between mb-3">
             <Button
               variant="secondary"
               onClick={() => handleTabChange('attendance')}
             >
               <ChevronLeft className="me-1" /> Attendance
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => handleTabChange('checks')}
+            >
+              Checks <ChevronRight className="ms-1" />
+            </Button>
+          </div>
+        </Tab>
+
+        <Tab
+          eventKey="checks"
+          title={
+            <span>
+              Checks
+              {isAttendancesLoading ?
+                <Spinner animation="border" size="sm" className="ms-2" /> :
+                validationErrors.length > 0 && (
+                  <Badge bg="primary" className="ms-2">
+                    {validationErrors.length}
+                  </Badge>
+                )}
+            </span>
+          }
+        >
+          {isAttendancesLoading ?
+            <Spinner animation="border" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </Spinner> :
+            <PracticeValidation validationErrors={validationErrors} />
+          }
+          <div className="d-flex justify-content-start mb-3">
+            <Button
+              variant="secondary"
+              onClick={() => handleTabChange('sets')}
+            >
+              <ChevronLeft className="me-1" /> Sets
             </Button>
           </div>
         </Tab>
@@ -319,4 +424,12 @@ function PracticeView() {
   )
 }
 
-export default PracticeView
+function PracticeDetails() {
+  return (
+    <PracticeProvider>
+      <PracticeDetailsContent />
+    </PracticeProvider>
+  )
+}
+
+export default PracticeDetails

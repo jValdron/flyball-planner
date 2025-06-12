@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
 import { seedDatabase } from './db/seed';
 import { Club } from './models/Club';
-import { Owner } from './models/Owner';
+import { Handler } from './models/Handler';
 import { Dog } from './models/Dog';
 import { Practice } from './models/Practice';
 import { Set } from './models/Set';
@@ -20,7 +20,7 @@ const dataSource = new DataSource({
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'flyball_practice_planner',
   ssl: process.env.DB_SSLMODE !== 'disable',
-  entities: [Club, Owner, Dog, Practice, Set, SetDog, PracticeAttendance],
+  entities: [Club, Handler, Dog, Practice, Set, SetDog, PracticeAttendance],
   synchronize: true,
 });
 
