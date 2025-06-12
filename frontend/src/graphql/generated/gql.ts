@@ -16,7 +16,14 @@ import type { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-
 type Documents = {
     "\n  query GetPracticeAttendances($practiceId: String!) {\n    practiceAttendances(practiceId: $practiceId) {\n      id\n      dogId\n      attending\n      dog {\n        id\n        name\n        ownerId\n      }\n    }\n  }\n": typeof types.GetPracticeAttendancesDocument,
     "\n  mutation UpdateAttendances($practiceId: String!, $updates: [AttendanceUpdate!]!) {\n    updateAttendances(practiceId: $practiceId, updates: $updates) {\n      id\n      dogId\n      attending\n    }\n  }\n": typeof types.UpdateAttendancesDocument,
-    "\n    query GetClubs {\n      clubs {\n        id\n        name\n        nafaClubNumber\n        defaultPracticeTime\n      }\n    }\n  ": typeof types.GetClubsDocument,
+    "\n  query GetClubs {\n    clubs {\n      id\n      name\n      nafaClubNumber\n      defaultPracticeTime\n    }\n  }\n": typeof types.GetClubsDocument,
+    "\n  query GetClubById($id: String!) {\n    club(id: $id) {\n      id\n      name\n      nafaClubNumber\n      defaultPracticeTime\n    }\n  }\n": typeof types.GetClubByIdDocument,
+    "\n  query GetLocationById($id: String!) {\n    location(id: $id) {\n      id\n      name\n      isDefault\n      isDoubleLane\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.GetLocationByIdDocument,
+    "\n  query GetLocationsByClub($clubId: ID!) {\n    locationsByClub(clubId: $clubId) {\n      id\n      name\n      isDefault\n      isDoubleLane\n    }\n  }\n": typeof types.GetLocationsByClubDocument,
+    "\n  mutation CreateLocation($clubId: ID!, $name: String!, $isDefault: Boolean!, $isDoubleLane: Boolean!) {\n    createLocation(clubId: $clubId, name: $name, isDefault: $isDefault, isDoubleLane: $isDoubleLane) {\n      id\n      name\n      isDefault\n      isDoubleLane\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.CreateLocationDocument,
+    "\n  mutation UpdateLocation($id: String!, $name: String, $isDefault: Boolean, $isDoubleLane: Boolean) {\n    updateLocation(id: $id, name: $name, isDefault: $isDefault, isDoubleLane: $isDoubleLane) {\n      id\n      name\n      isDefault\n      isDoubleLane\n      updatedAt\n    }\n  }\n": typeof types.UpdateLocationDocument,
+    "\n  mutation DeleteLocation($id: String!) {\n    deleteLocation(id: $id)\n  }\n": typeof types.DeleteLocationDocument,
+    "\n  mutation UpdateClub($id: String!, $name: String, $nafaClubNumber: String, $defaultPracticeTime: String) {\n    updateClub(id: $id, name: $name, nafaClubNumber: $nafaClubNumber, defaultPracticeTime: $defaultPracticeTime) {\n      id\n      name\n      nafaClubNumber\n      defaultPracticeTime\n      updatedAt\n    }\n  }\n": typeof types.UpdateClubDocument,
     "\n  query GetDogsByHandlersInClub($clubId: ID!) {\n    dogsByHandlersInClub(clubId: $clubId) {\n      id\n      givenName\n      surname\n      dogs {\n        id\n        name\n        crn\n        status\n        trainingLevel\n      }\n    }\n  }\n": typeof types.GetDogsByHandlersInClubDocument,
     "\n  query GetDogById($id: String!) {\n    dog(id: $id) {\n      id\n      name\n      crn\n      status\n      trainingLevel\n      ownerId\n      updatedAt\n      createdAt\n    }\n  }\n": typeof types.GetDogByIdDocument,
     "\n  query GetActiveDogsInClub($clubId: ID!) {\n    activeDogsInClub(clubId: $clubId)\n  }\n": typeof types.GetActiveDogsInClubDocument,
@@ -32,11 +39,21 @@ type Documents = {
     "\n  mutation CreatePractice($clubId: String!, $scheduledAt: DateTimeISO!, $status: PracticeStatus!) {\n    createPractice(clubId: $clubId, scheduledAt: $scheduledAt, status: $status) {\n      id\n      scheduledAt\n      status\n      clubId\n    }\n  }\n": typeof types.CreatePracticeDocument,
     "\n  mutation UpdatePractice($id: String!, $clubId: String, $scheduledAt: DateTimeISO, $status: PracticeStatus) {\n    updatePractice(id: $id, clubId: $clubId, scheduledAt: $scheduledAt, status: $status) {\n      id\n      scheduledAt\n      status\n      clubId\n    }\n  }\n": typeof types.UpdatePracticeDocument,
     "\n  mutation DeletePractice($id: String!) {\n    deletePractice(id: $id)\n  }\n": typeof types.DeletePracticeDocument,
+    "\n  query GetSets($practiceId: String!, $locationId: String!) {\n    sets(practiceId: $practiceId, locationId: $locationId) {\n      id\n      index\n      type\n      typeCustom\n      notes\n      locationId\n      setDogs {\n        dogId\n        index\n        lane\n      }\n    }\n  }\n": typeof types.GetSetsDocument,
+    "\n  mutation UpdateSet($id: ID, $update: SetUpdate!) {\n    updateSet(id: $id, update: $update) {\n      id\n      index\n      type\n      typeCustom\n      notes\n      locationId\n      setDogs {\n        dogId\n        index\n        lane\n      }\n    }\n  }\n": typeof types.UpdateSetDocument,
+    "\n  mutation DeleteSet($id: String!) {\n    deleteSet(id: $id)\n  }\n": typeof types.DeleteSetDocument,
 };
 const documents: Documents = {
     "\n  query GetPracticeAttendances($practiceId: String!) {\n    practiceAttendances(practiceId: $practiceId) {\n      id\n      dogId\n      attending\n      dog {\n        id\n        name\n        ownerId\n      }\n    }\n  }\n": types.GetPracticeAttendancesDocument,
     "\n  mutation UpdateAttendances($practiceId: String!, $updates: [AttendanceUpdate!]!) {\n    updateAttendances(practiceId: $practiceId, updates: $updates) {\n      id\n      dogId\n      attending\n    }\n  }\n": types.UpdateAttendancesDocument,
-    "\n    query GetClubs {\n      clubs {\n        id\n        name\n        nafaClubNumber\n        defaultPracticeTime\n      }\n    }\n  ": types.GetClubsDocument,
+    "\n  query GetClubs {\n    clubs {\n      id\n      name\n      nafaClubNumber\n      defaultPracticeTime\n    }\n  }\n": types.GetClubsDocument,
+    "\n  query GetClubById($id: String!) {\n    club(id: $id) {\n      id\n      name\n      nafaClubNumber\n      defaultPracticeTime\n    }\n  }\n": types.GetClubByIdDocument,
+    "\n  query GetLocationById($id: String!) {\n    location(id: $id) {\n      id\n      name\n      isDefault\n      isDoubleLane\n      createdAt\n      updatedAt\n    }\n  }\n": types.GetLocationByIdDocument,
+    "\n  query GetLocationsByClub($clubId: ID!) {\n    locationsByClub(clubId: $clubId) {\n      id\n      name\n      isDefault\n      isDoubleLane\n    }\n  }\n": types.GetLocationsByClubDocument,
+    "\n  mutation CreateLocation($clubId: ID!, $name: String!, $isDefault: Boolean!, $isDoubleLane: Boolean!) {\n    createLocation(clubId: $clubId, name: $name, isDefault: $isDefault, isDoubleLane: $isDoubleLane) {\n      id\n      name\n      isDefault\n      isDoubleLane\n      createdAt\n      updatedAt\n    }\n  }\n": types.CreateLocationDocument,
+    "\n  mutation UpdateLocation($id: String!, $name: String, $isDefault: Boolean, $isDoubleLane: Boolean) {\n    updateLocation(id: $id, name: $name, isDefault: $isDefault, isDoubleLane: $isDoubleLane) {\n      id\n      name\n      isDefault\n      isDoubleLane\n      updatedAt\n    }\n  }\n": types.UpdateLocationDocument,
+    "\n  mutation DeleteLocation($id: String!) {\n    deleteLocation(id: $id)\n  }\n": types.DeleteLocationDocument,
+    "\n  mutation UpdateClub($id: String!, $name: String, $nafaClubNumber: String, $defaultPracticeTime: String) {\n    updateClub(id: $id, name: $name, nafaClubNumber: $nafaClubNumber, defaultPracticeTime: $defaultPracticeTime) {\n      id\n      name\n      nafaClubNumber\n      defaultPracticeTime\n      updatedAt\n    }\n  }\n": types.UpdateClubDocument,
     "\n  query GetDogsByHandlersInClub($clubId: ID!) {\n    dogsByHandlersInClub(clubId: $clubId) {\n      id\n      givenName\n      surname\n      dogs {\n        id\n        name\n        crn\n        status\n        trainingLevel\n      }\n    }\n  }\n": types.GetDogsByHandlersInClubDocument,
     "\n  query GetDogById($id: String!) {\n    dog(id: $id) {\n      id\n      name\n      crn\n      status\n      trainingLevel\n      ownerId\n      updatedAt\n      createdAt\n    }\n  }\n": types.GetDogByIdDocument,
     "\n  query GetActiveDogsInClub($clubId: ID!) {\n    activeDogsInClub(clubId: $clubId)\n  }\n": types.GetActiveDogsInClubDocument,
@@ -52,6 +69,9 @@ const documents: Documents = {
     "\n  mutation CreatePractice($clubId: String!, $scheduledAt: DateTimeISO!, $status: PracticeStatus!) {\n    createPractice(clubId: $clubId, scheduledAt: $scheduledAt, status: $status) {\n      id\n      scheduledAt\n      status\n      clubId\n    }\n  }\n": types.CreatePracticeDocument,
     "\n  mutation UpdatePractice($id: String!, $clubId: String, $scheduledAt: DateTimeISO, $status: PracticeStatus) {\n    updatePractice(id: $id, clubId: $clubId, scheduledAt: $scheduledAt, status: $status) {\n      id\n      scheduledAt\n      status\n      clubId\n    }\n  }\n": types.UpdatePracticeDocument,
     "\n  mutation DeletePractice($id: String!) {\n    deletePractice(id: $id)\n  }\n": types.DeletePracticeDocument,
+    "\n  query GetSets($practiceId: String!, $locationId: String!) {\n    sets(practiceId: $practiceId, locationId: $locationId) {\n      id\n      index\n      type\n      typeCustom\n      notes\n      locationId\n      setDogs {\n        dogId\n        index\n        lane\n      }\n    }\n  }\n": types.GetSetsDocument,
+    "\n  mutation UpdateSet($id: ID, $update: SetUpdate!) {\n    updateSet(id: $id, update: $update) {\n      id\n      index\n      type\n      typeCustom\n      notes\n      locationId\n      setDogs {\n        dogId\n        index\n        lane\n      }\n    }\n  }\n": types.UpdateSetDocument,
+    "\n  mutation DeleteSet($id: String!) {\n    deleteSet(id: $id)\n  }\n": types.DeleteSetDocument,
 };
 
 /**
@@ -79,7 +99,35 @@ export function graphql(source: "\n  mutation UpdateAttendances($practiceId: Str
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n    query GetClubs {\n      clubs {\n        id\n        name\n        nafaClubNumber\n        defaultPracticeTime\n      }\n    }\n  "): (typeof documents)["\n    query GetClubs {\n      clubs {\n        id\n        name\n        nafaClubNumber\n        defaultPracticeTime\n      }\n    }\n  "];
+export function graphql(source: "\n  query GetClubs {\n    clubs {\n      id\n      name\n      nafaClubNumber\n      defaultPracticeTime\n    }\n  }\n"): (typeof documents)["\n  query GetClubs {\n    clubs {\n      id\n      name\n      nafaClubNumber\n      defaultPracticeTime\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query GetClubById($id: String!) {\n    club(id: $id) {\n      id\n      name\n      nafaClubNumber\n      defaultPracticeTime\n    }\n  }\n"): (typeof documents)["\n  query GetClubById($id: String!) {\n    club(id: $id) {\n      id\n      name\n      nafaClubNumber\n      defaultPracticeTime\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query GetLocationById($id: String!) {\n    location(id: $id) {\n      id\n      name\n      isDefault\n      isDoubleLane\n      createdAt\n      updatedAt\n    }\n  }\n"): (typeof documents)["\n  query GetLocationById($id: String!) {\n    location(id: $id) {\n      id\n      name\n      isDefault\n      isDoubleLane\n      createdAt\n      updatedAt\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query GetLocationsByClub($clubId: ID!) {\n    locationsByClub(clubId: $clubId) {\n      id\n      name\n      isDefault\n      isDoubleLane\n    }\n  }\n"): (typeof documents)["\n  query GetLocationsByClub($clubId: ID!) {\n    locationsByClub(clubId: $clubId) {\n      id\n      name\n      isDefault\n      isDoubleLane\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation CreateLocation($clubId: ID!, $name: String!, $isDefault: Boolean!, $isDoubleLane: Boolean!) {\n    createLocation(clubId: $clubId, name: $name, isDefault: $isDefault, isDoubleLane: $isDoubleLane) {\n      id\n      name\n      isDefault\n      isDoubleLane\n      createdAt\n      updatedAt\n    }\n  }\n"): (typeof documents)["\n  mutation CreateLocation($clubId: ID!, $name: String!, $isDefault: Boolean!, $isDoubleLane: Boolean!) {\n    createLocation(clubId: $clubId, name: $name, isDefault: $isDefault, isDoubleLane: $isDoubleLane) {\n      id\n      name\n      isDefault\n      isDoubleLane\n      createdAt\n      updatedAt\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation UpdateLocation($id: String!, $name: String, $isDefault: Boolean, $isDoubleLane: Boolean) {\n    updateLocation(id: $id, name: $name, isDefault: $isDefault, isDoubleLane: $isDoubleLane) {\n      id\n      name\n      isDefault\n      isDoubleLane\n      updatedAt\n    }\n  }\n"): (typeof documents)["\n  mutation UpdateLocation($id: String!, $name: String, $isDefault: Boolean, $isDoubleLane: Boolean) {\n    updateLocation(id: $id, name: $name, isDefault: $isDefault, isDoubleLane: $isDoubleLane) {\n      id\n      name\n      isDefault\n      isDoubleLane\n      updatedAt\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation DeleteLocation($id: String!) {\n    deleteLocation(id: $id)\n  }\n"): (typeof documents)["\n  mutation DeleteLocation($id: String!) {\n    deleteLocation(id: $id)\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation UpdateClub($id: String!, $name: String, $nafaClubNumber: String, $defaultPracticeTime: String) {\n    updateClub(id: $id, name: $name, nafaClubNumber: $nafaClubNumber, defaultPracticeTime: $defaultPracticeTime) {\n      id\n      name\n      nafaClubNumber\n      defaultPracticeTime\n      updatedAt\n    }\n  }\n"): (typeof documents)["\n  mutation UpdateClub($id: String!, $name: String, $nafaClubNumber: String, $defaultPracticeTime: String) {\n    updateClub(id: $id, name: $name, nafaClubNumber: $nafaClubNumber, defaultPracticeTime: $defaultPracticeTime) {\n      id\n      name\n      nafaClubNumber\n      defaultPracticeTime\n      updatedAt\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -140,6 +188,18 @@ export function graphql(source: "\n  mutation UpdatePractice($id: String!, $club
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation DeletePractice($id: String!) {\n    deletePractice(id: $id)\n  }\n"): (typeof documents)["\n  mutation DeletePractice($id: String!) {\n    deletePractice(id: $id)\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query GetSets($practiceId: String!, $locationId: String!) {\n    sets(practiceId: $practiceId, locationId: $locationId) {\n      id\n      index\n      type\n      typeCustom\n      notes\n      locationId\n      setDogs {\n        dogId\n        index\n        lane\n      }\n    }\n  }\n"): (typeof documents)["\n  query GetSets($practiceId: String!, $locationId: String!) {\n    sets(practiceId: $practiceId, locationId: $locationId) {\n      id\n      index\n      type\n      typeCustom\n      notes\n      locationId\n      setDogs {\n        dogId\n        index\n        lane\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation UpdateSet($id: ID, $update: SetUpdate!) {\n    updateSet(id: $id, update: $update) {\n      id\n      index\n      type\n      typeCustom\n      notes\n      locationId\n      setDogs {\n        dogId\n        index\n        lane\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation UpdateSet($id: ID, $update: SetUpdate!) {\n    updateSet(id: $id, update: $update) {\n      id\n      index\n      type\n      typeCustom\n      notes\n      locationId\n      setDogs {\n        dogId\n        index\n        lane\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation DeleteSet($id: String!) {\n    deleteSet(id: $id)\n  }\n"): (typeof documents)["\n  mutation DeleteSet($id: String!) {\n    deleteSet(id: $id)\n  }\n"];
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};

@@ -8,6 +8,8 @@ import { HandlerResolver } from './resolvers/HandlerResolver';
 import { ClubResolver } from './resolvers/ClubResolver';
 import { PracticeResolver } from './resolvers/PracticeResolver';
 import { PracticeAttendanceResolver } from './resolvers/PracticeAttendanceResolver';
+import { LocationResolver } from './resolvers/LocationResolver';
+import { PracticeSetResolver } from './resolvers/PracticeSetResolver';
 
 config();
 
@@ -23,6 +25,8 @@ async function startServer() {
         HandlerResolver,
         PracticeResolver,
         PracticeAttendanceResolver,
+        PracticeSetResolver,
+        LocationResolver,
       ],
       emitSchemaFile: true,
       validate: false,

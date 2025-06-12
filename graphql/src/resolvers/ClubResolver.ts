@@ -27,13 +27,17 @@ export class ClubResolver {
   @Mutation(() => Club, { nullable: true })
   async updateClub(
     @Arg('id') id: string,
-    @Arg('name', { nullable: true }) name?: string
+    @Arg('name', { nullable: true }) name?: string,
+    @Arg('nafaClubNumber', { nullable: true }) nafaClubNumber?: string,
+    @Arg('defaultPracticeTime', { nullable: true }) defaultPracticeTime?: string
   ): Promise<Club | null> {
     const club = await this.clubRepository.findOneBy({ id });
     if (!club) return null;
 
     Object.assign(club, {
-      name: name ?? club.name
+      name: name ?? club.name,
+      nafaClubNumber: nafaClubNumber ?? club.nafaClubNumber,
+      defaultPracticeTime: defaultPracticeTime ?? club.defaultPracticeTime
     });
 
     return await this.clubRepository.save(club);

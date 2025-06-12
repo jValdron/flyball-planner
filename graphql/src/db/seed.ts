@@ -2,6 +2,7 @@ import { DataSource } from 'typeorm';
 import { Club } from '../models/Club';
 import { Handler } from '../models/Handler';
 import { Dog, DogStatus } from '../models/Dog';
+import { Location } from '../models/Location';
 
 const ownersData = [
   { givenName: 'Andrea', surname: 'Donovan' },
@@ -82,6 +83,13 @@ export async function seedDatabase(dataSource: DataSource) {
     defaultPracticeTime: '10:00',
   });
   await dataSource.getRepository(Club).save(club);
+
+  // Create locations
+  const locations = [
+    { name: 'Main Room', clubId: club.id, isDefault: true },
+    { name: 'Puppy Room', clubId: club.id, isDefault: false },
+  ];
+  await dataSource.getRepository(Location).save(locations);
 
   // Create owners
   const owners = ownersData.map(ownerData =>

@@ -22,6 +22,7 @@ type Club {
   defaultPracticeTime: String!
   dogs: [Dog!]!
   id: ID!
+  locations: [Location!]!
   nafaClubNumber: String!
   name: String!
   practices: [Practice!]!
@@ -64,20 +65,42 @@ type Handler {
   updatedAt: DateTimeISO!
 }
 
+"""The lane that the set is being performed in"""
+enum Lane {
+  Left
+  Right
+}
+
+type Location {
+  club: Club!
+  clubId: ID!
+  createdAt: DateTimeISO!
+  id: ID!
+  isDefault: Boolean!
+  isDoubleLane: Boolean!
+  name: String!
+  updatedAt: DateTimeISO!
+}
+
 type Mutation {
   createClub(name: String!): Club!
   createDog(clubId: String!, crn: String, name: String!, ownerId: String!, status: DogStatus!, trainingLevel: Float!): Dog!
   createHandler(clubId: ID!, givenName: String!, surname: String!): Handler!
+  createLocation(clubId: ID!, isDefault: Boolean, isDoubleLane: Boolean, name: String!): Location!
   createPractice(clubId: String!, scheduledAt: DateTimeISO!, status: PracticeStatus!): Practice!
   deleteClub(id: String!): Boolean!
   deleteDog(id: String!): Boolean!
   deleteHandler(id: String!): Boolean!
+  deleteLocation(id: String!): Boolean!
   deletePractice(id: String!): Boolean!
+  deleteSet(id: String!): Boolean!
   updateAttendances(practiceId: String!, updates: [AttendanceUpdate!]!): [PracticeAttendance!]!
-  updateClub(id: String!, name: String): Club
+  updateClub(defaultPracticeTime: String, id: String!, nafaClubNumber: String, name: String): Club
   updateDog(clubId: String, crn: String, id: String!, name: String, ownerId: String, status: DogStatus, trainingLevel: Float): Dog
   updateHandler(givenName: String, id: String!, surname: String): Handler
+  updateLocation(id: String!, isDefault: Boolean, isDoubleLane: Boolean, name: String): Location
   updatePractice(clubId: String, id: String!, scheduledAt: DateTimeISO, status: PracticeStatus): Practice
+  updateSet(id: ID, update: SetUpdate!): Set!
 }
 
 type Practice {
@@ -118,18 +141,29 @@ type Query {
   dogsByHandlersInClub(clubId: ID!): [Handler!]
   handler(id: String!): Handler
   handlers: [Handler!]!
+  location(id: String!): Location
+  locations: [Location!]!
+  locationsByClub(clubId: ID!): [Location!]!
   practice(id: String!): Practice
   practiceAttendances(practiceId: String!): [PracticeAttendance!]!
   practices: [Practice!]!
   practicesByClub(clubId: String!): [Practice!]!
+  set(id: String!): Set
+  sets(locationId: String!, practiceId: String!): [Set!]!
 }
 
 type Set {
   createdAt: DateTimeISO!
   id: ID!
+  index: Float!
+  location: Location!
+  locationId: ID!
+  notes: String
   practice: Practice!
   practiceId: ID!
   setDogs: [SetDog!]!
+  type: SetType!
+  typeCustom: String
   updatedAt: DateTimeISO!
 }
 
@@ -138,7 +172,38 @@ type SetDog {
   dog: Dog!
   dogId: ID!
   id: ID!
+  index: Float!
+  lane: Lane!
   set: Set!
   setId: ID!
   updatedAt: DateTimeISO!
+}
+
+input SetDogUpdate {
+  dogId: ID!
+  index: Float!
+  lane: Lane!
+}
+
+"""The type of set being performed"""
+enum SetType {
+  AroundTheWorld
+  BoxWork
+  Custom
+  FullRuns
+  PowerJumping
+  Restraints
+  ReverseSnapoffs
+  Snapoffs
+  TwoJumpsFlyball
+}
+
+input SetUpdate {
+  dogs: [SetDogUpdate!]!
+  index: Float!
+  locationId: ID!
+  notes: String
+  practiceId: ID!
+  type: SetType!
+  typeCustom: String
 }

@@ -17,6 +17,7 @@ import type { Practice, GetPracticeQuery, CreatePracticeMutation, UpdatePractice
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import { PracticeValidationService, type ValidationError } from '../services/practiceValidation'
 import { PracticeValidation } from '../components/PracticeValidation'
+import { PracticeSet } from '../components/PracticeSet'
 
 function PracticeDetailsContent() {
   const navigate = useNavigate()
@@ -218,10 +219,11 @@ function PracticeDetailsContent() {
 
   return (
     <Container>
-      <Breadcrumb className="mt-3">
-        <div className="breadcrumb-item" onClick={() => navigate('/practices')} style={{ cursor: 'pointer' }}>Practices</div>
+      <Breadcrumb>
+        <Breadcrumb.Item onClick={() => navigate('/')}>Home</Breadcrumb.Item>
+        <Breadcrumb.Item onClick={() => navigate('/practices')}>Practices</Breadcrumb.Item>
         <Breadcrumb.Item active>
-          {practiceId ? isPastPractice ? 'View Practice' : 'Edit Practice' : 'Schedule New Practice'}
+          {practiceId ? formatRelativeTime(practice?.scheduledAt) : 'Schedule New Practice'}
         </Breadcrumb.Item>
       </Breadcrumb>
 
@@ -368,9 +370,12 @@ function PracticeDetailsContent() {
         </Tab>
 
         <Tab eventKey="sets" title="Sets">
-          <Alert variant="info">
-            Practice sets management will be implemented in a future update.
-          </Alert>
+          {practiceId && (
+            <PracticeSet
+              practiceId={practiceId}
+              isPastPractice={isPastPractice}
+            />
+          )}
           <div className="d-flex justify-content-between mb-3">
             <Button
               variant="secondary"

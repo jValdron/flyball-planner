@@ -1,5 +1,5 @@
 import React from 'react'
-import { Container, Table, Button, Badge, Alert, Spinner, Form, InputGroup } from 'react-bootstrap'
+import { Container, Table, Button, Badge, Alert, Spinner, Form, InputGroup, Breadcrumb } from 'react-bootstrap'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
@@ -145,6 +145,11 @@ function Dogs() {
 
   return (
     <Container>
+      <Breadcrumb>
+        <Breadcrumb.Item onClick={() => navigate('/')}>Home</Breadcrumb.Item>
+        <Breadcrumb.Item active>Handlers & Dogs</Breadcrumb.Item>
+      </Breadcrumb>
+
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Handlers & Dogs</h1>
         <div>

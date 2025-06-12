@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { ObjectType, Field, ID } from 'type-graphql';
 import { Dog } from './Dog';
 import { Practice } from './Practice';
+import { Location } from './Location';
 
 @ObjectType()
 @Entity('clubs')
@@ -37,4 +38,8 @@ export class Club {
   @Field(() => [Practice])
   @OneToMany(() => Practice, practice => practice.club)
   practices: Practice[];
+
+  @Field(() => [Location])
+  @OneToMany(() => Location, location => location.club)
+  locations: Location[];
 }

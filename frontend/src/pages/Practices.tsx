@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Container, Button, Card, Spinner, Alert, Badge, Form, ListGroup } from 'react-bootstrap'
+import { Container, Button, Card, Spinner, Alert, Badge, Form, ListGroup, Breadcrumb } from 'react-bootstrap'
 import { useClub } from '../contexts/ClubContext'
 import { Link, useNavigate } from 'react-router-dom'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
@@ -98,6 +98,11 @@ function Practices() {
 
   return (
     <Container>
+      <Breadcrumb>
+        <Breadcrumb.Item onClick={() => navigate('/')}>Home</Breadcrumb.Item>
+        <Breadcrumb.Item active>Practices</Breadcrumb.Item>
+      </Breadcrumb>
+
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Practices</h1>
         <Button variant="primary" onClick={() => navigate('/practices/new')}>

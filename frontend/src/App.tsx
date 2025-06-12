@@ -8,9 +8,11 @@ import Dogs from './pages/Dogs'
 import DogDetails from './pages/DogDetails'
 import Practices from './pages/Practices'
 import PracticeDetails from './pages/PracticeDetails'
+import ClubDetails from './pages/ClubDetails'
 import { ClubProvider } from './contexts/ClubContext'
 import { PracticeProvider } from './contexts/PracticeContext'
 import { ClubPicker } from './components/ClubPicker'
+import LocationDetails from './pages/LocationDetails'
 
 function Header() {
   return (
@@ -23,6 +25,7 @@ function Header() {
             <Nav.Link as={Link} to="/">Home</Nav.Link>
             <Nav.Link as={Link} to="/practices">Practices</Nav.Link>
             <Nav.Link as={Link} to="/dogs">Dogs</Nav.Link>
+            <Nav.Link as={Link} to="/club">Club</Nav.Link>
           </Nav>
           <div className="d-flex align-items-center">
             <ClubPicker />
@@ -47,6 +50,9 @@ function App() {
                 <Route path="/dogs/new" element={<DogDetails />} />
                 <Route path="/dogs/:dogId" element={<DogDetails />} />
                 <Route path="/handlers/:handlerId" element={<HandlerDetails />} />
+                <Route path="/club" element={<ClubDetails />} />
+                <Route path="/locations/new" element={<LocationDetails />} />
+                <Route path="/locations/:locationId" element={<LocationDetails />} />
                 <Route path="/practices" element={<Practices />} />
                 <Route path="/practices/new" element={<PracticeDetails />} />
                 <Route path="/practices/:practiceId" element={<PracticeDetails />} />

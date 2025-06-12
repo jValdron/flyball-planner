@@ -40,7 +40,7 @@ export function ClubPicker() {
     >
       {data?.clubs.map((club) => (
         <option key={club.id} value={club.id}>
-          {club.name} ({club.nafaClubNumber})
+          {club.name}{club.nafaClubNumber && ` (${club.nafaClubNumber})`}
         </option>
       ))}
     </Form.Select>

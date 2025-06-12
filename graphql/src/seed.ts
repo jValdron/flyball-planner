@@ -9,6 +9,7 @@ import { Practice } from './models/Practice';
 import { Set } from './models/Set';
 import { SetDog } from './models/SetDog';
 import { PracticeAttendance } from './models/PracticeAttendance';
+import { Location } from './models/Location';
 
 dotenv.config();
 
@@ -20,7 +21,7 @@ const dataSource = new DataSource({
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'flyball_practice_planner',
   ssl: process.env.DB_SSLMODE !== 'disable',
-  entities: [Club, Handler, Dog, Practice, Set, SetDog, PracticeAttendance],
+  entities: [Club, Handler, Dog, Practice, Set, SetDog, PracticeAttendance, Location],
   synchronize: true,
 });
 

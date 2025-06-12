@@ -137,10 +137,11 @@ function DogDetails() {
 
   return (
     <Container>
-      <Breadcrumb className="mt-3">
-        <div className="breadcrumb-item" onClick={() => navigate('/dogs')} style={{ cursor: 'pointer' }}>Dogs</div>
+      <Breadcrumb>
+        <Breadcrumb.Item onClick={() => navigate('/')}>Home</Breadcrumb.Item>
+        <Breadcrumb.Item onClick={() => navigate('/dogs')}>Handlers & Dogs</Breadcrumb.Item>
         <Breadcrumb.Item active>
-          {dogId ? 'Edit Dog' : 'Add New Dog'}
+          {dogId ? dogData?.dog?.name : 'Add New Dog'}
         </Breadcrumb.Item>
       </Breadcrumb>
       <div className="d-flex justify-content-between align-items-center mb-4">

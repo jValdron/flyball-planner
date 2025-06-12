@@ -162,8 +162,9 @@ function HandlerDetails() {
         message={`Are you sure you want to delete <strong>${handlerData?.handler?.givenName} ${handlerData?.handler?.surname}</strong>? This will delete all dogs associated with this handler and remove them from any practice sessions.<p class="mt-2 text-danger">This action cannot be undone.</p>`}
         confirmButtonText="Delete Handler"
       />
-      <Breadcrumb className="mt-3">
-        <div className="breadcrumb-item" onClick={() => navigate('/dogs')} style={{ cursor: 'pointer' }}>Dogs</div>
+      <Breadcrumb>
+        <Breadcrumb.Item onClick={() => navigate('/')}>Home</Breadcrumb.Item>
+        <Breadcrumb.Item onClick={() => navigate('/dogs')}>Handlers & Dogs</Breadcrumb.Item>
         <Breadcrumb.Item active>
           {isNewHandler ? 'Add New Handler' : `${handlerData?.handler?.givenName} ${handlerData?.handler?.surname}`}
         </Breadcrumb.Item>

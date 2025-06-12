@@ -1,7 +1,17 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { ObjectType, Field, ID } from 'type-graphql';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
+import { ObjectType, Field, ID, registerEnumType } from 'type-graphql';
 import { Set } from './Set';
 import { Dog } from './Dog';
+
+export enum Lane {
+  Left = 'Left',
+  Right = 'Right'
+}
+
+registerEnumType(Lane, {
+  name: 'Lane',
+  description: 'The lane that the set is being performed in'
+});
 
 @ObjectType()
 @Entity('set_dogs')
@@ -10,6 +20,11 @@ export class SetDog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Field()
+  @Column()
+  @Index('IDX_set_dog_set_index', { unique: true })
+  index: number;
+
   @Field(() => ID)
   @Column('uuid')
   setId: string;
@@ -17,6 +32,14 @@ export class SetDog {
   @Field(() => ID)
   @Column('uuid')
   dogId: string;
+
+  @Field(() => Lane)
+  @Column({
+    type: 'enum',
+    enum: Lane,
+    default: Lane.Left
+  })
+  lane: Lane;
 
   @Field()
   @CreateDateColumn()
