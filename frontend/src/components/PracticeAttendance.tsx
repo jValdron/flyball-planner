@@ -7,7 +7,7 @@ import { SaveSpinner } from './SaveSpinner'
 import { useQuery, useMutation } from '@apollo/client'
 import { GetDogsByHandlersInClub } from '../graphql/dogs'
 import { GetPracticeAttendances, UpdateAttendances } from '../graphql/attendance'
-import { AttendanceStatus } from '../graphql/generated/graphql'
+import { AttendanceStatus, DogStatus } from '../graphql/generated/graphql'
 import type { Dog, GetDogsByHandlersInClubQuery, GetPracticeAttendancesQuery, UpdateAttendancesMutation } from '../graphql/generated/graphql'
 
 const SAVE_DELAY = 1500
@@ -47,12 +47,14 @@ export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAtten
 
       const allDogs = ownersData.dogsByHandlersInClub
         .flatMap(owner =>
-          owner.dogs.map(dog => ({
+          owner.dogs.filter(dog => dog.status === DogStatus.Active).map(dog => ({
             dog: dog as Dog,
             dogId: dog.id,
             attending: attendanceMap.get(dog.id) || AttendanceStatus.Unknown
           }))
         )
+
+        console.log(allDogs)
 
       setAttendances(allDogs)
     }
@@ -118,17 +120,14 @@ export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAtten
   }, [pendingUpdates])
 
   return (
-    <>
+    <React.Fragment>
       <Table striped bordered hover>
-        <thead>
-          <tr>
-            <th className="w-100">Owner / Dog</th>
-            <th></th>
-          </tr>
-        </thead>
         <tbody>
-          {[...(ownersData?.dogsByHandlersInClub || [])].sort((a, b) => a.givenName.localeCompare(b.givenName)).map(owner => {
-            const ownerDogs = owner.dogs
+          {[...(ownersData?.dogsByHandlersInClub || [])]
+            .filter(owner => owner.dogs.some(dog => dog.status === DogStatus.Active))
+            .sort((a, b) => a.givenName.localeCompare(b.givenName))
+            .map(owner => {
+            const ownerDogs = owner.dogs.filter(dog => dog.status === DogStatus.Active)
             const ownerName = `${owner.givenName} ${owner.surname}`
             const allDogsSameStatus = ownerDogs.length > 0 && ownerDogs.every(dog =>
               getAttendance(dog.id) === getAttendance(ownerDogs[0].id)
@@ -151,7 +150,7 @@ export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAtten
                     }
                   }}
                 >
-                  <td><strong>{ownerName}</strong></td>
+                  <td className="w-100"><strong>{ownerName}</strong></td>
                   <td className="text-left">
                     <div className="btn-group" role="group">
                       <Button
@@ -234,6 +233,6 @@ export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAtten
         </tbody>
       </Table>
       <SaveSpinner show={isSaving} />
-    </>
+    </React.Fragment>
   )
 }

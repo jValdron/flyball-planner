@@ -2,7 +2,6 @@ import { Container, Navbar, Nav } from 'react-bootstrap'
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import { ApolloProvider } from '@apollo/client'
 import { client } from './apollo/client'
-import Home from './pages/Home'
 import HandlerDetails from './pages/HandlerDetails'
 import Dogs from './pages/Dogs'
 import DogDetails from './pages/DogDetails'
@@ -22,7 +21,6 @@ function Header() {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
-            <Nav.Link as={Link} to="/">Home</Nav.Link>
             <Nav.Link as={Link} to="/practices">Practices</Nav.Link>
             <Nav.Link as={Link} to="/dogs">Dogs</Nav.Link>
             <Nav.Link as={Link} to="/club">Club</Nav.Link>
@@ -45,7 +43,7 @@ function App() {
             <Header />
             <Container>
               <Routes>
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<Practices />} />
                 <Route path="/dogs" element={<Dogs />} />
                 <Route path="/dogs/new" element={<DogDetails />} />
                 <Route path="/dogs/:dogId" element={<DogDetails />} />

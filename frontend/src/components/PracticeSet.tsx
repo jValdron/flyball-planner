@@ -1,15 +1,20 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Button, Table, Form, InputGroup } from 'react-bootstrap'
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
+import { Button, Table, Form, InputGroup, CardGroup, Card, Badge, OverlayTrigger, Popover, Dropdown } from 'react-bootstrap'
+import { DndContext, closestCenter } from '@dnd-kit/core'
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useQuery, useMutation } from '@apollo/client'
 import { GetSets, UpdateSet, DeleteSet } from '../graphql/sets'
 import { GetLocationsByClub } from '../graphql/clubs'
-import { SetType, AttendanceStatus } from '../graphql/generated/graphql'
+import { SetType, AttendanceStatus, Lane } from '../graphql/generated/graphql'
+import { GripVertical, PlusLg, Trash, ChevronDown } from 'react-bootstrap-icons'
 import { SaveSpinner } from './SaveSpinner'
 import { useClub } from '../contexts/ClubContext'
 import { usePractice } from '../contexts/PracticeContext'
 import type { GetSetsQuery, UpdateSetMutation, DeleteSetMutation, GetLocationsByClubQuery, PracticeAttendance, SetUpdate } from '../graphql/generated/graphql'
-import { GripVertical, PlusLg } from 'react-bootstrap-icons'
+import { DogAutocomplete } from './DogAutocomplete'
+import { SetTypeAutocomplete } from './PracticeSet/SetTypeAutocomplete'
+import { LocationSelector } from './PracticeSet/LocationSelector'
 
 const SAVE_DELAY = 2500
 
@@ -18,24 +23,198 @@ interface PracticeSetProps {
   isPastPractice: boolean
 }
 
+interface SortableSetProps {
+  set: GetSetsQuery['sets'][0]
+  onDelete: (id: string) => void
+  onTypeChange: (id: string, type: SetType, dogs?: Array<{ dogId: string; index: number; lane: Lane }>) => void
+  attendingDogsList: Array<{ id: string; name: string; displayName: string }>
+}
+
+function SortableSet({ set, onDelete, onTypeChange, attendingDogsList }: SortableSetProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: set.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  const [dogInputs, setDogInputs] = useState<Record<Lane, string>>({
+    [Lane.Left]: '',
+    [Lane.Right]: ''
+  })
+
+  const handleDogInputChange = (lane: Lane, value: string) => {
+    setDogInputs(prev => ({
+      ...prev,
+      [lane]: value
+    }))
+  }
+
+  const handleDogSelect = (lane: Lane, dog: { id: string; name: string; displayName: string }) => {
+    const newDog = {
+      dogId: dog.id,
+      index: set.setDogs.length + 1,
+      lane
+    }
+
+    const updatedDogs = [...set.setDogs, newDog]
+    onTypeChange(set.id, set.type, updatedDogs)
+    setDogInputs(prev => ({
+      ...prev,
+      [lane]: ''
+    }))
+  }
+
+  const handleRemoveDog = (dogId: string) => {
+    const updatedDogs = set.setDogs.filter(dog => dog.dogId !== dogId)
+    onTypeChange(set.id, set.type, updatedDogs)
+  }
+
+  const handleDogReorder = (lane: Lane, dogId: string, newIndex: number) => {
+    const laneDogs = set.setDogs.filter(dog => dog.lane === lane)
+    const otherLaneDogs = set.setDogs.filter(dog => dog.lane !== lane)
+    const dogToMove = laneDogs.find(dog => dog.dogId === dogId)
+    if (!dogToMove) return
+
+    const updatedLaneDogs = laneDogs.filter(dog => dog.dogId !== dogId)
+    updatedLaneDogs.splice(newIndex, 0, dogToMove)
+
+    const updatedDogs = [
+      ...otherLaneDogs,
+      ...updatedLaneDogs.map((dog, index) => ({
+        ...dog,
+        index: index + 1
+      }))
+    ]
+
+    onTypeChange(set.id, set.type, updatedDogs)
+  }
+
+  return (
+    <CardGroup ref={setNodeRef} style={style} className="d-flex mb-3">
+      <Card bg="light" className="rounded-left">
+        <Card.Body {...attributes} {...listeners} className="cursor-grab d-flex align-items-center justify-content-center">
+          <Card.Title>
+            <GripVertical /> {set.index}
+          </Card.Title>
+        </Card.Body>
+      </Card>
+      <Card className="flex-fill">
+        <Card.Body>
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <Form.Group className="flex-grow-1 me-3">
+              <SetTypeAutocomplete
+                value={set.typeCustom || set.type}
+                typeCustom={set.typeCustom}
+                onChange={(type, typeCustom) => onTypeChange(set.id, type, set.setDogs.map(dog => ({
+                  dogId: dog.dogId,
+                  index: dog.index,
+                  lane: dog.lane
+                })))}
+              />
+            </Form.Group>
+            <Button variant="outline-danger" size="sm" onClick={() => onDelete(set.id)}>
+              <Trash />
+            </Button>
+          </div>
+          <div className="d-flex">
+            {Object.values(Lane).map(lane => (
+              <div key={lane} className="flex-grow-1 me-2">
+                <div className="d-flex flex-column">
+                  <SortableContext
+                    items={set.setDogs
+                      .filter(dog => dog.lane === lane)
+                      .map(dog => dog.dogId)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {set.setDogs
+                      .filter(dog => dog.lane === lane)
+                      .map(dog => {
+                        const {
+                          attributes,
+                          listeners,
+                          setNodeRef,
+                          transform,
+                          transition,
+                        } = useSortable({ id: dog.dogId })
+
+                        const style = {
+                          transform: CSS.Transform.toString(transform),
+                          transition,
+                        }
+
+                        return (
+                          <div
+                            key={dog.dogId}
+                            ref={setNodeRef}
+                            style={style}
+                            {...attributes}
+                            {...listeners}
+                          >
+                            <Badge bg="primary" className="mb-1 d-flex justify-content-between align-items-center">
+                              <div className="d-flex align-items-center">
+                                <GripVertical className="me-1" />
+                                <span>{attendingDogsList.find(d => d.id === dog.dogId)?.displayName}</span>
+                              </div>
+                              <Button
+                                variant="link"
+                                className="text-white p-0 ms-2"
+                                onClick={() => handleRemoveDog(dog.dogId)}
+                              >
+                                <Trash size={12} />
+                              </Button>
+                            </Badge>
+                          </div>
+                        )
+                      })}
+                  </SortableContext>
+                  <DogAutocomplete
+                    value={dogInputs[lane]}
+                    onChange={(value) => handleDogInputChange(lane, value)}
+                    onSelect={(dog) => handleDogSelect(lane, dog)}
+                    attendingDogsList={attendingDogsList}
+                    placeholder={`Add dog to ${lane} lane`}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="d-flex">
+            {/* <LocationSelector
+              locations={locations}
+              selectedLocationId={selectedLocationId || ''}
+              onSelect={handleLocationSelect}
+              onDelete={handleLocationDelete}
+            /> */}
+          </div>
+        </Card.Body>
+      </Card>
+    </CardGroup>
+  )
+}
+
 export function PracticeSet({ practiceId, isPastPractice }: PracticeSetProps) {
   const { selectedClub } = useClub()
   const { attendances } = usePractice()
   const [isSaving, setIsSaving] = useState(false)
   const [pendingUpdates, setPendingUpdates] = useState<{ setId: string | null, update: any }[]>([])
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
 
-  // Fetch locations for the club
   const { data: locationsData, loading: locationsLoading } = useQuery<GetLocationsByClubQuery>(GetLocationsByClub, {
     variables: { clubId: selectedClub?.id! },
     skip: !selectedClub?.id
   })
 
-  // Find default location and other locations
   const locations = locationsData?.locationsByClub || []
   const defaultLocation = useMemo(() => locations.find(l => l.isDefault), [locations])
   const otherLocations = useMemo(() => locations.filter(l => !l.isDefault), [locations])
 
-  // Fetch sets for all locations
   const { data: setsData, loading: setsLoading, refetch } = useQuery<GetSetsQuery>(GetSets, {
     variables: {
       practiceId,
@@ -59,29 +238,51 @@ export function PracticeSet({ practiceId, isPastPractice }: PracticeSetProps) {
       }))
       .sort((a, b) => a.displayName.localeCompare(b.displayName)), [attendances])
 
-  const handleDragEnd = (result: any) => {
-    if (!result.destination) return
+  useEffect(() => {
+    if (defaultLocation?.id && !selectedLocationId) {
+      setSelectedLocationId(defaultLocation.id)
+    }
+  }, [defaultLocation?.id, selectedLocationId])
 
-    const sourceLocationId = result.source.droppableId
-    const destLocationId = result.destination.droppableId
+  const handleLocationSelect = (locationId: string) => {
+    setSelectedLocationId(locationId)
+  }
+
+  const handleLocationDelete = async (locationId: string) => {
+    const setsToDelete = setsData?.sets.filter(set => set.locationId === locationId) || []
+    for (const set of setsToDelete) {
+      await deleteSet({
+        variables: { id: set.id }
+      })
+    }
+    refetch()
+  }
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = setsData?.sets.findIndex(set => set.id === active.id) ?? -1
+    const newIndex = setsData?.sets.findIndex(set => set.id === over.id) ?? -1
+
+    if (oldIndex === -1 || newIndex === -1) return
+
     const items = Array.from(setsData?.sets || [])
-    const [reorderedItem] = items.splice(result.source.index, 1)
-    items.splice(result.destination.index, 0, reorderedItem)
+    const [reorderedItem] = items.splice(oldIndex, 1)
+    items.splice(newIndex, 0, reorderedItem)
 
-    // Update indices
     const updatedItems = items.map((item, index) => ({
       ...item,
       index: index + 1
     }))
 
-    // Add to pending updates
     setPendingUpdates(prev => [
       ...prev,
       ...updatedItems.map(item => ({
         setId: item.id,
         update: {
           practiceId,
-          locationId: destLocationId,
+          locationId: selectedLocationId!,
           index: item.index,
           type: item.type,
           typeCustom: item.typeCustom,
@@ -96,20 +297,15 @@ export function PracticeSet({ practiceId, isPastPractice }: PracticeSetProps) {
     ])
   }
 
-  const handleAddSet = (locationId: string) => {
+  const handleAddSet = () => {
     const newIndex = (setsData?.sets.length || 0) + 1
     const newSet: SetUpdate = {
       practiceId,
-      locationId,
+      locationId: selectedLocationId!,
       index: newIndex,
       type: SetType.FullRuns,
       dogs: []
     }
-    setsData?.sets.push({
-      ...newSet,
-      id: '',
-      setDogs: []
-    })
     setPendingUpdates(prev => [
       ...prev,
       {
@@ -130,10 +326,22 @@ export function PracticeSet({ practiceId, isPastPractice }: PracticeSetProps) {
     }
   }
 
-  const handleSetTypeChange = (setId: string, type: SetType) => {
+  const handleSetTypeChange = (setId: string, type: SetType, dogs?: Array<{ dogId: string; index: number; lane: Lane }>) => {
     setPendingUpdates(prev => [
       ...prev,
-      { setId, update: { type } }
+      {
+        setId,
+        update: {
+          practiceId,
+          locationId: selectedLocationId!,
+          type,
+          dogs: dogs || setsData?.sets.find(s => s.id === setId)?.setDogs.map(dog => ({
+            dogId: dog.dogId,
+            index: dog.index,
+            lane: dog.lane
+          })) || []
+        }
+      }
     ])
   }
 
@@ -165,161 +373,33 @@ export function PracticeSet({ practiceId, isPastPractice }: PracticeSetProps) {
     return <div>Loading...</div>
   }
 
-  const renderLocationTable = (location: typeof locations[0]) => {
-    const locationSets = setsData?.sets.filter(set => set.locationId === location.id) || []
-    const isDoubleLane = location.isDoubleLane
-
-    return (
-      <div key={location.id} className="mb-4">
-        <div className="d-flex justify-content-between align-items-center mb-2">
-          <h4>{location.name}</h4>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => handleAddSet(location.id)}
-            disabled={isPastPractice}
-          >
-            <PlusLg className="me-2" />
-            Add Set
-          </Button>
-        </div>
-        <Droppable droppableId={location.id} isDropDisabled={isPastPractice} isCombineEnabled={false} ignoreContainerClipping={true}>
-          {(provided) => (
-            <div
-              {...provided.droppableProps}
-              ref={provided.innerRef}
-            >
-              <Table striped bordered>
-                <thead>
-                  <tr>
-                    <th style={{ width: '50px' }}></th>
-                    <th className="text-center" style={{ width: '50px' }}>#</th>
-                    {isDoubleLane ? (
-                      <>
-                        <th>Left Lane</th>
-                        <th>Right Lane</th>
-                      </>
-                    ) : (
-                      <th>Dogs</th>
-                    )}
-                    <th>Type</th>
-                    <th style={{ width: '50px' }}></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {locationSets.length === 0 ? (
-                    <tr>
-                      <td colSpan={isDoubleLane ? 6 : 5} className="text-center text-muted py-4">
-                        No sets found for this location
-                      </td>
-                    </tr>
-                  ) : (
-                    locationSets.map((set, index) => (
-                      <Draggable
-                        key={set.id}
-                        draggableId={set.id}
-                        index={index}
-                      >
-                        {(provided) => (
-                          <tr
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                          >
-                            <td {...provided.dragHandleProps} className="align-middle text-center"><GripVertical /></td>
-                            <td className="text-monospace text-center align-middle">{set.index}</td>
-                            {isDoubleLane ? (
-                              <>
-                                <td>
-                                  <InputGroup>
-                                    <Form.Control
-                                      type="text"
-                                      placeholder="Add dog..."
-                                      list={`dogs-left-${set.id}`}
-                                      disabled={isPastPractice}
-                                    />
-                                    <datalist id={`dogs-left-${set.id}`}>
-                                      {attendingDogsList.map(dog => (
-                                        <option key={dog.id} value={dog.displayName} />
-                                      ))}
-                                    </datalist>
-                                  </InputGroup>
-                                </td>
-                                <td>
-                                  <InputGroup>
-                                    <Form.Control
-                                      type="text"
-                                      placeholder="Add dog..."
-                                      list={`dogs-right-${set.id}`}
-                                      disabled={isPastPractice}
-                                    />
-                                    <datalist id={`dogs-right-${set.id}`}>
-                                      {attendingDogsList.map(dog => (
-                                        <option key={dog.id} value={dog.displayName} />
-                                      ))}
-                                    </datalist>
-                                  </InputGroup>
-                                </td>
-                              </>
-                            ) : (
-                              <td>
-                                <InputGroup>
-                                  <Form.Control
-                                    type="text"
-                                    placeholder="Add dog..."
-                                    list={`dogs-${set.id}`}
-                                    disabled={isPastPractice}
-                                  />
-                                  <datalist id={`dogs-${set.id}`}>
-                                    {attendingDogsList.map(dog => (
-                                      <option key={dog.id} value={dog.displayName} />
-                                    ))}
-                                  </datalist>
-                                </InputGroup>
-                              </td>
-                            )}
-                            <td>
-                              <Form.Select
-                                value={set.type}
-                                onChange={(e) => handleSetTypeChange(set.id, e.target.value as SetType)}
-                                disabled={isPastPractice}
-                              >
-                                {Object.values(SetType).map(type => (
-                                  <option key={type} value={type}>
-                                    {type}
-                                  </option>
-                                ))}
-                              </Form.Select>
-                            </td>
-                            <td>
-                              <Button
-                                variant="outline-danger"
-                                size="sm"
-                                onClick={() => handleDeleteSet(set.id)}
-                                disabled={isPastPractice}
-                              >
-                                ×
-                              </Button>
-                            </td>
-                          </tr>
-                        )}
-                      </Draggable>
-                    ))
-                  )}
-                </tbody>
-              </Table>
-            </div>
-          )}
-        </Droppable>
-      </div>
-    )
-  }
-
   return (
-    <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="practice-sets">
-        {locations.map(location => renderLocationTable(location))}
+    <div>
+      <DndContext
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={setsData?.sets.map(set => set.id) || []}
+          strategy={verticalListSortingStrategy}
+        >
+          {(setsData?.sets || []).map(set => (
+            <SortableSet
+              key={set.id}
+              set={set}
+              onDelete={handleDeleteSet}
+              onTypeChange={handleSetTypeChange}
+              attendingDogsList={attendingDogsList}
+            />
+          ))}
+        </SortableContext>
+      </DndContext>
+      <div className="d-flex justify-content-end mb-4">
+        <Button variant="primary" onClick={handleAddSet}>
+          <PlusLg className="me-2" />
+          Add Set
+        </Button>
       </div>
       <SaveSpinner show={isSaving} />
-    </DragDropContext>
+    </div>
   )
 }

@@ -7,12 +7,12 @@ import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
 import { CALENDAR_TYPES } from 'react-calendar/dist/shared/const.js'
 import { SaveSpinner } from '../components/SaveSpinner'
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, CalendarCheck, CalendarX, Trash, ExclamationTriangle } from 'react-bootstrap-icons'
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, CalendarCheck, CalendarX, Trash, ExclamationTriangle, CheckLg, Clock  } from 'react-bootstrap-icons'
 import { formatRelativeTime, isPastDay } from '../utils/dateUtils'
 import { PracticeAttendance } from '../components/PracticeAttendance'
 import { useQuery, useMutation } from '@apollo/client'
 import { GetPractice, CreatePractice, UpdatePractice, DeletePractice } from '../graphql/practice'
-import { PracticeStatus } from '../graphql/generated/graphql'
+import { AttendanceStatus, PracticeStatus } from '../graphql/generated/graphql'
 import type { Practice, GetPracticeQuery, CreatePracticeMutation, UpdatePracticeMutation, DeletePracticeMutation, PracticeAttendance as PracticeAttendanceType } from '../graphql/generated/graphql'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import { PracticeValidationService, type ValidationError } from '../services/practiceValidation'
@@ -220,7 +220,6 @@ function PracticeDetailsContent() {
   return (
     <Container>
       <Breadcrumb>
-        <Breadcrumb.Item onClick={() => navigate('/')}>Home</Breadcrumb.Item>
         <Breadcrumb.Item onClick={() => navigate('/practices')}>Practices</Breadcrumb.Item>
         <Breadcrumb.Item active>
           {practiceId ? formatRelativeTime(practice?.scheduledAt) : 'Schedule New Practice'}
@@ -272,7 +271,12 @@ function PracticeDetailsContent() {
       )}
 
       <Tabs activeKey={getCurrentTab()} onSelect={(k) => handleTabChange(k || 'date')}>
-        <Tab eventKey="date" title="Date & Time">
+        <Tab eventKey="date" title={
+          <span>
+            {practice?.scheduledAt ? <CheckLg className="me-2" /> : ""}
+            Date & Time
+          </span>
+        }>
           <Form onSubmit={handleSubmit}>
             <div className="row">
               <div className="col-md-6">
@@ -327,7 +331,7 @@ function PracticeDetailsContent() {
               <OverlayTrigger overlay={<Tooltip>Practice must be scheduled first.</Tooltip>} placement="left">
                 <span className="d-inline-block">
                   <Button
-                    variant="primary"
+                    variant="outline-primary"
                     disabled
                     onClick={() => handleTabChange('attendance')}
                   >
@@ -337,7 +341,7 @@ function PracticeDetailsContent() {
               </OverlayTrigger>
             ) : (
               <Button
-                variant="primary"
+                variant="outline-primary"
                 onClick={() => handleTabChange('attendance')}
               >
                 Attendance <ChevronRight className="ms-1" />
@@ -346,7 +350,21 @@ function PracticeDetailsContent() {
           </div>
         </Tab>
 
-        <Tab eventKey="attendance" title="Attendance">
+        <Tab
+          eventKey="attendance"
+          title={
+            <span>
+              {!attendances.some(a => a.attending === AttendanceStatus.Unknown) ? <CheckLg className="me-2" /> : ""}
+              Attendance
+              {isAttendancesLoading ? (
+                <Spinner animation="border" size="sm" className="ms-2" />
+              ) : (
+                  <Badge bg="primary" className="ms-2">
+                    {attendances.filter(a => a.attending === AttendanceStatus.Attending).length}
+                  </Badge>
+              )}
+            </span>
+          }>
           {practiceId && (
             <PracticeAttendance
               practiceId={practiceId}
@@ -355,13 +373,13 @@ function PracticeDetailsContent() {
           )}
           <div className="d-flex justify-content-between mb-3">
             <Button
-              variant="secondary"
+              variant="outline-secondary"
               onClick={() => handleTabChange('date')}
             >
               <ChevronLeft className="me-1" /> Date & Time
             </Button>
             <Button
-              variant="primary"
+              variant="outline-primary"
               onClick={() => handleTabChange('sets')}
             >
               Sets <ChevronRight className="ms-1" />
@@ -378,13 +396,13 @@ function PracticeDetailsContent() {
           )}
           <div className="d-flex justify-content-between mb-3">
             <Button
-              variant="secondary"
+              variant="outline-secondary"
               onClick={() => handleTabChange('attendance')}
             >
               <ChevronLeft className="me-1" /> Attendance
             </Button>
             <Button
-              variant="primary"
+              variant="outline-primary"
               onClick={() => handleTabChange('checks')}
             >
               Checks <ChevronRight className="ms-1" />
@@ -415,7 +433,7 @@ function PracticeDetailsContent() {
           }
           <div className="d-flex justify-content-start mb-3">
             <Button
-              variant="secondary"
+              variant="outline-secondary"
               onClick={() => handleTabChange('sets')}
             >
               <ChevronLeft className="me-1" /> Sets
