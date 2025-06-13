@@ -128,12 +128,12 @@ function LocationDetails() {
         <Breadcrumb.Item onClick={() => navigate('/')}>Home</Breadcrumb.Item>
         <Breadcrumb.Item onClick={() => navigate('/club')}>{selectedClub?.name}</Breadcrumb.Item>
         <Breadcrumb.Item active>
-          {locationId ? 'Edit Location' : 'Add New Location'}
+          {locationId ? locationData?.location?.name : 'Add New Location'}
         </Breadcrumb.Item>
       </Breadcrumb>
 
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1>{locationId ? 'Edit Location' : 'Add New Location'}</h1>
+        <h1>{locationId ? locationData?.location?.name : 'Add New Location'}</h1>
         {locationId && (
           <Button
             variant="danger"

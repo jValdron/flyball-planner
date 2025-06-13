@@ -3,21 +3,19 @@ import { Container, Form, Button, Alert, Spinner, Breadcrumb, Tabs, Tab, Badge, 
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useClub } from '../contexts/ClubContext'
 import { PracticeProvider, usePractice } from '../contexts/PracticeContext'
-import Calendar from 'react-calendar'
-import 'react-calendar/dist/Calendar.css'
-import { CALENDAR_TYPES } from 'react-calendar/dist/shared/const.js'
 import { SaveSpinner } from '../components/SaveSpinner'
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, CalendarCheck, CalendarX, Trash, ExclamationTriangle, CheckLg, Clock  } from 'react-bootstrap-icons'
+import { ChevronLeft, ChevronRight, Trash, CheckLg } from 'react-bootstrap-icons'
 import { formatRelativeTime, isPastDay } from '../utils/dateUtils'
-import { PracticeAttendance } from '../components/PracticeAttendance'
+import { PracticeAttendance } from '../components/PracticeSet/PracticeAttendance'
 import { useQuery, useMutation } from '@apollo/client'
 import { GetPractice, CreatePractice, UpdatePractice, DeletePractice } from '../graphql/practice'
 import { AttendanceStatus, PracticeStatus } from '../graphql/generated/graphql'
 import type { Practice, GetPracticeQuery, CreatePracticeMutation, UpdatePracticeMutation, DeletePracticeMutation, PracticeAttendance as PracticeAttendanceType } from '../graphql/generated/graphql'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import { PracticeValidationService, type ValidationError } from '../services/practiceValidation'
-import { PracticeValidation } from '../components/PracticeValidation'
+import { PracticeValidation } from '../components/PracticeSet/PracticeValidation'
 import { PracticeSet } from '../components/PracticeSet'
+import { DatePickerComponent } from '../components/PracticeSet/DatePickerComponent'
 
 function PracticeDetailsContent() {
   const navigate = useNavigate()
@@ -25,8 +23,7 @@ function PracticeDetailsContent() {
   const location = useLocation()
   const { selectedClub } = useClub()
   const { attendances, isAttendancesLoading } = usePractice()
-  const [scheduledDate, setScheduledDate] = useState<Date | null>(null)
-  const [scheduledTime, setScheduledTime] = useState<string>('')
+  const [scheduledAt, setScheduledAt] = useState<Date | null>(null)
   const [isDirty, setIsDirty] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -83,19 +80,18 @@ function PracticeDetailsContent() {
     navigate(tab === 'date' ? `/practices/${practiceId}` : `/practices/${practiceId}/${tab}`)
   }
 
-  useEffect(() => {
-    if (selectedClub?.defaultPracticeTime && !practiceId) {
-      setScheduledTime(selectedClub.defaultPracticeTime)
-    }
-  }, [selectedClub, practiceId])
+  const handleScheduledAtChange = (newScheduledAt: Date) => {
+    console.log('newScheduledAt', newScheduledAt)
+    setScheduledAt(newScheduledAt)
+    setIsDirty(true)
+  }
 
   useEffect(() => {
     if (practice?.scheduledAt) {
-      const date = new Date(practice.scheduledAt)
-      setScheduledDate(date)
-      setScheduledTime(date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }))
+      const newDate = new Date(practice.scheduledAt)
+      setScheduledAt(newDate)
     }
-  }, [practice])
+  }, [practice?.scheduledAt])
 
   useEffect(() => {
     if (practice) {
@@ -109,12 +105,7 @@ function PracticeDetailsContent() {
   }, [practice, attendances])
 
   const savePractice = useCallback(async () => {
-    if (!selectedClub || !scheduledDate || !scheduledTime) return
-
-    const [hours, minutes] = scheduledTime.split(':')
-    const combinedDate = new Date(scheduledDate)
-    combinedDate.setHours(parseInt(hours), parseInt(minutes))
-    const scheduledAt = combinedDate.toISOString()
+    if (!selectedClub || !scheduledAt) return
 
     try {
       if (practiceId) {
@@ -148,36 +139,13 @@ function PracticeDetailsContent() {
       setError(err instanceof Error ? err.message : 'Failed to save practice')
       setIsDirty(false)
     }
-  }, [selectedClub, practiceId, navigate, scheduledDate, scheduledTime, createPractice, updatePractice])
+  }, [selectedClub, practiceId, navigate, scheduledAt, createPractice, updatePractice])
 
   useEffect(() => {
     if (isDirty && !isSaving) {
       savePractice()
     }
   }, [isDirty, isSaving, savePractice])
-
-  const handleDateChange = (date: Date) => {
-    setScheduledDate(date)
-    setIsDirty(true)
-  }
-
-  const handleTimeChange = (time: string) => {
-    setScheduledTime(time)
-    setIsDirty(true)
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedClub || !scheduledDate || !scheduledTime) return
-    try {
-      setError(null)
-      await savePractice()
-      navigate('/practices')
-    } catch (err) {
-      setError('Failed to save practice. Please try again later.')
-      console.error('Error saving practice:', err)
-    }
-  }
 
   const handleStatusChange = async (newStatus: PracticeStatus) => {
     if (!selectedClub || !practiceId) return
@@ -273,88 +241,42 @@ function PracticeDetailsContent() {
       <Tabs activeKey={getCurrentTab()} onSelect={(k) => handleTabChange(k || 'date')}>
         <Tab eventKey="date" title={
           <span>
-            {practice?.scheduledAt ? <CheckLg className="me-2" /> : ""}
+            {practice?.scheduledAt ? <CheckLg className="me-2 text-success" /> : ""}
             Date & Time
           </span>
         }>
-          <Form onSubmit={handleSubmit}>
-            <div className="row">
-              <div className="col-md-6">
-                <Form.Group className="mb-3">
-                  <Calendar
-                    calendarType={CALENDAR_TYPES.GREGORY}
-                    className="w-100"
-                    minDate={isPastPractice ? undefined : new Date()}
-                    showNavigation={!isPastPractice}
-                    prevLabel={<ChevronLeft />}
-                    nextLabel={<ChevronRight />}
-                    tileClassName={({ date }) => {
-                      const today = new Date()
-                      if (date.toDateString() === today.toDateString()) {
-                        return 'today'
-                      }
-                      if (scheduledDate && date.toDateString() === scheduledDate.toDateString()) {
-                        return 'selected'
-                      }
-                      return null
-                    }}
-                    tileDisabled={({date}) => isPastPractice && scheduledDate?.toDateString() !== date.toDateString()}
-                    onChange={(value) => {
-                      if (!isPastPractice && value instanceof Date) {
-                        handleDateChange(value)
-                      }
-                    }}
-                    value={scheduledDate}
-                  />
-                  <div className="mt-2">
-                    <Badge bg="success" className="d-inline-block me-2"><CalendarIcon /> Today</Badge>
-                    <Badge bg="primary" className="d-inline-block me-2"><CalendarCheck /> Selected</Badge>
-                    <Badge bg="past" className="d-inline-block me-2"><CalendarX /> Past</Badge>
-                  </div>
-                </Form.Group>
-              </div>
-              <div className="col-md-6">
-                <Form.Group className="mb-3">
-                  <Form.Label>Time</Form.Label>
-                  <Form.Control
-                    type="time"
-                    value={scheduledTime}
-                    onChange={(e) => handleTimeChange(e.target.value)}
-                    disabled={isPastPractice}
-                  />
-                </Form.Group>
-              </div>
+          <Form>
+            <DatePickerComponent isPastPractice={isPastPractice} initialScheduledAt={practice?.scheduledAt} onChange={handleScheduledAtChange} />
+            <div className="d-flex justify-content-end">
+              {!practiceId ? (
+                <OverlayTrigger overlay={<Tooltip>Practice must be scheduled first.</Tooltip>} placement="left">
+                  <span className="d-inline-block">
+                    <Button
+                      variant="outline-primary"
+                      disabled
+                      onClick={() => handleTabChange('attendance')}
+                    >
+                      Attendance <ChevronRight className="ms-1" />
+                    </Button>
+                  </span>
+                </OverlayTrigger>
+              ) : (
+                <Button
+                  variant="outline-primary"
+                  onClick={() => handleTabChange('attendance')}
+                >
+                  Attendance <ChevronRight className="ms-1" />
+                </Button>
+              )}
             </div>
           </Form>
-          <div className="d-flex justify-content-end">
-            {!practiceId ? (
-              <OverlayTrigger overlay={<Tooltip>Practice must be scheduled first.</Tooltip>} placement="left">
-                <span className="d-inline-block">
-                  <Button
-                    variant="outline-primary"
-                    disabled
-                    onClick={() => handleTabChange('attendance')}
-                  >
-                    Attendance <ChevronRight className="ms-1" />
-                  </Button>
-                </span>
-              </OverlayTrigger>
-            ) : (
-              <Button
-                variant="outline-primary"
-                onClick={() => handleTabChange('attendance')}
-              >
-                Attendance <ChevronRight className="ms-1" />
-              </Button>
-            )}
-          </div>
         </Tab>
 
         <Tab
           eventKey="attendance"
           title={
             <span>
-              {!attendances.some(a => a.attending === AttendanceStatus.Unknown) ? <CheckLg className="me-2" /> : ""}
+              {!attendances.some(a => a.attending === AttendanceStatus.Unknown) ? <CheckLg className="me-2 text-success" /> : ""}
               Attendance
               {isAttendancesLoading ? (
                 <Spinner animation="border" size="sm" className="ms-2" />

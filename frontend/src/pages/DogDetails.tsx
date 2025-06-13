@@ -17,7 +17,6 @@ function DogDetails() {
   const { selectedClub } = useClub()
   const [formData, setFormData] = useState<Partial<Dog>>({
     name: '',
-    crn: '',
     trainingLevel: 1,
     clubId: selectedClub?.id || '',
     ownerId: searchParams.get('ownerId') || '',

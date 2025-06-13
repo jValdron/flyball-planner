@@ -9,6 +9,7 @@ import { PlusLg, Trash, PersonPlus } from 'react-bootstrap-icons'
 import { GetDogsByHandlersInClub, DeleteDog } from '../graphql/dogs'
 import type { DogStatus } from '../graphql/generated/graphql'
 import type { DocumentType } from '../graphql/generated/gql'
+import { getFilteredAndSortedDogsByHandlers, getHandlerName } from '../utils/dogsUtils'
 
 type HandlerWithDogs = NonNullable<DocumentType<typeof GetDogsByHandlersInClub>['dogsByHandlersInClub']>[number]
 type DogWithBasicInfo = NonNullable<HandlerWithDogs['dogs']>[number]
@@ -92,46 +93,7 @@ function Dogs() {
     }
   }
 
-  const getHandlerName = (handler: HandlerWithDogs) => {
-    return `${handler.givenName} ${handler.surname}`
-  }
-
-  const getFilteredAndSortedDogsByHandlers = () => {
-    if (!data?.dogsByHandlersInClub) return []
-
-    const searchLower = searchQuery.toLowerCase()
-    const dogsByHandlers = data.dogsByHandlersInClub
-      .filter((handler: HandlerWithDogs) => {
-        const handlerName = getHandlerName(handler).toLowerCase()
-
-        if (searchLower && handlerName.includes(searchLower)) {
-          return true
-        }
-
-        return (!searchLower && !handler.dogs?.length) || handler.dogs?.some((dog: DogWithBasicInfo) => {
-          const matchesInactive = showInactive || dog.status === 'Active'
-          const matchesSearch = searchQuery === '' ||
-            dog.name.toLowerCase().includes(searchLower) ||
-            (dog.crn?.toLowerCase() || '').includes(searchLower)
-          return matchesInactive && matchesSearch
-        })
-      })
-      .map((handler: HandlerWithDogs) => ({
-        ...handler,
-        dogs: handler.dogs?.filter((dog: DogWithBasicInfo) => {
-          const handlerName = getHandlerName(handler).toLowerCase()
-          const matchesHandler = searchLower && handlerName.includes(searchLower)
-          const matchesInactive = showInactive || dog.status === 'Active'
-          const matchesSearch = searchQuery === '' ||
-            dog.name.toLowerCase().includes(searchLower) ||
-            (dog.crn?.toLowerCase() || '').includes(searchLower)
-          return (matchesHandler && matchesInactive) || matchesInactive && matchesSearch
-        }).sort((a: DogWithBasicInfo, b: DogWithBasicInfo) => a.name.localeCompare(b.name)) || []
-      }))
-      .sort((a: HandlerWithDogs, b: HandlerWithDogs) => getHandlerName(a).localeCompare(getHandlerName(b)))
-
-    return dogsByHandlers
-  }
+  const filteredDogsByHandlers = getFilteredAndSortedDogsByHandlers(data?.dogsByHandlersInClub || [], searchQuery, showInactive)
 
   if (!selectedClub) {
     return (
@@ -208,14 +170,14 @@ function Dogs() {
             </tr>
           </thead>
           <tbody>
-            {getFilteredAndSortedDogsByHandlers().length === 0 ? (
+            {filteredDogsByHandlers.length === 0 ? (
               <tr>
                 <td colSpan={5} className="text-center text-muted py-4">
                   No matching handlers or dogs found
                 </td>
               </tr>
             ) : (
-              getFilteredAndSortedDogsByHandlers().map((handler: HandlerWithDogs) => {
+              filteredDogsByHandlers.map((handler: HandlerWithDogs) => {
                 const handlerName = getHandlerName(handler)
 
                 return (

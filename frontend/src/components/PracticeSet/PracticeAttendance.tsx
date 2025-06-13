@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { Button, Table } from 'react-bootstrap'
 import { CheckLg, XLg } from 'react-bootstrap-icons'
-import { useClub } from '../contexts/ClubContext'
-import { usePractice } from '../contexts/PracticeContext'
-import { SaveSpinner } from './SaveSpinner'
+import { useClub } from '../../contexts/ClubContext'
+import { usePractice } from '../../contexts/PracticeContext'
+import { SaveSpinner } from '../SaveSpinner'
 import { useQuery, useMutation } from '@apollo/client'
-import { GetDogsByHandlersInClub } from '../graphql/dogs'
-import { GetPracticeAttendances, UpdateAttendances } from '../graphql/attendance'
-import { AttendanceStatus, DogStatus } from '../graphql/generated/graphql'
-import type { Dog, GetDogsByHandlersInClubQuery, GetPracticeAttendancesQuery, UpdateAttendancesMutation } from '../graphql/generated/graphql'
+import { GetDogsByHandlersInClub } from '../../graphql/dogs'
+import { GetPracticeAttendances, UpdateAttendances } from '../../graphql/attendance'
+import { AttendanceStatus, DogStatus } from '../../graphql/generated/graphql'
+import type { Dog, GetDogsByHandlersInClubQuery, GetPracticeAttendancesQuery, UpdateAttendancesMutation } from '../../graphql/generated/graphql'
 
 const SAVE_DELAY = 1500
 
@@ -53,8 +53,6 @@ export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAtten
             attending: attendanceMap.get(dog.id) || AttendanceStatus.Unknown
           }))
         )
-
-        console.log(allDogs)
 
       setAttendances(allDogs)
     }

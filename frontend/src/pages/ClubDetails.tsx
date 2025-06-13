@@ -19,11 +19,7 @@ function ClubDetails() {
 
   useEffect(() => {
     if (selectedClub) {
-      setClub({
-        name: selectedClub.name,
-        nafaClubNumber: selectedClub.nafaClubNumber,
-        defaultPracticeTime: selectedClub.defaultPracticeTime
-      })
+      setClub(selectedClub)
     }
   }, [selectedClub])
 
@@ -104,6 +100,9 @@ function ClubDetails() {
     )
   }
 
+  const locations = [...(locationsData?.locationsByClub || [])]
+    .sort((a: Location, b: Location) => a.name.localeCompare(b.name))
+
   return (
     <Container>
       <Breadcrumb>
@@ -181,16 +180,14 @@ function ClubDetails() {
           </tr>
         </thead>
         <tbody>
-          {locationsData?.locationsByClub?.length === 0 ? (
+          {locations.length === 0 ? (
             <tr>
               <td colSpan={5} className="text-center text-muted py-4">
                 No locations found
               </td>
             </tr>
           ) : (
-            [...(locationsData?.locationsByClub || [])]
-            ?.sort((a: Location, b: Location) => a.name.localeCompare(b.name))
-            .map((location: Location) => (
+            locations.map((location: Location) => (
               <tr
                 key={location.id}
                 onClick={() => navigate(`/locations/${location.id}`)}

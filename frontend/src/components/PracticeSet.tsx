@@ -63,7 +63,7 @@ function SortableSet({ set, onDelete, onTypeChange, attendingDogsList }: Sortabl
       lane
     }
 
-    const updatedDogs = [...set.setDogs, newDog]
+  const updatedDogs = [...set.setDogs, newDog]
     onTypeChange(set.id, set.type, updatedDogs)
     setDogInputs(prev => ({
       ...prev,
@@ -98,10 +98,16 @@ function SortableSet({ set, onDelete, onTypeChange, attendingDogsList }: Sortabl
 
   return (
     <CardGroup ref={setNodeRef} style={style} className="d-flex mb-3">
-      <Card bg="light" className="rounded-left">
-        <Card.Body {...attributes} {...listeners} className="cursor-grab d-flex align-items-center justify-content-center">
-          <Card.Title>
-            <GripVertical /> {set.index}
+      <Card
+        {...attributes}
+        {...listeners}
+        bg="light"
+        className="flex-fill rounded-left">
+        <Card.Body
+          className="cursor-grab p-4 d-flex align-items-center justify-content-center">
+          <Card.Title className="text-nowrap">
+            <GripVertical />
+            <span>{set.index}</span>
           </Card.Title>
         </Card.Body>
       </Card>
