@@ -7,14 +7,14 @@ import { Index } from 'typeorm';
 
 export enum SetType {
   Custom = 'Custom',
-  FullRuns = 'Full Runs',
-  TwoJumpsFlyball = 'Two Jumps Flyball',
+  FullRuns = 'FullRuns',
+  TwoJumpsFlyball = 'TwoJumpsFlyball',
   Snapoffs = 'Snapoffs',
-  ReverseSnapoffs = 'Reverse Snapoffs',
-  BoxWork = 'Box Work',
+  ReverseSnapoffs = 'ReverseSnapoffs',
+  BoxWork = 'BoxWork',
   Restraints = 'Restraints',
-  PowerJumping = 'Power Jumping',
-  AroundTheWorld = 'Around the World'
+  PowerJumping = 'PowerJumping',
+  AroundTheWorld = 'AroundTheWorld'
 }
 
 registerEnumType(SetType, {
@@ -33,13 +33,13 @@ export class Set {
   @Column('uuid')
   practiceId: string;
 
-  @Field(() => SetType)
+  @Field(() => SetType, { nullable: true })
   @Column({
     type: 'enum',
     enum: SetType,
-    default: SetType.Custom
+    nullable: true
   })
-  type: SetType;
+  type: SetType | null;
 
   @Field(() => ID)
   @Column('uuid')
@@ -47,7 +47,6 @@ export class Set {
 
   @Field()
   @Column()
-  @Index('IDX_set_practice_location_index', { unique: true })
   index: number;
 
   @Field(() => String, { nullable: true })
@@ -79,7 +78,7 @@ export class Set {
 
   @Field(() => [SetDog])
   @OneToMany(() => SetDog, setDog => setDog.set)
-  setDogs: SetDog[];
+  dogs: SetDog[];
 
   @Field(() => Location)
   @ManyToOne(() => Location)

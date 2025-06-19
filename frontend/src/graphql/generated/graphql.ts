@@ -114,7 +114,7 @@ export type Mutation = {
   updateHandler?: Maybe<Handler>;
   updateLocation?: Maybe<Location>;
   updatePractice?: Maybe<Practice>;
-  updateSet: Set;
+  updateSets: Array<Set>;
 };
 
 
@@ -233,9 +233,8 @@ export type MutationUpdatePracticeArgs = {
 };
 
 
-export type MutationUpdateSetArgs = {
-  id?: InputMaybe<Scalars['ID']['input']>;
-  update: SetUpdate;
+export type MutationUpdateSetsArgs = {
+  updates: Array<SetUpdate>;
 };
 
 export type Practice = {
@@ -347,13 +346,13 @@ export type QuerySetArgs = {
 
 
 export type QuerySetsArgs = {
-  locationId: Scalars['String']['input'];
   practiceId: Scalars['String']['input'];
 };
 
 export type Set = {
   __typename?: 'Set';
   createdAt: Scalars['DateTimeISO']['output'];
+  dogs: Array<SetDog>;
   id: Scalars['ID']['output'];
   index: Scalars['Float']['output'];
   location: Location;
@@ -361,8 +360,7 @@ export type Set = {
   notes?: Maybe<Scalars['String']['output']>;
   practice: Practice;
   practiceId: Scalars['ID']['output'];
-  setDogs: Array<SetDog>;
-  type: SetType;
+  type?: Maybe<SetType>;
   typeCustom?: Maybe<Scalars['String']['output']>;
   updatedAt: Scalars['DateTimeISO']['output'];
 };
@@ -374,16 +372,16 @@ export type SetDog = {
   dogId: Scalars['ID']['output'];
   id: Scalars['ID']['output'];
   index: Scalars['Float']['output'];
-  lane: Lane;
+  lane?: Maybe<Lane>;
   set: Set;
   setId: Scalars['ID']['output'];
   updatedAt: Scalars['DateTimeISO']['output'];
 };
 
 export type SetDogUpdate = {
-  dogId: Scalars['ID']['input'];
-  index: Scalars['Float']['input'];
-  lane: Lane;
+  dogId?: InputMaybe<Scalars['ID']['input']>;
+  index?: InputMaybe<Scalars['Float']['input']>;
+  lane?: InputMaybe<Lane>;
 };
 
 /** The type of set being performed */
@@ -400,12 +398,13 @@ export enum SetType {
 }
 
 export type SetUpdate = {
-  dogs: Array<SetDogUpdate>;
-  index: Scalars['Float']['input'];
-  locationId: Scalars['ID']['input'];
+  dogs?: InputMaybe<Array<SetDogUpdate>>;
+  id?: InputMaybe<Scalars['ID']['input']>;
+  index?: InputMaybe<Scalars['Float']['input']>;
+  locationId?: InputMaybe<Scalars['ID']['input']>;
   notes?: InputMaybe<Scalars['String']['input']>;
-  practiceId: Scalars['ID']['input'];
-  type: SetType;
+  practiceId?: InputMaybe<Scalars['ID']['input']>;
+  type?: InputMaybe<SetType>;
   typeCustom?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -414,7 +413,7 @@ export type GetPracticeAttendancesQueryVariables = Exact<{
 }>;
 
 
-export type GetPracticeAttendancesQuery = { __typename?: 'Query', practiceAttendances: Array<{ __typename?: 'PracticeAttendance', id: string, dogId: string, attending: AttendanceStatus, dog: { __typename?: 'Dog', id: string, name: string, ownerId: string } }> };
+export type GetPracticeAttendancesQuery = { __typename?: 'Query', practiceAttendances: Array<{ __typename?: 'PracticeAttendance', id: string, dogId: string, attending: AttendanceStatus, dog: { __typename?: 'Dog', id: string, name: string, ownerId: string, trainingLevel: number, owner: { __typename?: 'Handler', givenName: string, surname: string } } }> };
 
 export type UpdateAttendancesMutationVariables = Exact<{
   practiceId: Scalars['String']['input'];
@@ -614,19 +613,10 @@ export type DeletePracticeMutation = { __typename?: 'Mutation', deletePractice: 
 
 export type GetSetsQueryVariables = Exact<{
   practiceId: Scalars['String']['input'];
-  locationId: Scalars['String']['input'];
 }>;
 
 
-export type GetSetsQuery = { __typename?: 'Query', sets: Array<{ __typename?: 'Set', id: string, index: number, type: SetType, typeCustom?: string | null, notes?: string | null, locationId: string, setDogs: Array<{ __typename?: 'SetDog', dogId: string, index: number, lane: Lane }> }> };
-
-export type UpdateSetMutationVariables = Exact<{
-  id?: InputMaybe<Scalars['ID']['input']>;
-  update: SetUpdate;
-}>;
-
-
-export type UpdateSetMutation = { __typename?: 'Mutation', updateSet: { __typename?: 'Set', id: string, index: number, type: SetType, typeCustom?: string | null, notes?: string | null, locationId: string, setDogs: Array<{ __typename?: 'SetDog', dogId: string, index: number, lane: Lane }> } };
+export type GetSetsQuery = { __typename?: 'Query', sets: Array<{ __typename?: 'Set', id: string, index: number, type?: SetType | null, typeCustom?: string | null, notes?: string | null, locationId: string, dogs: Array<{ __typename?: 'SetDog', dogId: string, index: number, lane?: Lane | null }> }> };
 
 export type DeleteSetMutationVariables = Exact<{
   id: Scalars['String']['input'];
@@ -635,8 +625,15 @@ export type DeleteSetMutationVariables = Exact<{
 
 export type DeleteSetMutation = { __typename?: 'Mutation', deleteSet: boolean };
 
+export type UpdateSetsMutationVariables = Exact<{
+  updates: Array<SetUpdate> | SetUpdate;
+}>;
 
-export const GetPracticeAttendancesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPracticeAttendances"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"practiceId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"practiceAttendances"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"practiceId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"practiceId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"dogId"}},{"kind":"Field","name":{"kind":"Name","value":"attending"}},{"kind":"Field","name":{"kind":"Name","value":"dog"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"ownerId"}}]}}]}}]}}]} as unknown as DocumentNode<GetPracticeAttendancesQuery, GetPracticeAttendancesQueryVariables>;
+
+export type UpdateSetsMutation = { __typename?: 'Mutation', updateSets: Array<{ __typename?: 'Set', id: string, index: number, type?: SetType | null, typeCustom?: string | null, notes?: string | null, locationId: string, dogs: Array<{ __typename?: 'SetDog', dogId: string, index: number, lane?: Lane | null }> }> };
+
+
+export const GetPracticeAttendancesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPracticeAttendances"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"practiceId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"practiceAttendances"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"practiceId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"practiceId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"dogId"}},{"kind":"Field","name":{"kind":"Name","value":"attending"}},{"kind":"Field","name":{"kind":"Name","value":"dog"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"ownerId"}},{"kind":"Field","name":{"kind":"Name","value":"trainingLevel"}},{"kind":"Field","name":{"kind":"Name","value":"owner"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"givenName"}},{"kind":"Field","name":{"kind":"Name","value":"surname"}}]}}]}}]}}]}}]} as unknown as DocumentNode<GetPracticeAttendancesQuery, GetPracticeAttendancesQueryVariables>;
 export const UpdateAttendancesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateAttendances"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"practiceId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"updates"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"AttendanceUpdate"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateAttendances"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"practiceId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"practiceId"}}},{"kind":"Argument","name":{"kind":"Name","value":"updates"},"value":{"kind":"Variable","name":{"kind":"Name","value":"updates"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"dogId"}},{"kind":"Field","name":{"kind":"Name","value":"attending"}}]}}]}}]} as unknown as DocumentNode<UpdateAttendancesMutation, UpdateAttendancesMutationVariables>;
 export const GetClubsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetClubs"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"clubs"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"nafaClubNumber"}},{"kind":"Field","name":{"kind":"Name","value":"defaultPracticeTime"}}]}}]}}]} as unknown as DocumentNode<GetClubsQuery, GetClubsQueryVariables>;
 export const GetClubByIdDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetClubById"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"club"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"nafaClubNumber"}},{"kind":"Field","name":{"kind":"Name","value":"defaultPracticeTime"}}]}}]}}]} as unknown as DocumentNode<GetClubByIdQuery, GetClubByIdQueryVariables>;
@@ -661,6 +658,6 @@ export const GetPracticeDocument = {"kind":"Document","definitions":[{"kind":"Op
 export const CreatePracticeDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreatePractice"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"clubId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"scheduledAt"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"DateTimeISO"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"status"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"PracticeStatus"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createPractice"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"clubId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"clubId"}}},{"kind":"Argument","name":{"kind":"Name","value":"scheduledAt"},"value":{"kind":"Variable","name":{"kind":"Name","value":"scheduledAt"}}},{"kind":"Argument","name":{"kind":"Name","value":"status"},"value":{"kind":"Variable","name":{"kind":"Name","value":"status"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"scheduledAt"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"clubId"}}]}}]}}]} as unknown as DocumentNode<CreatePracticeMutation, CreatePracticeMutationVariables>;
 export const UpdatePracticeDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdatePractice"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"clubId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"scheduledAt"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"DateTimeISO"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"status"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"PracticeStatus"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updatePractice"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"clubId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"clubId"}}},{"kind":"Argument","name":{"kind":"Name","value":"scheduledAt"},"value":{"kind":"Variable","name":{"kind":"Name","value":"scheduledAt"}}},{"kind":"Argument","name":{"kind":"Name","value":"status"},"value":{"kind":"Variable","name":{"kind":"Name","value":"status"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"scheduledAt"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"clubId"}}]}}]}}]} as unknown as DocumentNode<UpdatePracticeMutation, UpdatePracticeMutationVariables>;
 export const DeletePracticeDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeletePractice"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deletePractice"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<DeletePracticeMutation, DeletePracticeMutationVariables>;
-export const GetSetsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetSets"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"practiceId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"locationId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"sets"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"practiceId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"practiceId"}}},{"kind":"Argument","name":{"kind":"Name","value":"locationId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"locationId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"index"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"typeCustom"}},{"kind":"Field","name":{"kind":"Name","value":"notes"}},{"kind":"Field","name":{"kind":"Name","value":"locationId"}},{"kind":"Field","name":{"kind":"Name","value":"setDogs"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"dogId"}},{"kind":"Field","name":{"kind":"Name","value":"index"}},{"kind":"Field","name":{"kind":"Name","value":"lane"}}]}}]}}]}}]} as unknown as DocumentNode<GetSetsQuery, GetSetsQueryVariables>;
-export const UpdateSetDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateSet"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"update"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SetUpdate"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateSet"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"update"},"value":{"kind":"Variable","name":{"kind":"Name","value":"update"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"index"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"typeCustom"}},{"kind":"Field","name":{"kind":"Name","value":"notes"}},{"kind":"Field","name":{"kind":"Name","value":"locationId"}},{"kind":"Field","name":{"kind":"Name","value":"setDogs"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"dogId"}},{"kind":"Field","name":{"kind":"Name","value":"index"}},{"kind":"Field","name":{"kind":"Name","value":"lane"}}]}}]}}]}}]} as unknown as DocumentNode<UpdateSetMutation, UpdateSetMutationVariables>;
+export const GetSetsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetSets"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"practiceId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"sets"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"practiceId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"practiceId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"index"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"typeCustom"}},{"kind":"Field","name":{"kind":"Name","value":"notes"}},{"kind":"Field","name":{"kind":"Name","value":"locationId"}},{"kind":"Field","name":{"kind":"Name","value":"dogs"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"dogId"}},{"kind":"Field","name":{"kind":"Name","value":"index"}},{"kind":"Field","name":{"kind":"Name","value":"lane"}}]}}]}}]}}]} as unknown as DocumentNode<GetSetsQuery, GetSetsQueryVariables>;
 export const DeleteSetDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteSet"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteSet"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<DeleteSetMutation, DeleteSetMutationVariables>;
+export const UpdateSetsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateSets"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"updates"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SetUpdate"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateSets"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"updates"},"value":{"kind":"Variable","name":{"kind":"Name","value":"updates"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"index"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"typeCustom"}},{"kind":"Field","name":{"kind":"Name","value":"notes"}},{"kind":"Field","name":{"kind":"Name","value":"locationId"}},{"kind":"Field","name":{"kind":"Name","value":"dogs"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"dogId"}},{"kind":"Field","name":{"kind":"Name","value":"index"}},{"kind":"Field","name":{"kind":"Name","value":"lane"}}]}}]}}]}}]} as unknown as DocumentNode<UpdateSetsMutation, UpdateSetsMutationVariables>;

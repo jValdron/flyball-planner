@@ -14,7 +14,7 @@ import type { Practice, GetPracticeQuery, CreatePracticeMutation, UpdatePractice
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import { PracticeValidationService, type ValidationError } from '../services/practiceValidation'
 import { PracticeValidation } from '../components/PracticeSet/PracticeValidation'
-import { PracticeSet } from '../components/PracticeSet'
+import { PracticeSet } from '../components/PracticeSet/PracticeSet'
 import { DatePickerComponent } from '../components/PracticeSet/DatePickerComponent'
 
 function PracticeDetailsContent() {
@@ -22,7 +22,7 @@ function PracticeDetailsContent() {
   const { practiceId } = useParams()
   const location = useLocation()
   const { selectedClub } = useClub()
-  const { attendances, isAttendancesLoading } = usePractice()
+  const { attendances, isAttendancesLoading, sets, isSetsLoading } = usePractice()
   const [scheduledAt, setScheduledAt] = useState<Date | null>(null)
   const [isDirty, setIsDirty] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -96,13 +96,17 @@ function PracticeDetailsContent() {
   useEffect(() => {
     if (practice) {
       const practiceToValidate: Partial<Practice> = {
-        ...practice,
-        attendances: attendances as PracticeAttendanceType[]
+        id: practice.id,
+        scheduledAt: practice.scheduledAt,
+        status: practice.status,
+        clubId: practice.clubId,
+        attendances: attendances as PracticeAttendanceType[],
+        sets: sets as any || []
       }
       const validationResult = PracticeValidationService.validatePractice(practiceToValidate)
       setValidationErrors(validationResult.errors)
     }
-  }, [practice, attendances])
+  }, [practice, attendances, sets])
 
   const savePractice = useCallback(async () => {
     if (!selectedClub || !scheduledAt) return
@@ -337,7 +341,7 @@ function PracticeDetailsContent() {
           title={
             <span>
               Checks
-              {isAttendancesLoading ?
+              {isAttendancesLoading || isSetsLoading ?
                 <Spinner animation="border" size="sm" className="ms-2" /> :
                 validationErrors.length > 0 && (
                   <Badge bg="primary" className="ms-2">
@@ -347,7 +351,7 @@ function PracticeDetailsContent() {
             </span>
           }
         >
-          {isAttendancesLoading ?
+          {isAttendancesLoading || isSetsLoading ?
             <Spinner animation="border" role="status">
               <span className="visually-hidden">Loading...</span>
             </Spinner> :

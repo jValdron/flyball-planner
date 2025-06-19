@@ -100,7 +100,7 @@ type Mutation {
   updateHandler(givenName: String, id: String!, surname: String): Handler
   updateLocation(id: String!, isDefault: Boolean, isDoubleLane: Boolean, name: String): Location
   updatePractice(clubId: String, id: String!, scheduledAt: DateTimeISO, status: PracticeStatus): Practice
-  updateSet(id: ID, update: SetUpdate!): Set!
+  updateSets(updates: [SetUpdate!]!): [Set!]!
 }
 
 type Practice {
@@ -149,11 +149,12 @@ type Query {
   practices: [Practice!]!
   practicesByClub(clubId: String!): [Practice!]!
   set(id: String!): Set
-  sets(locationId: String!, practiceId: String!): [Set!]!
+  sets(practiceId: String!): [Set!]!
 }
 
 type Set {
   createdAt: DateTimeISO!
+  dogs: [SetDog!]!
   id: ID!
   index: Float!
   location: Location!
@@ -161,8 +162,7 @@ type Set {
   notes: String
   practice: Practice!
   practiceId: ID!
-  setDogs: [SetDog!]!
-  type: SetType!
+  type: SetType
   typeCustom: String
   updatedAt: DateTimeISO!
 }
@@ -173,16 +173,16 @@ type SetDog {
   dogId: ID!
   id: ID!
   index: Float!
-  lane: Lane!
+  lane: Lane
   set: Set!
   setId: ID!
   updatedAt: DateTimeISO!
 }
 
 input SetDogUpdate {
-  dogId: ID!
-  index: Float!
-  lane: Lane!
+  dogId: ID
+  index: Float
+  lane: Lane
 }
 
 """The type of set being performed"""
@@ -199,11 +199,12 @@ enum SetType {
 }
 
 input SetUpdate {
-  dogs: [SetDogUpdate!]!
-  index: Float!
-  locationId: ID!
+  dogs: [SetDogUpdate!]
+  id: ID
+  index: Float
+  locationId: ID
   notes: String
-  practiceId: ID!
-  type: SetType!
+  practiceId: ID
+  type: SetType
   typeCustom: String
 }

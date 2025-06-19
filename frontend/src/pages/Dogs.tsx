@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
 import { useClub } from '../contexts/ClubContext'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
+import TrainingLevelBadge from '../components/TrainingLevelBadge'
 import { PlusLg, Trash, PersonPlus } from 'react-bootstrap-icons'
 import { GetDogsByHandlersInClub, DeleteDog } from '../graphql/dogs'
 import type { DogStatus } from '../graphql/generated/graphql'
@@ -13,18 +14,6 @@ import { getFilteredAndSortedDogsByHandlers, getHandlerName } from '../utils/dog
 
 type HandlerWithDogs = NonNullable<DocumentType<typeof GetDogsByHandlersInClub>['dogsByHandlersInClub']>[number]
 type DogWithBasicInfo = NonNullable<HandlerWithDogs['dogs']>[number]
-
-const getTrainingLevelBadge = (level: number) => {
-  const levels = {
-    1: { text: 'Beginner', variant: 'secondary' },
-    2: { text: 'Novice', variant: 'info' },
-    3: { text: 'Intermediate', variant: 'primary' },
-    4: { text: 'Advanced', variant: 'warning text-dark' },
-    5: { text: 'Solid', variant: 'primary' }
-  }
-  const { text, variant } = levels[level as keyof typeof levels]
-  return <Badge bg={variant}>{text}</Badge>
-}
 
 const getStatusBadge = (status: DogStatus) => {
   const variants = {
@@ -221,7 +210,7 @@ function Dogs() {
                           <td className={`ps-4 ${dog.status === 'Inactive' ? 'text-muted' : ''} col-6 col-md-4`}>{dog.name}</td>
                           <td className="font-monospace col-3 col-md-2">{dog.crn}</td>
                           <td className="d-none d-md-table-cell col-md-2">{getStatusBadge(dog.status)}</td>
-                          <td className="col-2 col-md-2">{getTrainingLevelBadge(dog.trainingLevel)}</td>
+                          <td className="col-2 col-md-2">{<TrainingLevelBadge level={dog.trainingLevel} />}</td>
                           <td className="col-1 text-nowrap text-end">
                             <Button
                               variant="outline-danger"

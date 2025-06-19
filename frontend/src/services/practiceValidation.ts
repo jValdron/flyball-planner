@@ -120,7 +120,7 @@ export class SetConfigurationValidator extends BaseValidator<Partial<Practice>> 
     if (!practice.sets || practice.sets.length === 0) {
       this.addError(
         'NO_SETS_CONFIGURED',
-        'No sets have been configured',
+        'No sets have been configured for confirmed dogs',
         'error',
         undefined,
         React.createElement(ListOl)

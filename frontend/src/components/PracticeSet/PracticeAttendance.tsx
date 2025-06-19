@@ -48,7 +48,13 @@ export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAtten
       const allDogs = ownersData.dogsByHandlersInClub
         .flatMap(owner =>
           owner.dogs.filter(dog => dog.status === DogStatus.Active).map(dog => ({
-            dog: dog as Dog,
+            dog: {
+              ...dog,
+              owner: {
+                givenName: owner.givenName,
+                surname: owner.surname
+              }
+            } as Dog,
             dogId: dog.id,
             attending: attendanceMap.get(dog.id) || AttendanceStatus.Unknown
           }))

@@ -22,7 +22,6 @@ export class SetDog {
 
   @Field()
   @Column()
-  @Index('IDX_set_dog_set_index', { unique: true })
   index: number;
 
   @Field(() => ID)
@@ -33,11 +32,12 @@ export class SetDog {
   @Column('uuid')
   dogId: string;
 
-  @Field(() => Lane)
+  @Field(() => Lane, { nullable: true })
   @Column({
     type: 'enum',
     enum: Lane,
-    default: Lane.Left
+    default: Lane.Left,
+    nullable: true
   })
   lane: Lane;
 
@@ -50,7 +50,7 @@ export class SetDog {
   updatedAt: Date;
 
   @Field(() => Set)
-  @ManyToOne(() => Set, set => set.setDogs)
+  @ManyToOne(() => Set, set => set.dogs, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'setId' })
   set: Set;
 

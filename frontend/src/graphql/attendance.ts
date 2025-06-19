@@ -10,6 +10,11 @@ export const GetPracticeAttendances = graphql(`
         id
         name
         ownerId
+        trainingLevel
+        owner {
+          givenName
+          surname
+        }
       }
     }
   }

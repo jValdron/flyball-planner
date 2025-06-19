@@ -3,32 +3,37 @@ import { SetDog, Lane } from '../models/SetDog';
 import { AppDataSource } from '../db';
 import { InputType, Field, ID } from 'type-graphql';
 import { Set as SetModel, SetType } from '../models/Set';
+import { Location } from '../models/Location';
+import { In } from 'typeorm';
 
 @InputType()
 class SetDogUpdate {
-  @Field(() => ID)
-  dogId: string;
+  @Field(() => ID, { nullable: true })
+  dogId?: string;
 
-  @Field()
-  index: number;
+  @Field({ nullable: true })
+  index?: number;
 
-  @Field(() => Lane)
-  lane: Lane;
+  @Field(() => Lane, { nullable: true })
+  lane?: Lane;
 }
 
 @InputType()
 class SetUpdate {
-  @Field(() => ID)
-  practiceId: string;
+  @Field(() => ID, { nullable: true })
+  id?: string;
 
-  @Field(() => ID)
-  locationId: string;
+  @Field(() => ID, { nullable: true })
+  practiceId?: string;
 
-  @Field()
-  index: number;
+  @Field(() => ID, { nullable: true })
+  locationId?: string;
 
-  @Field(() => SetType)
-  type: SetType;
+  @Field({ nullable: true })
+  index?: number;
+
+  @Field(() => SetType, { nullable: true })
+  type?: SetType;
 
   @Field({ nullable: true })
   typeCustom?: string;
@@ -36,8 +41,8 @@ class SetUpdate {
   @Field({ nullable: true })
   notes?: string;
 
-  @Field(() => [SetDogUpdate])
-  dogs: SetDogUpdate[];
+  @Field(() => [SetDogUpdate], { nullable: true })
+  dogs?: SetDogUpdate[];
 }
 
 @Resolver(SetModel)
@@ -46,12 +51,11 @@ export class PracticeSetResolver {
 
   @Query(() => [SetModel])
   async sets(
-    @Arg('practiceId') practiceId: string,
-    @Arg('locationId') locationId: string
+    @Arg('practiceId') practiceId: string
   ): Promise<SetModel[]> {
     return await this.setRepository.find({
-      where: { practiceId, locationId },
-      relations: ['setDogs', 'setDogs.dog'],
+      where: { practiceId },
+      relations: ['dogs', 'dogs.dog'],
       order: { index: 'ASC' }
     });
   }
@@ -60,101 +64,142 @@ export class PracticeSetResolver {
   async set(@Arg('id') id: string): Promise<SetModel | null> {
     return await this.setRepository.findOne({
       where: { id },
-      relations: ['setDogs', 'setDogs.dog']
+      relations: ['dogs', 'dogs.dog']
     });
-  }
-
-  @Mutation(() => SetModel)
-  async updateSet(
-    @Arg('id', () => ID, { nullable: true }) id: string | null,
-    @Arg('update') update: SetUpdate
-  ): Promise<SetModel> {
-    const queryRunner = AppDataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
-      const existingSetWithIndex = await queryRunner.manager.findOne(SetModel, {
-        where: {
-          practiceId: update.practiceId,
-          locationId: update.locationId,
-          index: update.index
-        }
-      });
-
-      if (existingSetWithIndex && existingSetWithIndex.id !== id) {
-        throw new Error(`A set with index ${update.index} already exists in this practice and location`);
-      }
-
-      let set: SetModel;
-      if (id) {
-        const existingSet = await queryRunner.manager.findOne(SetModel, {
-          where: { id },
-          relations: ['setDogs']
-        });
-        if (!existingSet) {
-          throw new Error('Set not found');
-        }
-        set = existingSet;
-        Object.assign(set, {
-          practiceId: update.practiceId,
-          locationId: update.locationId,
-          index: update.index,
-          type: update.type,
-          typeCustom: update.typeCustom,
-          notes: update.notes
-        });
-      } else {
-        set = queryRunner.manager.create(SetModel, {
-          practiceId: update.practiceId,
-          locationId: update.locationId,
-          index: update.index,
-          type: update.type,
-          typeCustom: update.typeCustom,
-          notes: update.notes
-        });
-      }
-
-      const savedSet = await queryRunner.manager.save(set);
-
-      if (id) {
-        await queryRunner.manager.delete(SetDog, { setId: savedSet.id });
-      }
-
-      const setDogs = update.dogs.map(dogUpdate =>
-        queryRunner.manager.create(SetDog, {
-          setId: savedSet.id,
-          dogId: dogUpdate.dogId,
-          index: dogUpdate.index,
-          lane: dogUpdate.lane
-        })
-      );
-
-      await queryRunner.manager.save(setDogs);
-
-      await queryRunner.commitTransaction();
-
-      const result = await this.setRepository.findOne({
-        where: { id: savedSet.id },
-        relations: ['setDogs', 'setDogs.dog']
-      });
-
-      if (!result) {
-        throw new Error('Failed to retrieve saved set');
-      }
-
-      return result;
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
   }
 
   @Mutation(() => Boolean)
   async deleteSet(@Arg('id') id: string): Promise<boolean> {
     const result = await this.setRepository.delete(id);
     return result.affected !== 0;
+  }
+
+  @Mutation(() => [SetModel])
+  async updateSets(
+    @Arg('updates', () => [SetUpdate]) updates: SetUpdate[]
+  ): Promise<SetModel[]> {
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const results: SetModel[] = [];
+      for (const update of updates) {
+        let set: SetModel;
+        let id = update.id;
+        if (id) {
+          const existingSet = await queryRunner.manager.findOne(SetModel, {
+            where: { id },
+            relations: ['dogs']
+          });
+          if (!existingSet) {
+            throw new Error('Set not found');
+          }
+          set = existingSet;
+          if (update.practiceId !== undefined) set.practiceId = update.practiceId;
+          if (update.locationId !== undefined) set.locationId = update.locationId;
+          if (update.index !== undefined) set.index = update.index;
+          if (update.type !== undefined) set.type = update.type;
+          if (update.typeCustom !== undefined) set.typeCustom = update.typeCustom;
+          if (update.notes !== undefined) set.notes = update.notes;
+        } else {
+          set = queryRunner.manager.create(SetModel, {
+            practiceId: update.practiceId,
+            locationId: update.locationId,
+            index: update.index,
+            type: update.type,
+            typeCustom: update.typeCustom,
+            notes: update.notes
+          });
+        }
+        const savedSet = await queryRunner.manager.save(set);
+        if (id && update.dogs !== undefined) {
+          await queryRunner.manager.delete(SetDog, { setId: savedSet.id });
+        }
+        if (update.dogs !== undefined) {
+          const dogs = update.dogs.map(dogUpdate =>
+            queryRunner.manager.create(SetDog, {
+              setId: savedSet.id,
+              dogId: dogUpdate.dogId,
+              index: dogUpdate.index,
+              lane: dogUpdate.lane
+            })
+          );
+          await queryRunner.manager.save(dogs);
+        }
+        const result = await queryRunner.manager.findOne(SetModel, {
+          where: { id: savedSet.id },
+          relations: ['dogs', 'dogs.dog']
+        });
+        if (!result) {
+          throw new Error('Failed to retrieve saved set');
+        }
+        results.push(result);
+      }
+
+      // Check that SetDog records have lane defined when location is double lane
+      const allSets = await queryRunner.manager.find(SetModel, {
+        relations: ['dogs']
+      });
+      const locationIds = [...new Set(allSets.map(set => set.locationId))];
+      const locations = await queryRunner.manager.find(Location, {
+        where: { id: In(locationIds) }
+      });
+      const locationMap = new Map(locations.map(loc => [loc.id, loc]));
+
+      for (const set of allSets) {
+        const location = locationMap.get(set.locationId);
+        if (location?.isDoubleLane) {
+          for (const setDog of set.dogs) {
+            if (setDog.lane === null || setDog.lane === undefined) {
+              throw new Error(`Lane must be defined for SetDog in double lane location ${location.name}`);
+            }
+          }
+        }
+      }
+
+      // Check for duplicate SetDog indices within each set per lane
+      const allSetDogs = await queryRunner.manager.find(SetDog);
+      const setDogSeen = new Map<string, Map<Lane | null, Set<number>>>();
+      for (const setDog of allSetDogs) {
+        if (setDog.setId && setDog.index !== undefined) {
+          if (!setDogSeen.has(setDog.setId)) {
+            setDogSeen.set(setDog.setId, new Map());
+          }
+          const laneMap = setDogSeen.get(setDog.setId)!;
+          const lane = setDog.lane;
+          if (!laneMap.has(lane)) {
+            laneMap.set(lane, new Set());
+          }
+          const seenIndices = laneMap.get(lane)!;
+          if (seenIndices.has(setDog.index)) {
+            throw new Error(`Duplicate SetDog index ${setDog.index} found for setId ${setDog.setId} in lane ${lane || 'null'}`);
+          }
+          seenIndices.add(setDog.index);
+        }
+      }
+
+      // Check for duplicate set indices within each location (not across all locations)
+      const locationSetMap = new Map<string, Set<number>>();
+      for (const set of allSets) {
+        if (set.practiceId && set.locationId && set.index !== undefined) {
+          const locationKey = `${set.practiceId}|${set.locationId}`;
+          if (!locationSetMap.has(locationKey)) {
+            locationSetMap.set(locationKey, new Set());
+          }
+          const seenIndices = locationSetMap.get(locationKey)!;
+          if (seenIndices.has(set.index)) {
+            throw new Error(`Duplicate index ${set.index} found for practiceId ${set.practiceId} and locationId ${set.locationId}`);
+          }
+          seenIndices.add(set.index);
+        }
+      }
+      await queryRunner.commitTransaction();
+      return results;
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

@@ -20,7 +20,7 @@ export class PracticeAttendanceResolver {
   async practiceAttendances(@Arg('practiceId') practiceId: string): Promise<PracticeAttendance[]> {
     return await this.practiceAttendanceRepository.find({
       where: { practiceId },
-      relations: ['practice', 'dog']
+      relations: ['practice', 'dog', 'dog.owner']
     });
   }
 

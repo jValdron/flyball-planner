@@ -6,7 +6,17 @@ export type DogWithBasicInfo = NonNullable<HandlerWithDogs['dogs']>[number]
 
 export const getFilteredAndSortedDogsByHandlers = (dogsByHandlers: HandlerWithDogs[], searchQuery: string | null = null, showInactive: boolean = false) => {
   if (!dogsByHandlers) return []
-  if (!searchQuery) return dogsByHandlers
+
+  if (!searchQuery) {
+    return dogsByHandlers
+      .map((handler: HandlerWithDogs) => ({
+        ...handler,
+        dogs: handler.dogs?.filter((dog: DogWithBasicInfo) => {
+          return showInactive || dog.status === 'Active'
+        }).sort((a: DogWithBasicInfo, b: DogWithBasicInfo) => a.name.localeCompare(b.name)) || []
+      }))
+      .sort((a: HandlerWithDogs, b: HandlerWithDogs) => getHandlerName(a).localeCompare(getHandlerName(b)))
+  }
 
   const searchLower = searchQuery.toLowerCase()
   const filteredDogsByHandlers = dogsByHandlers

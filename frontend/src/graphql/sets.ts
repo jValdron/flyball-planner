@@ -1,33 +1,15 @@
 import { gql } from '@apollo/client'
 
 export const GetSets = gql`
-  query GetSets($practiceId: String!, $locationId: String!) {
-    sets(practiceId: $practiceId, locationId: $locationId) {
+  query GetSets($practiceId: String!) {
+    sets(practiceId: $practiceId) {
       id
       index
       type
       typeCustom
       notes
       locationId
-      setDogs {
-        dogId
-        index
-        lane
-      }
-    }
-  }
-`
-
-export const UpdateSet = gql`
-  mutation UpdateSet($id: ID, $update: SetUpdate!) {
-    updateSet(id: $id, update: $update) {
-      id
-      index
-      type
-      typeCustom
-      notes
-      locationId
-      setDogs {
+      dogs {
         dogId
         index
         lane
@@ -39,5 +21,23 @@ export const UpdateSet = gql`
 export const DeleteSet = gql`
   mutation DeleteSet($id: String!) {
     deleteSet(id: $id)
+  }
+`
+
+export const UpdateSets = gql`
+  mutation UpdateSets($updates: [SetUpdate!]!) {
+    updateSets(updates: $updates) {
+      id
+      index
+      type
+      typeCustom
+      notes
+      locationId
+      dogs {
+        dogId
+        index
+        lane
+      }
+    }
   }
 `
