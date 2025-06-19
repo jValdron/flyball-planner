@@ -280,17 +280,19 @@ function PracticeDetailsContent() {
           eventKey="attendance"
           title={
             <span>
-              {!attendances.some(a => a.attending === AttendanceStatus.Unknown) ? <CheckLg className="me-2 text-success" /> : ""}
+              {practiceId && !attendances.some(a => a.attending === AttendanceStatus.Unknown) ? <CheckLg className="me-2 text-success" /> : ""}
               Attendance
               {isAttendancesLoading ? (
                 <Spinner animation="border" size="sm" className="ms-2" />
               ) : (
-                  <Badge bg="primary" className="ms-2">
+                  <Badge bg={practiceId ? 'primary' : 'secondary'} className="ms-2">
                     {attendances.filter(a => a.attending === AttendanceStatus.Attending).length}
                   </Badge>
               )}
             </span>
-          }>
+          }
+          disabled={!practiceId}
+          >
           {practiceId && (
             <PracticeAttendance
               practiceId={practiceId}
@@ -313,7 +315,18 @@ function PracticeDetailsContent() {
           </div>
         </Tab>
 
-        <Tab eventKey="sets" title="Sets">
+        <Tab eventKey="sets" title={
+          <span>
+            Sets
+            {isSetsLoading ? (
+              <Spinner animation="border" size="sm" className="ms-2" />
+            ) : (
+              <Badge bg={practiceId ? 'primary' : 'secondary'} className="ms-2">
+                {sets.length}
+              </Badge>
+            )}
+          </span>
+        } disabled={!practiceId}>
           {practiceId && (
             <PracticeSet
               practiceId={practiceId}
@@ -350,6 +363,7 @@ function PracticeDetailsContent() {
                 )}
             </span>
           }
+          disabled={!practiceId}
         >
           {isAttendancesLoading || isSetsLoading ?
             <Spinner animation="border" role="status">

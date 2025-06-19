@@ -44,7 +44,7 @@ type Dog {
   owner: Handler!
   ownerId: ID!
   status: DogStatus!
-  trainingLevel: Int!
+  trainingLevel: TrainingLevel!
   updatedAt: DateTimeISO!
 }
 
@@ -84,7 +84,7 @@ type Location {
 
 type Mutation {
   createClub(name: String!): Club!
-  createDog(clubId: String!, crn: String, name: String!, ownerId: String!, status: DogStatus!, trainingLevel: Float!): Dog!
+  createDog(clubId: String!, crn: String, name: String!, ownerId: String!, status: DogStatus!, trainingLevel: TrainingLevel!): Dog!
   createHandler(clubId: ID!, givenName: String!, surname: String!): Handler!
   createLocation(clubId: ID!, isDefault: Boolean, isDoubleLane: Boolean, name: String!): Location!
   createPractice(clubId: String!, scheduledAt: DateTimeISO!, status: PracticeStatus!): Practice!
@@ -96,7 +96,7 @@ type Mutation {
   deleteSet(id: String!): Boolean!
   updateAttendances(practiceId: String!, updates: [AttendanceUpdate!]!): [PracticeAttendance!]!
   updateClub(defaultPracticeTime: String, id: String!, nafaClubNumber: String, name: String): Club
-  updateDog(clubId: String, crn: String, id: String!, name: String, ownerId: String, status: DogStatus, trainingLevel: Float): Dog
+  updateDog(clubId: String, crn: String, id: String!, name: String, ownerId: String, status: DogStatus, trainingLevel: TrainingLevel): Dog
   updateHandler(givenName: String, id: String!, surname: String): Handler
   updateLocation(id: String!, isDefault: Boolean, isDoubleLane: Boolean, name: String): Location
   updatePractice(clubId: String, id: String!, scheduledAt: DateTimeISO, status: PracticeStatus): Practice
@@ -207,4 +207,13 @@ input SetUpdate {
   practiceId: ID
   type: SetType
   typeCustom: String
+}
+
+"""The training level of a dog"""
+enum TrainingLevel {
+  Advanced
+  Beginner
+  Intermediate
+  Novice
+  Solid
 }

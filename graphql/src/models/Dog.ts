@@ -8,9 +8,22 @@ export enum DogStatus {
   Inactive = 'Inactive'
 }
 
+export enum TrainingLevel {
+  Beginner = 1,
+  Novice = 2,
+  Intermediate = 3,
+  Advanced = 4,
+  Solid = 5
+}
+
 registerEnumType(DogStatus, {
   name: 'DogStatus',
   description: 'The status of a dog',
+});
+
+registerEnumType(TrainingLevel, {
+  name: 'TrainingLevel',
+  description: 'The training level of a dog',
 });
 
 @ObjectType()
@@ -36,9 +49,13 @@ export class Dog {
   @Column('uuid')
   clubId: string;
 
-  @Field(() => Int)
-  @Column({ type: 'int', default: 1 })
-  trainingLevel: number;
+  @Field(() => TrainingLevel)
+  @Column({
+    type: 'enum',
+    enum: TrainingLevel,
+    default: TrainingLevel.Beginner
+  })
+  trainingLevel: TrainingLevel;
 
   @Field(() => DogStatus)
   @Column({

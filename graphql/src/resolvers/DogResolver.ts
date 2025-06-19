@@ -1,5 +1,5 @@
 import { Resolver, Query, Mutation, Arg, ID, Int } from 'type-graphql';
-import { Dog, DogStatus } from '../models/Dog';
+import { Dog, DogStatus, TrainingLevel } from '../models/Dog';
 import { AppDataSource } from '../db';
 
 @Resolver(Dog)
@@ -31,7 +31,7 @@ export class DogResolver {
     @Arg('name') name: string,
     @Arg('ownerId') ownerId: string,
     @Arg('clubId') clubId: string,
-    @Arg('trainingLevel') trainingLevel: number,
+    @Arg('trainingLevel', () => TrainingLevel) trainingLevel: TrainingLevel,
     @Arg('status', () => DogStatus) status: DogStatus,
     @Arg('crn', { nullable: true }) crn?: string
   ): Promise<Dog> {
@@ -52,7 +52,7 @@ export class DogResolver {
     @Arg('name', { nullable: true }) name?: string,
     @Arg('ownerId', { nullable: true }) ownerId?: string,
     @Arg('clubId', { nullable: true }) clubId?: string,
-    @Arg('trainingLevel', { nullable: true }) trainingLevel?: number,
+    @Arg('trainingLevel', () => TrainingLevel, { nullable: true }) trainingLevel?: TrainingLevel,
     @Arg('status', () => DogStatus, { nullable: true }) status?: DogStatus,
     @Arg('crn', { nullable: true }) crn?: string
   ): Promise<Dog | null> {

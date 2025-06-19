@@ -1,0 +1,25 @@
+/* See https://getbootstrap.com/docs/5.0/customize/color/ */
+.custom-beginner {
+  background-color: #dee2e6 !important; /* $gray-300 */
+  color: var(--bs-dark) !important;
+}
+
+.custom-novice {
+  background-color: #7dd3fc !important; /* $blue-300 */
+  color: var(--bs-dark) !important;
+}
+
+.custom-intermediate {
+  background-color: #5eead4 !important; /* $teal-300 */
+  color: var(--bs-dark) !important;
+}
+
+.custom-advanced {
+  background-color: #86efac !important; /* $green-300 */
+  color: var(--bs-dark) !important;
+}
+
+.custom-solid {
+  background-color: #c4b5fd !important; /* $purple-300 */
+  color: var(--bs-dark) !important;
+}

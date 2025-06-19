@@ -49,7 +49,7 @@ export const CreateDog = graphql(`
     $name: String!
     $ownerId: String!
     $clubId: String!
-    $trainingLevel: Float!
+    $trainingLevel: TrainingLevel!
     $status: DogStatus!
     $crn: String
   ) {
@@ -77,7 +77,7 @@ export const UpdateDog = graphql(`
     $name: String
     $ownerId: String
     $clubId: String
-    $trainingLevel: Float
+    $trainingLevel: TrainingLevel
     $status: DogStatus
     $crn: String
   ) {

@@ -18,24 +18,34 @@ This is the GraphQL API server for the Flyball Practice Planner application. It 
 
 ## Setup
 
-1. Install dependencies:
+```
+1. (optional) Standup a PostgreSQL container for this:
+```bash
+docker-compose up
+```
+
+2. Install dependencies:
 ```bash
 npm install
 ```
 
-2. Create a `.env` file in the root directory with the following content:
+3. Create a `.env` file in this directory with the following content:
 ```
-PORT=4000
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/flyball_practice_planner
 NODE_ENV=development
-```
+PORT=4000
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=flyball_user
+DB_PASSWORD=flyball_password
+DB_NAME=flyball_practice_planner
+DB_SSLMODE=disable
 
-3. Create the database:
+4. Seed the initial data:
 ```bash
-createdb flyball_practice_planner
+npm run seed
 ```
 
-4. Start the development server:
+5. Start the development server:
 ```bash
 npm run dev
 ```
@@ -46,6 +56,7 @@ The server will start at http://localhost:4000 with the GraphQL playground avail
 
 - `npm run dev` - Start development server with hot reload
 - `npm run build` - Build for production
+- `npm run seed` - Seed the initial test data
 - `npm start` - Start production server
 - `npm test` - Run tests
 
@@ -62,7 +73,3 @@ The GraphQL API provides the following main types:
 - SetDog
 
 Each type has corresponding queries and mutations for CRUD operations. Visit the GraphQL playground at http://localhost:4000/graphql for the full schema documentation and to test queries.
-
-## License
-
-MIT

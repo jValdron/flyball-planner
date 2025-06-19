@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import { Form, Dropdown, InputGroup, Button } from 'react-bootstrap'
 import { ChevronDown } from 'react-bootstrap-icons'
 import { SetType } from '../../graphql/generated/graphql'
+import { getSetTypeDisplayName, findSetTypeByDisplayName, findSetTypeByPartialMatch } from '../../utils/setTypeUtils'
 
 interface SetTypeAutocompleteProps {
   value: string | null
@@ -13,23 +14,20 @@ export function SetTypeAutocomplete({ value, typeCustom, onChange }: SetTypeAuto
   const [show, setShow] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [inputValue, setInputValue] = useState(
-    value === SetType.Custom && typeCustom ? typeCustom : (value || '')
+    value === SetType.Custom && typeCustom ? typeCustom : (value ? getSetTypeDisplayName(value as SetType) : '')
   )
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1)
   const inputRef = useRef<HTMLInputElement>(null)
   const skipBlur = useRef(false)
 
   useEffect(() => {
-    setInputValue(value === SetType.Custom && typeCustom ? typeCustom : (value || ''))
+    setInputValue(value === SetType.Custom && typeCustom ? typeCustom : (value ? getSetTypeDisplayName(value as SetType) : ''))
   }, [value, typeCustom])
 
   const filteredTypes = useMemo(() => {
     const allTypes = Object.values(SetType).filter(type => type !== SetType.Custom)
     if (!searchTerm) return allTypes
-    const term = searchTerm.toLowerCase()
-    return allTypes.filter(type =>
-      type.toLowerCase().includes(term)
-    )
+    return findSetTypeByPartialMatch(searchTerm)
   }, [searchTerm])
 
   useEffect(() => {
@@ -62,9 +60,7 @@ export function SetTypeAutocomplete({ value, typeCustom, onChange }: SetTypeAuto
     const newValue = inputValue.trim()
     let newType: SetType
     let newTypeCustom: string | null
-    const matchingType = Object.values(SetType).find(
-      type => type.toLowerCase() === newValue.toLowerCase()
-    )
+    const matchingType = findSetTypeByDisplayName(newValue)
     if (matchingType) {
       newType = matchingType
       newTypeCustom = null
@@ -78,7 +74,8 @@ export function SetTypeAutocomplete({ value, typeCustom, onChange }: SetTypeAuto
   }
 
   const handleSelect = (type: SetType) => {
-    setInputValue(type)
+    const displayName = getSetTypeDisplayName(type)
+    setInputValue(displayName)
     setSearchTerm('')
     setShow(false)
     if (type !== value || typeCustom !== null) {
@@ -128,7 +125,7 @@ export function SetTypeAutocomplete({ value, typeCustom, onChange }: SetTypeAuto
   const shouldShowDropdown = show && (searchTerm.length > 0 || (document.activeElement === inputRef.current && show && searchTerm === ''))
 
   return (
-    <Dropdown show={shouldShowDropdown} onToggle={setShow} style={{ width: '100%' }}>
+    <Dropdown show={shouldShowDropdown} onToggle={setShow} className="set-type-autocomplete">
       <InputGroup>
         <Form.Control
           ref={inputRef}
@@ -161,7 +158,7 @@ export function SetTypeAutocomplete({ value, typeCustom, onChange }: SetTypeAuto
               onMouseDown={() => handleSelect(type)}
               active={idx === highlightedIndex}
             >
-              {type}
+              {getSetTypeDisplayName(type)}
             </Dropdown.Item>
           ))
         )}

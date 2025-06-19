@@ -8,7 +8,7 @@ export const TRAINING_LEVELS = {
 
 export const getTrainingLevelInfo = (level: number) => {
   return TRAINING_LEVELS[level as keyof typeof TRAINING_LEVELS] || {
-    text: `Level ${level}`,
+    text: `${level}`,
     variant: 'secondary'
   }
 }

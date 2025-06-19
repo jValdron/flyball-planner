@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_USER: flyball_user
       POSTGRES_PASSWORD: flyball_password
-      POSTGRES_DB: flyball_practice
+      POSTGRES_DB: flyball_practice_planner
     ports:
       - "5432:5432"
     volumes:
@@ -23,7 +23,7 @@ services:
       DB_PASSWORD: flyball_password
       DB_HOST: db
       DB_PORT: 5432
-      DB_NAME: flyball_practice
+      DB_NAME: flyball_practice_planner
       DB_SSLMODE: disable
     ports:
       - "8080:8080"
@@ -39,7 +39,7 @@ services:
       DB_PASSWORD: flyball_password
       DB_HOST: db
       DB_PORT: 5432
-      DB_NAME: flyball_practice
+      DB_NAME: flyball_practice_planner
       DB_SSLMODE: disable
     ports:
       - "4000:4000"

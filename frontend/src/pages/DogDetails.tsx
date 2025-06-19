@@ -6,7 +6,7 @@ import { ChevronLeft, Save, Trash } from 'react-bootstrap-icons'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import { useQuery, useMutation } from '@apollo/client'
 import { GetDogById, GetDogsByHandlersInClub, CreateDog, UpdateDog, DeleteDog } from '../graphql/dogs'
-import { DogStatus } from '../graphql/generated/graphql'
+import { DogStatus, TrainingLevel } from '../graphql/generated/graphql'
 import type { Dog } from '../graphql/generated/graphql'
 import { formatFullDateTime } from '../utils/dateUtils'
 
@@ -17,7 +17,7 @@ function DogDetails() {
   const { selectedClub } = useClub()
   const [formData, setFormData] = useState<Partial<Dog>>({
     name: '',
-    trainingLevel: 1,
+    trainingLevel: TrainingLevel.Beginner,
     clubId: selectedClub?.id || '',
     ownerId: searchParams.get('ownerId') || '',
     status: DogStatus.Active
@@ -81,7 +81,7 @@ function DogDetails() {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'trainingLevel' ? parseInt(value) : value
+      [name]: name === 'trainingLevel' ? value as TrainingLevel : value
     }))
   }
 
@@ -207,11 +207,11 @@ function DogDetails() {
             onChange={handleInputChange}
             required
           >
-            <option value={1}>Beginner</option>
-            <option value={2}>Novice</option>
-            <option value={3}>Intermediate</option>
-            <option value={4}>Advanced</option>
-            <option value={5}>Solid</option>
+            <option value={TrainingLevel.Beginner}>Beginner</option>
+            <option value={TrainingLevel.Novice}>Novice</option>
+            <option value={TrainingLevel.Intermediate}>Intermediate</option>
+            <option value={TrainingLevel.Advanced}>Advanced</option>
+            <option value={TrainingLevel.Solid}>Solid</option>
           </Form.Select>
         </Form.Group>
 
