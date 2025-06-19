@@ -29,6 +29,10 @@ type Club {
   updatedAt: DateTimeISO!
 }
 
+type ClubEvent {
+  club: Club!
+}
+
 """
 A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.This scalar is serialized to a string in ISO 8601 format and parsed from a string in ISO 8601 format.
 """
@@ -48,6 +52,10 @@ type Dog {
   updatedAt: DateTimeISO!
 }
 
+type DogEvent {
+  dog: Dog!
+}
+
 """The status of a dog"""
 enum DogStatus {
   Active
@@ -65,6 +73,10 @@ type Handler {
   updatedAt: DateTimeISO!
 }
 
+type HandlerEvent {
+  handler: Handler!
+}
+
 """The lane that the set is being performed in"""
 enum Lane {
   Left
@@ -80,6 +92,10 @@ type Location {
   isDoubleLane: Boolean!
   name: String!
   updatedAt: DateTimeISO!
+}
+
+type LocationEvent {
+  location: Location!
 }
 
 type Mutation {
@@ -207,6 +223,14 @@ input SetUpdate {
   practiceId: ID
   type: SetType
   typeCustom: String
+}
+
+type Subscription {
+  clubById(clubId: String): ClubEvent!
+  clubChanged: ClubEvent!
+  dogChanged(clubId: String): DogEvent!
+  handlerChanged(clubId: String): HandlerEvent!
+  locationChanged(clubId: String): LocationEvent!
 }
 
 """The training level of a dog"""

@@ -160,7 +160,7 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
       <div className="mb-2">
         {value.sort((a, b) => a.index - b.index).map((setDog, idx) => {
           const displayName = setDog.dog.name
-          const { variant } = getTrainingLevelInfo(setDog.dog.trainingLevel)
+          const { variant, className } = getTrainingLevelInfo(setDog.dog.trainingLevel)
           return (
             <div
               key={`${setDog.id}-${idx}`}
@@ -171,7 +171,7 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
               onDragEnd={handleDragEnd}
               style={{ opacity: draggedIndex === idx ? 0.5 : 1, cursor: 'move' }}
             >
-              <Badge bg={variant} className="d-flex align-items-center justify-content-between w-100" style={{ minHeight: 38 }}>
+              <Badge bg={variant} className={`d-flex align-items-center justify-content-between w-100 ${className}`} style={{ minHeight: 38 }}>
                 <span className="me-2 d-inline-flex align-items-center" style={{ cursor: 'grab' }}>
                   <GripVertical />
                 </span>

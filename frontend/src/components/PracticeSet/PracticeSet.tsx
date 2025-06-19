@@ -445,7 +445,8 @@ export function PracticeSet({ practiceId, isPastPractice }: PracticeSetProps) {
   }
 
   const handleAddSet = () => {
-    const newIndex = displaySets.length + 1
+    const maxIndex = displaySets.length > 0 ? Math.max(...displaySets.map(set => set.index)) : 0
+    const newIndex = maxIndex + 1
     queueUpdate({
       update: {
         practiceId,

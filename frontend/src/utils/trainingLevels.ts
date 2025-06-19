@@ -1,12 +1,14 @@
+import { TrainingLevel } from "../graphql/generated/graphql"
+
 export const TRAINING_LEVELS = {
-  1: { text: 'Beginner', variant: 'secondary' },
-  2: { text: 'Novice', variant: 'info' },
-  3: { text: 'Intermediate', variant: 'primary' },
-  4: { text: 'Advanced', variant: 'warning' },
-  5: { text: 'Solid', variant: 'primary' }
+  [TrainingLevel.Beginner]: { text: 'Beginner', variant: 'danger', className: '' },
+  [TrainingLevel.Novice]: { text: 'Novice', variant: 'warning', className: 'text-dark' },
+  [TrainingLevel.Intermediate]: { text: 'Intermediate', variant: 'secondary', className: '' },
+  [TrainingLevel.Advanced]: { text: 'Advanced', variant: 'success', className: '' },
+  [TrainingLevel.Solid]: { text: 'Solid', variant: 'info', className: 'text-dark' }
 } as const
 
-export const getTrainingLevelInfo = (level: number) => {
+export const getTrainingLevelInfo = (level: TrainingLevel) => {
   return TRAINING_LEVELS[level as keyof typeof TRAINING_LEVELS] || {
     text: `${level}`,
     variant: 'secondary'

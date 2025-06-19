@@ -42,6 +42,11 @@ type Documents = {
     "\n  query GetSets($practiceId: String!) {\n    sets(practiceId: $practiceId) {\n      id\n      index\n      type\n      typeCustom\n      notes\n      locationId\n      dogs {\n        dogId\n        index\n        lane\n      }\n    }\n  }\n": typeof types.GetSetsDocument,
     "\n  mutation DeleteSet($id: String!) {\n    deleteSet(id: $id)\n  }\n": typeof types.DeleteSetDocument,
     "\n  mutation UpdateSets($updates: [SetUpdate!]!) {\n    updateSets(updates: $updates) {\n      id\n      index\n      type\n      typeCustom\n      notes\n      locationId\n      dogs {\n        dogId\n        index\n        lane\n      }\n    }\n  }\n": typeof types.UpdateSetsDocument,
+    "\n  subscription ClubChanged {\n    clubChanged {\n      club {\n        id\n        name\n        nafaClubNumber\n        defaultPracticeTime\n        createdAt\n        updatedAt\n      }\n    }\n  }\n": typeof types.ClubChangedDocument,
+    "\n  subscription ClubById($clubId: String) {\n    clubById(clubId: $clubId) {\n      club {\n        id\n        name\n        nafaClubNumber\n        defaultPracticeTime\n        createdAt\n        updatedAt\n      }\n    }\n  }\n": typeof types.ClubByIdDocument,
+    "\n  subscription DogChanged($clubId: String) {\n    dogChanged(clubId: $clubId) {\n      dog {\n        id\n        name\n        crn\n        status\n        trainingLevel\n        ownerId\n        clubId\n        createdAt\n        updatedAt\n        owner {\n          id\n          givenName\n          surname\n        }\n        club {\n          id\n          name\n        }\n      }\n    }\n  }\n": typeof types.DogChangedDocument,
+    "\n  subscription HandlerChanged($clubId: String) {\n    handlerChanged(clubId: $clubId) {\n      handler {\n        id\n        givenName\n        surname\n        clubId\n        createdAt\n        updatedAt\n        club {\n          id\n          name\n        }\n        dogs {\n          id\n          name\n          status\n          trainingLevel\n        }\n      }\n    }\n  }\n": typeof types.HandlerChangedDocument,
+    "\n  subscription LocationChanged($clubId: String) {\n    locationChanged(clubId: $clubId) {\n      location {\n        id\n        name\n        isDefault\n        isDoubleLane\n        clubId\n        createdAt\n        updatedAt\n        club {\n          id\n          name\n        }\n      }\n    }\n  }\n": typeof types.LocationChangedDocument,
 };
 const documents: Documents = {
     "\n  query GetPracticeAttendances($practiceId: String!) {\n    practiceAttendances(practiceId: $practiceId) {\n      id\n      dogId\n      attending\n      dog {\n        id\n        name\n        ownerId\n        trainingLevel\n        owner {\n          givenName\n          surname\n        }\n      }\n    }\n  }\n": types.GetPracticeAttendancesDocument,
@@ -72,6 +77,11 @@ const documents: Documents = {
     "\n  query GetSets($practiceId: String!) {\n    sets(practiceId: $practiceId) {\n      id\n      index\n      type\n      typeCustom\n      notes\n      locationId\n      dogs {\n        dogId\n        index\n        lane\n      }\n    }\n  }\n": types.GetSetsDocument,
     "\n  mutation DeleteSet($id: String!) {\n    deleteSet(id: $id)\n  }\n": types.DeleteSetDocument,
     "\n  mutation UpdateSets($updates: [SetUpdate!]!) {\n    updateSets(updates: $updates) {\n      id\n      index\n      type\n      typeCustom\n      notes\n      locationId\n      dogs {\n        dogId\n        index\n        lane\n      }\n    }\n  }\n": types.UpdateSetsDocument,
+    "\n  subscription ClubChanged {\n    clubChanged {\n      club {\n        id\n        name\n        nafaClubNumber\n        defaultPracticeTime\n        createdAt\n        updatedAt\n      }\n    }\n  }\n": types.ClubChangedDocument,
+    "\n  subscription ClubById($clubId: String) {\n    clubById(clubId: $clubId) {\n      club {\n        id\n        name\n        nafaClubNumber\n        defaultPracticeTime\n        createdAt\n        updatedAt\n      }\n    }\n  }\n": types.ClubByIdDocument,
+    "\n  subscription DogChanged($clubId: String) {\n    dogChanged(clubId: $clubId) {\n      dog {\n        id\n        name\n        crn\n        status\n        trainingLevel\n        ownerId\n        clubId\n        createdAt\n        updatedAt\n        owner {\n          id\n          givenName\n          surname\n        }\n        club {\n          id\n          name\n        }\n      }\n    }\n  }\n": types.DogChangedDocument,
+    "\n  subscription HandlerChanged($clubId: String) {\n    handlerChanged(clubId: $clubId) {\n      handler {\n        id\n        givenName\n        surname\n        clubId\n        createdAt\n        updatedAt\n        club {\n          id\n          name\n        }\n        dogs {\n          id\n          name\n          status\n          trainingLevel\n        }\n      }\n    }\n  }\n": types.HandlerChangedDocument,
+    "\n  subscription LocationChanged($clubId: String) {\n    locationChanged(clubId: $clubId) {\n      location {\n        id\n        name\n        isDefault\n        isDoubleLane\n        clubId\n        createdAt\n        updatedAt\n        club {\n          id\n          name\n        }\n      }\n    }\n  }\n": types.LocationChangedDocument,
 };
 
 /**
@@ -200,6 +210,26 @@ export function graphql(source: "\n  mutation DeleteSet($id: String!) {\n    del
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation UpdateSets($updates: [SetUpdate!]!) {\n    updateSets(updates: $updates) {\n      id\n      index\n      type\n      typeCustom\n      notes\n      locationId\n      dogs {\n        dogId\n        index\n        lane\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation UpdateSets($updates: [SetUpdate!]!) {\n    updateSets(updates: $updates) {\n      id\n      index\n      type\n      typeCustom\n      notes\n      locationId\n      dogs {\n        dogId\n        index\n        lane\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  subscription ClubChanged {\n    clubChanged {\n      club {\n        id\n        name\n        nafaClubNumber\n        defaultPracticeTime\n        createdAt\n        updatedAt\n      }\n    }\n  }\n"): (typeof documents)["\n  subscription ClubChanged {\n    clubChanged {\n      club {\n        id\n        name\n        nafaClubNumber\n        defaultPracticeTime\n        createdAt\n        updatedAt\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  subscription ClubById($clubId: String) {\n    clubById(clubId: $clubId) {\n      club {\n        id\n        name\n        nafaClubNumber\n        defaultPracticeTime\n        createdAt\n        updatedAt\n      }\n    }\n  }\n"): (typeof documents)["\n  subscription ClubById($clubId: String) {\n    clubById(clubId: $clubId) {\n      club {\n        id\n        name\n        nafaClubNumber\n        defaultPracticeTime\n        createdAt\n        updatedAt\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  subscription DogChanged($clubId: String) {\n    dogChanged(clubId: $clubId) {\n      dog {\n        id\n        name\n        crn\n        status\n        trainingLevel\n        ownerId\n        clubId\n        createdAt\n        updatedAt\n        owner {\n          id\n          givenName\n          surname\n        }\n        club {\n          id\n          name\n        }\n      }\n    }\n  }\n"): (typeof documents)["\n  subscription DogChanged($clubId: String) {\n    dogChanged(clubId: $clubId) {\n      dog {\n        id\n        name\n        crn\n        status\n        trainingLevel\n        ownerId\n        clubId\n        createdAt\n        updatedAt\n        owner {\n          id\n          givenName\n          surname\n        }\n        club {\n          id\n          name\n        }\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  subscription HandlerChanged($clubId: String) {\n    handlerChanged(clubId: $clubId) {\n      handler {\n        id\n        givenName\n        surname\n        clubId\n        createdAt\n        updatedAt\n        club {\n          id\n          name\n        }\n        dogs {\n          id\n          name\n          status\n          trainingLevel\n        }\n      }\n    }\n  }\n"): (typeof documents)["\n  subscription HandlerChanged($clubId: String) {\n    handlerChanged(clubId: $clubId) {\n      handler {\n        id\n        givenName\n        surname\n        clubId\n        createdAt\n        updatedAt\n        club {\n          id\n          name\n        }\n        dogs {\n          id\n          name\n          status\n          trainingLevel\n        }\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  subscription LocationChanged($clubId: String) {\n    locationChanged(clubId: $clubId) {\n      location {\n        id\n        name\n        isDefault\n        isDoubleLane\n        clubId\n        createdAt\n        updatedAt\n        club {\n          id\n          name\n        }\n      }\n    }\n  }\n"): (typeof documents)["\n  subscription LocationChanged($clubId: String) {\n    locationChanged(clubId: $clubId) {\n      location {\n        id\n        name\n        isDefault\n        isDoubleLane\n        clubId\n        createdAt\n        updatedAt\n        club {\n          id\n          name\n        }\n      }\n    }\n  }\n"];
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};

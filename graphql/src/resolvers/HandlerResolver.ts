@@ -2,6 +2,7 @@ import { Resolver, Query, Mutation, Arg } from 'type-graphql';
 import { Handler } from '../models/Handler';
 import { AppDataSource } from '../db';
 import { ID } from 'type-graphql';
+import { PubSubService, SubscriptionEvents } from '../services/PubSubService';
 
 @Resolver(Handler)
 export class HandlerResolver {
@@ -34,7 +35,11 @@ export class HandlerResolver {
     @Arg('clubId', () => ID) clubId: string
   ): Promise<Handler> {
     const handler = this.handlerRepository.create({ givenName, surname, clubId });
-    return await this.handlerRepository.save(handler);
+    const savedHandler = await this.handlerRepository.save(handler);
+
+    await PubSubService.publishHandlerEvent(SubscriptionEvents.HANDLER_CREATED, savedHandler);
+
+    return savedHandler;
   }
 
   @Mutation(() => Handler, { nullable: true })
@@ -51,12 +56,25 @@ export class HandlerResolver {
       surname: surname ?? handler.surname
     });
 
-    return await this.handlerRepository.save(handler);
+    const updatedHandler = await this.handlerRepository.save(handler);
+
+    await PubSubService.publishHandlerEvent(SubscriptionEvents.HANDLER_UPDATED, updatedHandler);
+
+    return updatedHandler;
   }
 
   @Mutation(() => Boolean)
   async deleteHandler(@Arg('id') id: string): Promise<boolean> {
+    const handler = await this.handlerRepository.findOneBy({ id });
+    if (!handler) return false;
+
     const result = await this.handlerRepository.delete(id);
-    return result.affected !== 0;
+    const deleted = result.affected !== 0;
+
+    if (deleted) {
+      await PubSubService.publishHandlerEvent(SubscriptionEvents.HANDLER_DELETED, handler);
+    }
+
+    return deleted;
   }
 }

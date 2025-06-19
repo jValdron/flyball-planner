@@ -1,6 +1,7 @@
 import { Resolver, Query, Mutation, Arg, ID, Int } from 'type-graphql';
 import { Dog, DogStatus, TrainingLevel } from '../models/Dog';
 import { AppDataSource } from '../db';
+import { PubSubService, SubscriptionEvents } from '../services/PubSubService';
 
 @Resolver(Dog)
 export class DogResolver {
@@ -43,7 +44,11 @@ export class DogResolver {
       status,
       crn: crn === '' ? null : crn
     });
-    return await this.dogRepository.save(dog);
+    const savedDog = await this.dogRepository.save(dog);
+
+    await PubSubService.publishDogEvent(SubscriptionEvents.DOG_CREATED, savedDog);
+
+    return savedDog;
   }
 
   @Mutation(() => Dog, { nullable: true })
@@ -68,12 +73,25 @@ export class DogResolver {
       crn: crn ?? (crn === '' ? null : crn)
     });
 
-    return await this.dogRepository.save(dog);
+    const updatedDog = await this.dogRepository.save(dog);
+
+    await PubSubService.publishDogEvent(SubscriptionEvents.DOG_UPDATED, updatedDog);
+
+    return updatedDog;
   }
 
   @Mutation(() => Boolean)
   async deleteDog(@Arg('id') id: string): Promise<boolean> {
+    const dog = await this.dogRepository.findOneBy({ id });
+    if (!dog) return false;
+
     const result = await this.dogRepository.delete(id);
-    return result.affected !== 0;
+    const deleted = result.affected !== 0;
+
+    if (deleted) {
+      await PubSubService.publishDogEvent(SubscriptionEvents.DOG_DELETED, dog);
+    }
+
+    return deleted;
   }
 }

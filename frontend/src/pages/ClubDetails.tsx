@@ -5,13 +5,13 @@ import { useClub } from '../contexts/ClubContext'
 import { Save, PlusLg, Trash, CheckLg, XLg } from 'react-bootstrap-icons'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import { SaveSpinner } from '../components/SaveSpinner'
-import { useQuery, useMutation } from '@apollo/client'
-import { GetLocationsByClub, UpdateClub, DeleteLocation } from '../graphql/clubs'
+import { useMutation } from '@apollo/client'
+import { UpdateClub, DeleteLocation } from '../graphql/clubs'
 import type { Location, Club } from '../graphql/generated/graphql'
 
 function ClubDetails() {
   const navigate = useNavigate()
-  const { selectedClub, setSelectedClub } = useClub()
+  const { selectedClub, setSelectedClub, locations, loading, error: contextError } = useClub()
   const [club, setClub] = useState<Partial<Club>>({})
   const [error, setError] = useState<string | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -23,18 +23,9 @@ function ClubDetails() {
     }
   }, [selectedClub])
 
-  const { data: locationsData, loading: loadingLocations } = useQuery(GetLocationsByClub, {
-    variables: { clubId: selectedClub?.id || '' },
-    skip: !selectedClub,
-    onError: (error) => {
-      setError('Failed to load locations. Please try again later.')
-      console.error('Error loading locations:', error)
-    }
-  })
-
   const [updateClub, { loading: updating }] = useMutation(UpdateClub, {
     onCompleted: (data) => {
-      setSelectedClub(data.updateClub)
+      setSelectedClub(data.updateClub as Club)
     },
     onError: (error) => {
       setError('Failed to update club. Please try again later.')
@@ -43,7 +34,6 @@ function ClubDetails() {
   })
 
   const [deleteLocation] = useMutation(DeleteLocation, {
-    refetchQueries: [{ query: GetLocationsByClub, variables: { clubId: selectedClub?.id || '' } }],
     onError: (error) => {
       setError('Failed to delete location. Please try again later.')
       console.error('Error deleting location:', error)
@@ -88,8 +78,6 @@ function ClubDetails() {
     }
   }
 
-  const loading = loadingLocations
-
   if (loading) {
     return (
       <Container className="text-center mt-5">
@@ -100,8 +88,10 @@ function ClubDetails() {
     )
   }
 
-  const locations = [...(locationsData?.locationsByClub || [])]
+  const sortedLocations = [...locations]
     .sort((a: Location, b: Location) => a.name.localeCompare(b.name))
+
+  const displayError = error || contextError
 
   return (
     <Container>
@@ -114,9 +104,9 @@ function ClubDetails() {
         <h1>{selectedClub?.name}</h1>
       </div>
 
-      {error && (
+      {displayError && (
         <Alert variant="danger" className="mb-4" onClose={() => setError(null)} dismissible>
-          {error}
+          {displayError}
         </Alert>
       )}
 
@@ -180,14 +170,14 @@ function ClubDetails() {
           </tr>
         </thead>
         <tbody>
-          {locations.length === 0 ? (
+          {sortedLocations.length === 0 ? (
             <tr>
               <td colSpan={5} className="text-center text-muted py-4">
                 No locations found
               </td>
             </tr>
           ) : (
-            locations.map((location: Location) => (
+            sortedLocations.map((location: Location) => (
               <tr
                 key={location.id}
                 onClick={() => navigate(`/locations/${location.id}`)}

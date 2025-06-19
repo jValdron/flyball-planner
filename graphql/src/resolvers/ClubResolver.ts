@@ -2,6 +2,7 @@ import { Resolver, Query, Mutation, Arg } from 'type-graphql';
 import { Club } from '../models/Club';
 import { AppDataSource } from '../db';
 import { Dog } from '../models/Dog';
+import { PubSubService, SubscriptionEvents } from '../services/PubSubService';
 
 @Resolver(Club)
 export class ClubResolver {
@@ -21,7 +22,11 @@ export class ClubResolver {
   @Mutation(() => Club)
   async createClub(@Arg('name') name: string): Promise<Club> {
     const club = this.clubRepository.create({ name });
-    return await this.clubRepository.save(club);
+    const savedClub = await this.clubRepository.save(club);
+
+    await PubSubService.publishClubEvent(SubscriptionEvents.CLUB_CREATED, savedClub);
+
+    return savedClub;
   }
 
   @Mutation(() => Club, { nullable: true })
@@ -40,12 +45,25 @@ export class ClubResolver {
       defaultPracticeTime: defaultPracticeTime ?? club.defaultPracticeTime
     });
 
-    return await this.clubRepository.save(club);
+    const updatedClub = await this.clubRepository.save(club);
+
+    await PubSubService.publishClubEvent(SubscriptionEvents.CLUB_UPDATED, updatedClub);
+
+    return updatedClub;
   }
 
   @Mutation(() => Boolean)
   async deleteClub(@Arg('id') id: string): Promise<boolean> {
+    const club = await this.clubRepository.findOneBy({ id });
+    if (!club) return false;
+
     const result = await this.clubRepository.delete(id);
-    return result.affected !== 0;
+    const deleted = result.affected !== 0;
+
+    if (deleted) {
+      await PubSubService.publishClubEvent(SubscriptionEvents.CLUB_DELETED, club);
+    }
+
+    return deleted;
   }
 }
