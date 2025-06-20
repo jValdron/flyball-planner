@@ -11,6 +11,7 @@ export const CLUB_CHANGED_SUBSCRIPTION = gql`
         createdAt
         updatedAt
       }
+      eventType
     }
   }
 `;
@@ -26,6 +27,7 @@ export const CLUB_BY_ID_SUBSCRIPTION = gql`
         createdAt
         updatedAt
       }
+      eventType
     }
   }
 `;
@@ -53,6 +55,7 @@ export const DOG_CHANGED_SUBSCRIPTION = gql`
           name
         }
       }
+      eventType
     }
   }
 `;
@@ -78,6 +81,7 @@ export const HANDLER_CHANGED_SUBSCRIPTION = gql`
           trainingLevel
         }
       }
+      eventType
     }
   }
 `;
@@ -98,6 +102,7 @@ export const LOCATION_CHANGED_SUBSCRIPTION = gql`
           name
         }
       }
+      eventType
     }
   }
 `;

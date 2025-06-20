@@ -2,18 +2,16 @@ import React from 'react'
 import { Container, Table, Button, Badge, Alert, Spinner, Form, InputGroup, Breadcrumb } from 'react-bootstrap'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useState } from 'react'
-import { useQuery, useMutation } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import { useClub } from '../contexts/ClubContext'
+import { useTheme } from '../contexts/ThemeContext'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import TrainingLevelBadge from '../components/TrainingLevelBadge'
 import { PlusLg, Trash, PersonPlus } from 'react-bootstrap-icons'
-import { GetDogsByHandlersInClub, DeleteDog } from '../graphql/dogs'
+import { DeleteDog } from '../graphql/dogs'
 import type { DogStatus } from '../graphql/generated/graphql'
-import type { DocumentType } from '../graphql/generated/gql'
 import { getFilteredAndSortedDogsByHandlers, getHandlerName } from '../utils/dogsUtils'
-
-type HandlerWithDogs = NonNullable<DocumentType<typeof GetDogsByHandlersInClub>['dogsByHandlersInClub']>[number]
-type DogWithBasicInfo = NonNullable<HandlerWithDogs['dogs']>[number]
+import type { HandlerWithDogs, DogWithBasicInfo } from '../utils/dogsUtils'
 
 const getStatusBadge = (status: DogStatus) => {
   const variants = {
@@ -27,25 +25,15 @@ const getStatusBadge = (status: DogStatus) => {
 function Dogs() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { selectedClub } = useClub()
+  const { selectedClub, dogsByHandlersInSelectedClub, loading, error: clubError } = useClub()
+  const { isDark } = useTheme()
   const [error, setError] = useState<string | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [dogToDelete, setDogToDelete] = useState<DogWithBasicInfo | null>(null)
   const [showInactive, setShowInactive] = useState(searchParams.get('showInactive') === 'true')
   const [searchQuery, setSearchQuery] = useState('')
 
-  const { loading, data } = useQuery<DocumentType<typeof GetDogsByHandlersInClub>>(GetDogsByHandlersInClub, {
-    variables: { clubId: selectedClub?.id },
-    skip: !selectedClub,
-    onError: (err) => {
-      setError('Failed to load dogs. Please try again later.')
-      console.error('Error loading dogs:', err)
-    }
-  })
-
-  const [deleteDog] = useMutation(DeleteDog, {
-    refetchQueries: [{ query: GetDogsByHandlersInClub, variables: { clubId: selectedClub?.id } }]
-  })
+  const [deleteDog] = useMutation(DeleteDog)
 
   const handleShowInactiveChange = (checked: boolean) => {
     setShowInactive(checked)
@@ -82,7 +70,7 @@ function Dogs() {
     }
   }
 
-  const filteredDogsByHandlers = getFilteredAndSortedDogsByHandlers(data?.dogsByHandlersInClub || [], searchQuery, showInactive)
+  const filteredDogsByHandlers = getFilteredAndSortedDogsByHandlers(dogsByHandlersInSelectedClub, searchQuery, showInactive)
 
   if (!selectedClub) {
     return (
@@ -133,9 +121,9 @@ function Dogs() {
         />
       </div>
 
-      {error && (
-        <Alert variant="danger" className="mb-4" onClose={() => setError(null)} dismissible>
-          {error}
+      {(error || clubError) && (
+        <Alert variant="danger" className="mb-4" onClose={() => { setError(null) }} dismissible>
+          {error || clubError}
         </Alert>
       )}
 
@@ -172,7 +160,7 @@ function Dogs() {
                 return (
                   <React.Fragment key={handler.id}>
                     <tr
-                      className="table-secondary"
+                      className={isDark ? '' : 'table-secondary'}
                       onClick={() => navigate(`/handlers/${handler.id}`)}
                       style={{ cursor: 'pointer' }}
                     >

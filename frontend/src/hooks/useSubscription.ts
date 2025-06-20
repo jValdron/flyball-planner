@@ -28,8 +28,10 @@ export function useClubChangedSubscription(
   return useSubscription<ClubChangedSubscription, ClubChangedSubscriptionVariables>(
     CLUB_CHANGED_SUBSCRIPTION,
     {
-      skip: options?.skip,
-      onError: options?.onError,
+      skip: options?.skip ?? false,
+      onError: options?.onError || ((error: Error) => {
+        console.error('Club subscription error:', error);
+      }),
     }
   );
 }
@@ -45,8 +47,10 @@ export function useClubByIdSubscription(
     CLUB_BY_ID_SUBSCRIPTION,
     {
       variables: clubId ? { clubId } : undefined,
-      skip: options?.skip || !clubId,
-      onError: options?.onError,
+      skip: options?.skip ?? !clubId,
+      onError: options?.onError || ((error: Error) => {
+        console.error('Club by ID subscription error:', error);
+      }),
     }
   );
 }
@@ -62,8 +66,10 @@ export function useDogChangedSubscription(
     DOG_CHANGED_SUBSCRIPTION,
     {
       variables: clubId ? { clubId } : undefined,
-      skip: options?.skip,
-      onError: options?.onError,
+      skip: options?.skip ?? !clubId,
+      onError: options?.onError || ((error: Error) => {
+        console.error('Dog subscription error:', error);
+      }),
     }
   );
 }
@@ -79,8 +85,10 @@ export function useHandlerChangedSubscription(
     HANDLER_CHANGED_SUBSCRIPTION,
     {
       variables: clubId ? { clubId } : undefined,
-      skip: options?.skip,
-      onError: options?.onError,
+      skip: options?.skip ?? !clubId,
+      onError: options?.onError || ((error: Error) => {
+        console.error('Handler subscription error:', error);
+      }),
     }
   );
 }
@@ -96,8 +104,10 @@ export function useLocationChangedSubscription(
     LOCATION_CHANGED_SUBSCRIPTION,
     {
       variables: clubId ? { clubId } : undefined,
-      skip: options?.skip,
-      onError: options?.onError,
+      skip: options?.skip ?? !clubId,
+      onError: options?.onError || ((error: Error) => {
+        console.error('Location subscription error:', error);
+      }),
     }
   );
 }

@@ -9,16 +9,14 @@ interface ClubLoadingWrapperProps {
 
 export const ClubLoadingWrapper: React.FC<ClubLoadingWrapperProps> = ({
   children,
-  loadingMessage = 'Loading club data...'
+  loadingMessage = 'Loading clubs data...'
 }) => {
-  const { loading, selectedClub } = useClub();
+  const { loading, selectedClub, clubs } = useClub();
 
-  // Show loading spinner when loading and no club is selected
   if (loading && !selectedClub) {
     return <LoadingSpinner message={loadingMessage} />;
   }
 
-  // Show loading spinner when loading and we have a club (updating data)
   if (loading && selectedClub) {
     return <LoadingSpinner message="Loading club data..." />;
   }

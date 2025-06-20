@@ -5,23 +5,14 @@ import { pubsub, SubscriptionEvents } from '../services/PubSubService';
 @Resolver()
 export class ClubSubscriptionResolver {
   @Subscription(() => ClubEvent, {
-    topics: [SubscriptionEvents.CLUB_CREATED, SubscriptionEvents.CLUB_UPDATED, SubscriptionEvents.CLUB_DELETED],
-    filter: ({ payload, args }) => {
-      return true;
-    }
+    topics: [SubscriptionEvents.CLUB_CREATED, SubscriptionEvents.CLUB_UPDATED, SubscriptionEvents.CLUB_DELETED]
   })
   clubChanged(@Root() payload: ClubEvent): ClubEvent {
     return payload;
   }
 
   @Subscription(() => DogEvent, {
-    topics: [SubscriptionEvents.DOG_CREATED, SubscriptionEvents.DOG_UPDATED, SubscriptionEvents.DOG_DELETED],
-    filter: ({ payload, args }) => {
-      if (args.clubId) {
-        return payload.dog.clubId === args.clubId;
-      }
-      return true;
-    }
+    topics: [SubscriptionEvents.DOG_CREATED, SubscriptionEvents.DOG_UPDATED, SubscriptionEvents.DOG_DELETED]
   })
   dogChanged(
     @Root() payload: DogEvent,
@@ -31,13 +22,7 @@ export class ClubSubscriptionResolver {
   }
 
   @Subscription(() => HandlerEvent, {
-    topics: [SubscriptionEvents.HANDLER_CREATED, SubscriptionEvents.HANDLER_UPDATED, SubscriptionEvents.HANDLER_DELETED],
-    filter: ({ payload, args }) => {
-      if (args.clubId) {
-        return payload.handler.clubId === args.clubId;
-      }
-      return true;
-    }
+    topics: [SubscriptionEvents.HANDLER_CREATED, SubscriptionEvents.HANDLER_UPDATED, SubscriptionEvents.HANDLER_DELETED]
   })
   handlerChanged(
     @Root() payload: HandlerEvent,
@@ -47,13 +32,7 @@ export class ClubSubscriptionResolver {
   }
 
   @Subscription(() => ClubEvent, {
-    topics: [SubscriptionEvents.CLUB_CREATED, SubscriptionEvents.CLUB_UPDATED, SubscriptionEvents.CLUB_DELETED],
-    filter: ({ payload, args }) => {
-      if (args.clubId) {
-        return payload.club.id === args.clubId;
-      }
-      return true;
-    }
+    topics: [SubscriptionEvents.CLUB_CREATED, SubscriptionEvents.CLUB_UPDATED, SubscriptionEvents.CLUB_DELETED]
   })
   clubById(
     @Root() payload: ClubEvent,
@@ -63,13 +42,7 @@ export class ClubSubscriptionResolver {
   }
 
   @Subscription(() => LocationEvent, {
-    topics: [SubscriptionEvents.LOCATION_CREATED, SubscriptionEvents.LOCATION_UPDATED, SubscriptionEvents.LOCATION_DELETED],
-    filter: ({ payload, args }) => {
-      if (args.clubId) {
-        return payload.location.clubId === args.clubId;
-      }
-      return true;
-    }
+    topics: [SubscriptionEvents.LOCATION_CREATED, SubscriptionEvents.LOCATION_UPDATED, SubscriptionEvents.LOCATION_DELETED]
   })
   locationChanged(
     @Root() payload: LocationEvent,

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useMemo } from 'react'
 import type { ReactNode } from 'react'
 import type { Club, Dog, Handler, Location } from '../graphql/generated/graphql'
 import { useQuery } from '@apollo/client'
@@ -9,7 +9,9 @@ import {
   useDogChangedSubscription,
   useHandlerChangedSubscription,
   useLocationChangedSubscription,
+  useClubByIdSubscription,
 } from '../hooks/useSubscription'
+import type { HandlerWithDogs } from '../utils/dogsUtils'
 
 interface ClubContextType {
   selectedClub: Club | null
@@ -17,6 +19,7 @@ interface ClubContextType {
   dogs: Dog[]
   handlers: Handler[]
   locations: Location[]
+  dogsByHandlersInSelectedClub: HandlerWithDogs[]
   loading: boolean
   error: string | null
 }
@@ -71,8 +74,13 @@ export function ClubProvider({ children }: { children: ReactNode }) {
     if (handlersData?.dogsByHandlersInClub) {
       const handlersList = handlersData.dogsByHandlersInClub as Handler[]
       setHandlers(handlersList)
-      // Extract dogs from handlers
-      const allDogs = handlersList.flatMap((handler: Handler) => handler.dogs)
+
+      const allDogs = handlersList.flatMap((handler: Handler) => handler?.dogs?.map((dog: Dog) => {
+        return {
+          ...dog,
+          ownerId: handler.id
+        }
+      }))
       setDogs(allDogs)
     }
   }, [handlersData])
@@ -83,77 +91,100 @@ export function ClubProvider({ children }: { children: ReactNode }) {
     }
   }, [locationsData])
 
-  // Subscribe to real-time updates
+  // Subscribe to real-time updates only when a club is selected
   const { data: clubSubscriptionData, error: clubSubError } = useClubChangedSubscription({
-    onError: (error) => {
-      console.error('Club subscription error:', error)
-    }
-  })
-
-  const { data: dogSubscriptionData, error: dogSubError } = useDogChangedSubscription(selectedClub?.id, {
     skip: !selectedClub?.id,
     onError: (error) => {
-      console.error('Dog subscription error:', error)
+      console.error('Club subscription error:', error);
     }
   })
 
-  const { data: handlerSubscriptionData, error: handlerSubError } = useHandlerChangedSubscription(selectedClub?.id, {
-    skip: !selectedClub?.id,
-    onError: (error) => {
-      console.error('Handler subscription error:', error)
+  const { data: dogSubscriptionData, error: dogSubError } = useDogChangedSubscription(
+    selectedClub?.id,
+    {
+      skip: !selectedClub?.id,
+      onError: (error) => {
+        console.error('Dog subscription error:', error);
+      }
     }
-  })
+  )
 
-  const { data: locationSubscriptionData, error: locationSubError } = useLocationChangedSubscription(selectedClub?.id, {
-    skip: !selectedClub?.id,
-    onError: (error) => {
-      console.error('Location subscription error:', error)
+  const { data: handlerSubscriptionData, error: handlerSubError } = useHandlerChangedSubscription(
+    selectedClub?.id,
+    {
+      skip: !selectedClub?.id,
+      onError: (error) => {
+        console.error('Handler subscription error:', error);
+      }
     }
-  })
+  )
 
-  // Debug subscription errors
-  useEffect(() => {
-    console.log('ClubContext: selectedClub changed to:', selectedClub?.id)
-  }, [selectedClub?.id])
-
-  useEffect(() => {
-    if (clubSubError) {
-      console.error('Club subscription error in context:', clubSubError)
+  const { data: locationSubscriptionData, error: locationSubError } = useLocationChangedSubscription(
+    selectedClub?.id,
+    {
+      skip: !selectedClub?.id,
+      onError: (error) => {
+        console.error('Location subscription error:', error);
+      }
     }
-    if (dogSubError) {
-      console.error('Dog subscription error in context:', dogSubError)
-    }
-    if (handlerSubError) {
-      console.error('Handler subscription error in context:', handlerSubError)
-    }
-    if (locationSubError) {
-      console.error('Location subscription error in context:', locationSubError)
-    }
-  }, [clubSubError, dogSubError, handlerSubError, locationSubError])
+  )
 
   // Handle subscription updates
   useEffect(() => {
     if (clubSubscriptionData?.clubChanged) {
-      const updatedClub = clubSubscriptionData.clubChanged.club as Club
+      const { club: updatedClub, eventType } = clubSubscriptionData.clubChanged
+
       if (updatedClub.id === selectedClub?.id) {
-        setSelectedClub(updatedClub)
+        switch (eventType) {
+          case 'CREATED':
+            break
+
+          case 'UPDATED':
+            setSelectedClub(updatedClub as Club)
+            break
+
+          case 'DELETED':
+            setSelectedClub(null)
+            break
+
+          default:
+            break
+        }
       }
     }
   }, [clubSubscriptionData, selectedClub?.id])
 
   useEffect(() => {
     if (dogSubscriptionData?.dogChanged) {
-      const updatedDog = dogSubscriptionData.dogChanged.dog as Dog
+      const { dog: updatedDog, eventType } = dogSubscriptionData.dogChanged
+
       setDogs(prevDogs => {
         const existingIndex = prevDogs.findIndex(dog => dog.id === updatedDog.id)
-        if (existingIndex >= 0) {
-          // Update existing dog
-          const newDogs = [...prevDogs]
-          newDogs[existingIndex] = updatedDog
-          return newDogs
-        } else {
-          // Add new dog
-          return [...prevDogs, updatedDog]
+
+        switch (eventType) {
+          case 'CREATED':
+            if (existingIndex === -1) {
+              return [...prevDogs, updatedDog as Dog]
+            }
+            return prevDogs
+
+          case 'UPDATED':
+            if (existingIndex >= 0) {
+              const newDogs = [...prevDogs]
+              newDogs[existingIndex] = updatedDog as Dog
+              return newDogs
+            } else {
+              return [...prevDogs, updatedDog as Dog]
+            }
+
+          case 'DELETED':
+            if (existingIndex >= 0) {
+              return prevDogs.filter(dog => dog.id !== updatedDog.id)
+            }
+            return prevDogs
+
+          default:
+            return prevDogs
         }
       })
     }
@@ -161,17 +192,35 @@ export function ClubProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (handlerSubscriptionData?.handlerChanged) {
-      const updatedHandler = handlerSubscriptionData.handlerChanged.handler as Handler
+      const { handler: updatedHandler, eventType } = handlerSubscriptionData.handlerChanged
+
       setHandlers(prevHandlers => {
         const existingIndex = prevHandlers.findIndex(handler => handler.id === updatedHandler.id)
-        if (existingIndex >= 0) {
-          // Update existing handler
-          const newHandlers = [...prevHandlers]
-          newHandlers[existingIndex] = updatedHandler
-          return newHandlers
-        } else {
-          // Add new handler
-          return [...prevHandlers, updatedHandler]
+
+        switch (eventType) {
+          case 'CREATED':
+            if (existingIndex === -1) {
+              return [...prevHandlers, updatedHandler as Handler]
+            }
+            return prevHandlers
+
+          case 'UPDATED':
+            if (existingIndex >= 0) {
+              const newHandlers = [...prevHandlers]
+              newHandlers[existingIndex] = updatedHandler as Handler
+              return newHandlers
+            } else {
+              return [...prevHandlers, updatedHandler as Handler]
+            }
+
+          case 'DELETED':
+            if (existingIndex >= 0) {
+              return prevHandlers.filter(handler => handler.id !== updatedHandler.id)
+            }
+            return prevHandlers
+
+          default:
+            return prevHandlers
         }
       })
     }
@@ -179,24 +228,53 @@ export function ClubProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (locationSubscriptionData?.locationChanged) {
-      const updatedLocation = locationSubscriptionData.locationChanged.location as Location
+      const { location: updatedLocation, eventType } = locationSubscriptionData.locationChanged
+
       setLocations(prevLocations => {
         const existingIndex = prevLocations.findIndex(location => location.id === updatedLocation.id)
-        if (existingIndex >= 0) {
-          // Update existing location
-          const newLocations = [...prevLocations]
-          newLocations[existingIndex] = updatedLocation
-          return newLocations
-        } else {
-          // Add new location
-          return [...prevLocations, updatedLocation]
+
+        switch (eventType) {
+          case 'CREATED':
+            if (existingIndex === -1) {
+              return [...prevLocations, updatedLocation as Location]
+            }
+            return prevLocations
+
+          case 'UPDATED':
+            if (existingIndex >= 0) {
+              const newLocations = [...prevLocations]
+              newLocations[existingIndex] = updatedLocation as Location
+              return newLocations
+            } else {
+              return [...prevLocations, updatedLocation as Location]
+            }
+
+          case 'DELETED':
+            if (existingIndex >= 0) {
+              return prevLocations.filter(location => location.id !== updatedLocation.id)
+            }
+            return prevLocations
+
+          default:
+            return prevLocations
         }
       })
     }
   }, [locationSubscriptionData])
 
+  const dogsByHandlersInSelectedClub = useMemo(() => {
+    if (!selectedClub?.id || !handlers.length || !dogs.length) {
+      return []
+    }
+
+    return handlers.map((handler: Handler) => ({
+      ...handler,
+      dogs: dogs.filter(dog => dog?.ownerId === handler.id)
+    })) as HandlerWithDogs[]
+  }, [selectedClub?.id, handlers, dogs])
+
   const loading = clubLoading || handlersLoading || locationsLoading
-  const hasError = clubError || handlersError || locationsError
+  const hasError = clubError || handlersError || locationsError || clubSubError || dogSubError || handlerSubError || locationSubError
 
   useEffect(() => {
     if (hasError) {
@@ -213,6 +291,7 @@ export function ClubProvider({ children }: { children: ReactNode }) {
       dogs,
       handlers,
       locations,
+      dogsByHandlersInSelectedClub,
       loading,
       error
     }}>

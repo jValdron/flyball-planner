@@ -8,6 +8,10 @@
   --fpp-calendar-gap: 0.25rem;
 }
 
+[data-bs-theme="dark"] {
+  --fpp-calendar-active-tile-color: #fff;
+}
+
 .react-calendar {
   border: none;
 }
@@ -36,6 +40,12 @@
 .react-calendar__tile:disabled {
   background-color: var(--bs-gray-200) !important;
   color: var(--bs-gray-500) !important;
+}
+
+[data-bs-theme="dark"] .bg-past,
+[data-bs-theme="dark"] .react-calendar__tile:disabled {
+  background-color: var(--bs-gray-700) !important;
+  color: var(--bs-gray-400) !important;
 }
 
 .react-calendar__tile:disabled {

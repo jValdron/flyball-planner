@@ -159,7 +159,7 @@ function HandlerDetails() {
         onHide={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteHandler}
         title="Delete Handler"
-        message={`Are you sure you want to delete <strong>${handlerData?.handler?.givenName} ${handlerData?.handler?.surname}</strong>? This will delete all dogs associated with this handler and remove them from any practice sessions.<p class="mt-2 text-danger">This action cannot be undone.</p>`}
+        message={`Are you sure you want to delete <strong>${handlerData?.handler?.givenName} ${handlerData?.handler?.surname}</strong>? This will delete all dogs associated with this handler and remove them from any practices.<p class="mt-2 text-danger">This action cannot be undone.</p>`}
         confirmButtonText="Delete Handler"
       />
       <Breadcrumb>
@@ -233,14 +233,16 @@ function HandlerDetails() {
             <Save className="me-2" />
             {isNewHandler ? 'Create Handler' : 'Save Changes'}
           </Button>
-          <Button
-            type="button"
-            variant="success"
-            onClick={(e) => handleSubmit(e, true)}
-          >
-            <Save className="me-2" />
-            Save & Add Dog
-          </Button>
+          {isNewHandler && (
+            <Button
+              type="button"
+              variant="success"
+              onClick={(e) => handleSubmit(e, true)}
+            >
+              <Save className="me-2" />
+              Save & Add Dog
+            </Button>
+          )}
         </div>
 
         {!isNewHandler && handlerData?.handler && (

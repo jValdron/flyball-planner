@@ -22,7 +22,7 @@ export class Handler {
   @Column()
   clubId: string;
 
-  @Field(() => Club)
+  @Field(() => Club, { nullable: true })
   @ManyToOne(() => Club)
   @JoinColumn({ name: 'clubId' })
   club: Club;
@@ -35,7 +35,7 @@ export class Handler {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Field(() => [Dog])
+  @Field(() => [Dog], { nullable: true })
   @OneToMany(() => Dog, dog => dog.owner, { cascade: true })
   dogs: Dog[] | null;
 }

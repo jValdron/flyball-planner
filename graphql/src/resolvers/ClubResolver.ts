@@ -16,7 +16,9 @@ export class ClubResolver {
 
   @Query(() => Club, { nullable: true })
   async club(@Arg('id') id: string): Promise<Club | null> {
-    return await this.clubRepository.findOneBy({ id });
+    return await this.clubRepository.findOneBy({ id }, {
+      relations: ['dogs', 'handlers', 'locations']
+    });
   }
 
   @Mutation(() => Club)

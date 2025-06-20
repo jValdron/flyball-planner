@@ -33,8 +33,8 @@ export class Location {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Field(() => Club)
+  @Field(() => Club, { nullable: true })
   @ManyToOne(() => Club)
   @JoinColumn({ name: 'clubId' })
-  club: Club;
+  club?: Club;
 }

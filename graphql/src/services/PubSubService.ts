@@ -1,4 +1,5 @@
-import { PubSub } from 'graphql-subscriptions';
+import { createPubSub } from '@graphql-yoga/subscription';
+import { EventType } from '../types/SubscriptionTypes';
 
 export enum SubscriptionEvents {
   CLUB_CREATED = 'CLUB_CREATED',
@@ -23,38 +24,77 @@ export enum SubscriptionEvents {
   PRACTICE_SET_DELETED = 'PRACTICE_SET_DELETED',
 }
 
-export const pubsub = new PubSub();
+export const pubsub = createPubSub();
+
+function getEventType(event: SubscriptionEvents): EventType {
+  if (event.includes('_CREATED')) return EventType.CREATED;
+  if (event.includes('_UPDATED')) return EventType.UPDATED;
+  if (event.includes('_DELETED')) return EventType.DELETED;
+  return EventType.UPDATED; // fallback
+}
 
 export class PubSubService {
   static async publish<T>(event: SubscriptionEvents, payload: T): Promise<void> {
-    await pubsub.publish(event, payload);
+    try {
+      await pubsub.publish(event, payload);
+    } catch (error) {
+      console.error(`Error publishing event ${event}:`, error);
+    }
   }
 
   static async publishClubEvent(event: SubscriptionEvents, club: any): Promise<void> {
-    await this.publish(event, { club });
+    try {
+      await this.publish(event, { club, eventType: getEventType(event) });
+    } catch (error) {
+      console.error(`Error publishing club event ${event}:`, error);
+    }
   }
 
   static async publishDogEvent(event: SubscriptionEvents, dog: any): Promise<void> {
-    await this.publish(event, { dog });
+    try {
+      await this.publish(event, { dog, eventType: getEventType(event) });
+    } catch (error) {
+      console.error(`Error publishing dog event ${event}:`, error);
+    }
   }
 
   static async publishHandlerEvent(event: SubscriptionEvents, handler: any): Promise<void> {
-    await this.publish(event, { handler });
+    try {
+      await this.publish(event, { handler, eventType: getEventType(event) });
+    } catch (error) {
+      console.error(`Error publishing handler event ${event}:`, error);
+    }
   }
 
   static async publishLocationEvent(event: SubscriptionEvents, location: any): Promise<void> {
-    await this.publish(event, { location });
+    try {
+      await this.publish(event, { location, eventType: getEventType(event) });
+    } catch (error) {
+      console.error(`Error publishing location event ${event}:`, error);
+    }
   }
 
   static async publishPracticeEvent(event: SubscriptionEvents, practice: any): Promise<void> {
-    await this.publish(event, { practice });
+    try {
+      await this.publish(event, { practice, eventType: getEventType(event) });
+    } catch (error) {
+      console.error(`Error publishing practice event ${event}:`, error);
+    }
   }
 
   static async publishPracticeAttendanceEvent(event: SubscriptionEvents, attendance: any): Promise<void> {
-    await this.publish(event, { attendance });
+    try {
+      await this.publish(event, { attendance, eventType: getEventType(event) });
+    } catch (error) {
+      console.error(`Error publishing practice attendance event ${event}:`, error);
+    }
   }
 
   static async publishPracticeSetEvent(event: SubscriptionEvents, practiceSet: any): Promise<void> {
-    await this.publish(event, { practiceSet });
+    try {
+      await this.publish(event, { practiceSet, eventType: getEventType(event) });
+    } catch (error) {
+      console.error(`Error publishing practice set event ${event}:`, error);
+    }
   }
 }

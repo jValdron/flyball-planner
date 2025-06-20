@@ -10,14 +10,16 @@ import PracticeDetails from './pages/PracticeDetails'
 import ClubDetails from './pages/ClubDetails'
 import { ClubProvider } from './contexts/ClubContext'
 import { PracticeProvider } from './contexts/PracticeContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import { ClubPicker } from './components/ClubPicker'
 import { ClubLoadingWrapper } from './components/ClubLoadingWrapper'
 import { WebSocketStatus } from './components/WebSocketStatus'
+import { ThemeToggle } from './components/ThemeToggle'
 import LocationDetails from './pages/LocationDetails'
 
 function Header() {
   return (
-    <Navbar bg="dark" variant="dark" expand="lg" className="mb-4">
+    <Navbar bg="black" variant="dark" expand="lg" className="mb-4">
       <Container>
         <Navbar.Brand as={Link} to="/">Flyball Practice Planner</Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
@@ -27,7 +29,8 @@ function Header() {
             <Nav.Link as={Link} to="/dogs">Dogs</Nav.Link>
             <Nav.Link as={Link} to="/club">Club</Nav.Link>
           </Nav>
-          <div className="d-flex align-items-center">
+          <div className="d-flex align-items-center gap-2">
+            <ThemeToggle />
             <ClubPicker />
           </div>
         </Navbar.Collapse>
@@ -39,34 +42,36 @@ function Header() {
 function App() {
   return (
     <ApolloProvider client={client}>
-      <Router>
-        <ClubProvider>
-          <PracticeProvider>
-            <Header />
-            <ClubLoadingWrapper>
-              <Container>
-                <Routes>
-                  <Route path="/" element={<Practices />} />
-                  <Route path="/dogs" element={<Dogs />} />
-                  <Route path="/dogs/new" element={<DogDetails />} />
-                  <Route path="/dogs/:dogId" element={<DogDetails />} />
-                  <Route path="/handlers/:handlerId" element={<HandlerDetails />} />
-                  <Route path="/club" element={<ClubDetails />} />
-                  <Route path="/locations/new" element={<LocationDetails />} />
-                  <Route path="/locations/:locationId" element={<LocationDetails />} />
-                  <Route path="/practices" element={<Practices />} />
-                  <Route path="/practices/new" element={<PracticeDetails />} />
-                  <Route path="/practices/:practiceId" element={<PracticeDetails />} />
-                  <Route path="/practices/:practiceId/attendance" element={<PracticeDetails />} />
-                  <Route path="/practices/:practiceId/sets" element={<PracticeDetails />} />
-                  <Route path="/practices/:practiceId/checks" element={<PracticeDetails />} />
-                </Routes>
-              </Container>
-            </ClubLoadingWrapper>
-            <WebSocketStatus />
-          </PracticeProvider>
-        </ClubProvider>
-      </Router>
+      <ThemeProvider>
+        <Router>
+          <ClubProvider>
+            <PracticeProvider>
+              <Header />
+              <ClubLoadingWrapper>
+                <Container>
+                  <Routes>
+                    <Route path="/" element={<Practices />} />
+                    <Route path="/dogs" element={<Dogs />} />
+                    <Route path="/dogs/new" element={<DogDetails />} />
+                    <Route path="/dogs/:dogId" element={<DogDetails />} />
+                    <Route path="/handlers/:handlerId" element={<HandlerDetails />} />
+                    <Route path="/club" element={<ClubDetails />} />
+                    <Route path="/locations/new" element={<LocationDetails />} />
+                    <Route path="/locations/:locationId" element={<LocationDetails />} />
+                    <Route path="/practices" element={<Practices />} />
+                    <Route path="/practices/new" element={<PracticeDetails />} />
+                    <Route path="/practices/:practiceId" element={<PracticeDetails />} />
+                    <Route path="/practices/:practiceId/attendance" element={<PracticeDetails />} />
+                    <Route path="/practices/:practiceId/sets" element={<PracticeDetails />} />
+                    <Route path="/practices/:practiceId/checks" element={<PracticeDetails />} />
+                  </Routes>
+                </Container>
+              </ClubLoadingWrapper>
+              <WebSocketStatus />
+            </PracticeProvider>
+          </ClubProvider>
+        </Router>
+      </ThemeProvider>
     </ApolloProvider>
   )
 }

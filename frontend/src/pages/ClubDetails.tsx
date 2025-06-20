@@ -11,7 +11,7 @@ import type { Location, Club } from '../graphql/generated/graphql'
 
 function ClubDetails() {
   const navigate = useNavigate()
-  const { selectedClub, setSelectedClub, locations, loading, error: contextError } = useClub()
+  const { selectedClub, setSelectedClub, locations, error: contextError } = useClub()
   const [club, setClub] = useState<Partial<Club>>({})
   const [error, setError] = useState<string | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -76,16 +76,6 @@ function ClubDetails() {
       setShowDeleteModal(false)
       setLocationToDelete(null)
     }
-  }
-
-  if (loading) {
-    return (
-      <Container className="text-center mt-5">
-        <Spinner animation="border" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </Spinner>
-      </Container>
-    )
   }
 
   const sortedLocations = [...locations]
@@ -166,7 +156,7 @@ function ClubDetails() {
             <th className="w-100">Name</th>
             <th className="text-center">Default</th>
             <th className="text-center text-nowrap">Two Lanes</th>
-            <th>Actions</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>

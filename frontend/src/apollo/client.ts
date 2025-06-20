@@ -8,29 +8,37 @@ const httpLink = createHttpLink({
 });
 
 const wsClient = createClient({
-  url: 'ws://localhost:4000/graphql',
+  url: 'ws://localhost:4000/subscriptions',
   on: {
     connecting: () => {
-      console.log('WebSocket: Connecting...');
+      if (__DEV__) {
+        console.log('WebSocket: Connecting...');
+      }
     },
     connected: () => {
-      console.log('WebSocket: Connected successfully');
+      if (__DEV__) {
+        console.log('WebSocket: Connected successfully');
+      }
     },
     closed: () => {
-      console.log('WebSocket: Connection closed');
+      if (__DEV__) {
+        console.log('WebSocket: Connection closed');
+      }
     },
     error: (error) => {
-      console.error('WebSocket error:', error);
+      if (__DEV__) {
+        console.error('WebSocket error:', error);
+      }
     },
   },
-  connectionParams: {
-    // Add any auth headers if needed
-  },
+  connectionParams: {},
   retryAttempts: 3,
   retryWait: async (retries) => {
     const delay = Math.min(1000 * 2 ** retries, 10000);
     await new Promise(resolve => setTimeout(resolve, delay));
   },
+  lazyCloseTimeout: 5000,
+  disablePong: false,
 });
 
 const wsLink = new GraphQLWsLink(wsClient);
@@ -54,7 +62,14 @@ export const client = new ApolloClient({
     watchQuery: {
       fetchPolicy: 'cache-and-network',
     },
+    query: {
+      errorPolicy: 'all',
+    },
+    mutate: {
+      errorPolicy: 'all',
+    },
   },
+  connectToDevTools: __DEV__,
 });
 
 export { wsClient };

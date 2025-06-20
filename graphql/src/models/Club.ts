@@ -1,8 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { ObjectType, Field, ID } from 'type-graphql';
 import { Dog } from './Dog';
-import { Practice } from './Practice';
+import { Handler } from './Handler';
 import { Location } from './Location';
+import { Practice } from './Practice';
 
 @ObjectType()
 @Entity('clubs')
@@ -35,11 +36,15 @@ export class Club {
   @OneToMany(() => Dog, dog => dog.club)
   dogs: Dog[];
 
-  @Field(() => [Practice])
-  @OneToMany(() => Practice, practice => practice.club)
-  practices: Practice[];
+  @Field(() => [Handler])
+  @OneToMany(() => Handler, handler => handler.club)
+  handlers: Handler[];
 
   @Field(() => [Location])
   @OneToMany(() => Location, location => location.club)
   locations: Location[];
+
+  @Field(() => [Practice])
+  @OneToMany(() => Practice, practice => practice.club)
+  practices: Practice[];
 }

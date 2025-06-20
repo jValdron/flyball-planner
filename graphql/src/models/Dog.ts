@@ -73,13 +73,13 @@ export class Dog {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Field(() => Handler)
+  @Field(() => Handler, { nullable: true })
   @ManyToOne(() => Handler, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'ownerId' })
-  owner: Handler;
+  owner: Handler | null;
 
-  @Field(() => Club)
+  @Field(() => Club, { nullable: true })
   @ManyToOne(() => Club)
   @JoinColumn({ name: 'clubId' })
-  club: Club;
+  club: Club | null;
 }
