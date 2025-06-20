@@ -19,9 +19,12 @@ export enum SubscriptionEvents {
   PRACTICE_UPDATED = 'PRACTICE_UPDATED',
   PRACTICE_DELETED = 'PRACTICE_DELETED',
   PRACTICE_ATTENDANCE_UPDATED = 'PRACTICE_ATTENDANCE_UPDATED',
-  PRACTICE_SET_CREATED = 'PRACTICE_SET_CREATED',
   PRACTICE_SET_UPDATED = 'PRACTICE_SET_UPDATED',
   PRACTICE_SET_DELETED = 'PRACTICE_SET_DELETED',
+
+  PRACTICE_SUMMARY_CREATED = 'PRACTICE_SUMMARY_CREATED',
+  PRACTICE_SUMMARY_UPDATED = 'PRACTICE_SUMMARY_UPDATED',
+  PRACTICE_SUMMARY_DELETED = 'PRACTICE_SUMMARY_DELETED',
 }
 
 export const pubsub = createPubSub();
@@ -90,11 +93,35 @@ export class PubSubService {
     }
   }
 
-  static async publishPracticeSetEvent(event: SubscriptionEvents, practiceSet: any): Promise<void> {
+  static async publishPracticeSetEvent(event: SubscriptionEvents, set: any): Promise<void> {
     try {
-      await this.publish(event, { practiceSet, eventType: getEventType(event) });
+      await this.publish(event, { set, eventType: getEventType(event) });
     } catch (error) {
       console.error(`Error publishing practice set event ${event}:`, error);
+    }
+  }
+
+  static async publishPracticeSummaryEvent(event: SubscriptionEvents, practiceSummary: any): Promise<void> {
+    try {
+      let summaryEvent: SubscriptionEvents;
+      switch (event) {
+        case SubscriptionEvents.PRACTICE_CREATED:
+          summaryEvent = SubscriptionEvents.PRACTICE_SUMMARY_CREATED;
+          break;
+        case SubscriptionEvents.PRACTICE_UPDATED:
+          summaryEvent = SubscriptionEvents.PRACTICE_SUMMARY_UPDATED;
+          break;
+        case SubscriptionEvents.PRACTICE_DELETED:
+          summaryEvent = SubscriptionEvents.PRACTICE_SUMMARY_DELETED;
+          break;
+        default:
+          summaryEvent = event;
+      }
+
+      const payload = { practice: practiceSummary, eventType: getEventType(event) };
+      await this.publish(summaryEvent, payload);
+    } catch (error) {
+      console.error(`Error publishing practice summary event ${event}:`, error);
     }
   }
 }

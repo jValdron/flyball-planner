@@ -1,21 +1,25 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Container, Button, Card, Spinner, Alert, Badge, Form, ListGroup, Breadcrumb } from 'react-bootstrap'
 import { useClub } from '../contexts/ClubContext'
+import { useTheme } from '../contexts/ThemeContext'
 import { Link, useNavigate } from 'react-router-dom'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import { CalendarCheck, CalendarX, CheckLg, Pencil, PlusLg, Trash, FileText, XLg, QuestionLg } from 'react-bootstrap-icons'
 import { formatRelativeTime, isPastDay } from '../utils/dateUtils'
 import { useQuery, useMutation } from '@apollo/client'
 import { GetPracticesByClub, DeletePractice} from '../graphql/practice'
-import { GetActiveDogsInClub } from '../graphql/dogs'
 import { compareDesc, isAfter, isBefore } from 'date-fns'
 import { compareAsc } from 'date-fns'
+import { usePracticeSummaryChangedSubscription } from '../hooks/useSubscription'
+import type { PracticeSummary } from '../graphql/generated/graphql'
 
 function Practices() {
   const { selectedClub } = useClub()
+  const { isDark } = useTheme()
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [practiceToDelete, setPracticeToDelete] = useState<string | null>(null)
   const [showDraftsOnly, setShowDraftsOnly] = useState(false)
+  const [practices, setPractices] = useState<PracticeSummary[]>([])
   const navigate = useNavigate()
 
   const { loading, error, data } = useQuery(GetPracticesByClub, {
@@ -23,10 +27,54 @@ function Practices() {
     skip: !selectedClub
   })
 
-  const { data: activeDogsData } = useQuery(GetActiveDogsInClub, {
-    variables: { clubId: selectedClub?.id ?? '' },
+  const { data: subscriptionData } = usePracticeSummaryChangedSubscription(selectedClub?.id, {
+    onError: (error) => {
+      console.error('Practice summary subscription error:', error);
+    },
     skip: !selectedClub
-  })
+  });
+
+  useEffect(() => {
+    if (data?.practiceSummariesByClub) {
+      setPractices(data.practiceSummariesByClub as PracticeSummary[]);
+    }
+  }, [data]);
+
+  useEffect(() => {
+    if (subscriptionData?.practiceSummaryChanged) {
+      const { practice: updatedPractice, eventType } = subscriptionData.practiceSummaryChanged;
+
+      setPractices(prevPractices => {
+        const existingIndex = prevPractices.findIndex(p => p.id === updatedPractice.id);
+
+        switch (eventType) {
+          case 'CREATED':
+            if (existingIndex === -1) {
+              return [...prevPractices, updatedPractice as PracticeSummary];
+            }
+            return prevPractices;
+
+          case 'UPDATED':
+            if (existingIndex >= 0) {
+              const newPractices = [...prevPractices];
+              newPractices[existingIndex] = updatedPractice as PracticeSummary;
+              return newPractices;
+            } else {
+              return [...prevPractices, updatedPractice as PracticeSummary];
+            }
+
+          case 'DELETED':
+            if (existingIndex >= 0) {
+              return prevPractices.filter(p => p.id !== updatedPractice.id);
+            }
+            return prevPractices;
+
+          default:
+            return prevPractices;
+        }
+      });
+    }
+  }, [subscriptionData]);
 
   const [deletePractice] = useMutation(DeletePractice, {
     refetchQueries: [{ query: GetPracticesByClub, variables: { clubId: selectedClub?.id ?? '' } }]
@@ -49,7 +97,6 @@ function Practices() {
     }
   }
 
-  const practices = data?.practicesByClub || []
   const now = new Date()
   const sortedPractices = [...practices].sort((a, b) => {
     const dateA = a.scheduledAt ? new Date(a.scheduledAt) : new Date(0)
@@ -145,7 +192,7 @@ function Practices() {
                       style={{ cursor: 'pointer' }}
                     >
                       <Card.Body className={practiceIsPast ? 'bg-past' : practice.status === 'Draft' ? 'bg-warning-subtle' : 'bg-primary-subtle'}>
-                        <Card.Title>
+                        <Card.Title className="text-truncate">
                           {formatRelativeTime(practice.scheduledAt)}
                         </Card.Title>
                         <Card.Text>
@@ -155,15 +202,12 @@ function Practices() {
                         </Card.Text>
                       </Card.Body>
                       <ListGroup className="list-group-flush">
-                        <ListGroup.Item><CheckLg className="me-1" /> {practice.attendances.filter(a => a.attending === 'Attending').length} attending</ListGroup.Item>
-                        <ListGroup.Item><XLg className="me-1" /> {practice.attendances.filter(a => a.attending === 'NotAttending').length} not attending</ListGroup.Item>
-                        <ListGroup.Item><QuestionLg className="me-1" /> {
-                          (activeDogsData?.activeDogsInClub ?? 0) -
-                          practice.attendances.filter(a => a.attending === 'Attending' || a.attending === 'NotAttending').length
-                        } unconfirmed</ListGroup.Item>
-                        <ListGroup.Item><FileText className="me-1" /> {practice.sets.length} sets</ListGroup.Item>
+                        <ListGroup.Item><CheckLg className="me-1" /> {practice.attendingCount} attending</ListGroup.Item>
+                        <ListGroup.Item><XLg className="me-1" /> {practice.notAttendingCount} not attending</ListGroup.Item>
+                        <ListGroup.Item><QuestionLg className="me-1" /> {practice.unconfirmedCount} unconfirmed</ListGroup.Item>
+                        <ListGroup.Item><FileText className="me-1" /> {practice.setsCount} sets</ListGroup.Item>
                       </ListGroup>
-                      <Card.Body className="bg-light d-flex justify-content-between">
+                      <Card.Body className={`${isDark ? 'bg-dark' : 'bg-light'} d-flex justify-content-between`}>
                         {practiceIsPast ? "" : (
                           <Button
                             variant="outline-primary"

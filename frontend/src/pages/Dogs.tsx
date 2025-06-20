@@ -127,98 +127,90 @@ function Dogs() {
         </Alert>
       )}
 
-      {loading ? (
-        <Container className="text-center mt-5">
-          <Spinner animation="border" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </Spinner>
-        </Container>
-      ) : (
-        <Table striped bordered hover responsive>
-          <thead>
+      <Table striped bordered hover responsive>
+        <thead>
+          <tr>
+            <th className="col-6 col-md-4">Name</th>
+            <th className="col-3 col-md-2">CRN</th>
+            {showInactive && <th className="d-none d-md-table-cell col-md-2">Status</th>}
+            <th className="col-2 col-md-2">Level</th>
+            <th className="col-1 text-end">
+              <span className="d-none d-md-inline">Actions</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredDogsByHandlers.length === 0 ? (
             <tr>
-              <th className="col-6 col-md-4">Name</th>
-              <th className="col-3 col-md-2">CRN</th>
-              <th className="d-none d-md-table-cell col-md-2">Status</th>
-              <th className="col-2 col-md-2">Level</th>
-              <th className="col-1 text-end">
-                <span className="d-none d-md-inline">Actions</span>
-              </th>
+              <td colSpan={5} className="text-center text-muted py-4">
+                No matching handlers or dogs found
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {filteredDogsByHandlers.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="text-center text-muted py-4">
-                  No matching handlers or dogs found
-                </td>
-              </tr>
-            ) : (
-              filteredDogsByHandlers.map((handler: HandlerWithDogs) => {
-                const handlerName = getHandlerName(handler)
+          ) : (
+            filteredDogsByHandlers.map((handler: HandlerWithDogs) => {
+              const handlerName = getHandlerName(handler)
 
-                return (
-                  <React.Fragment key={handler.id}>
-                    <tr
-                      className={isDark ? '' : 'table-secondary'}
-                      onClick={() => navigate(`/handlers/${handler.id}`)}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <td colSpan={5}>
-                        <div className="d-flex justify-content-between align-items-center">
-                          <strong>{handlerName}</strong>
-                          <Button
-                            variant="outline-success"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              navigate(`/dogs/new?ownerId=${handler.id}`)
-                            }}
-                          >
-                            <PlusLg className="me-1" />
-                            New Dog
-                          </Button>
-                        </div>
+              return (
+                <React.Fragment key={handler.id}>
+                  <tr
+                    className={isDark ? '' : 'table-secondary'}
+                    onClick={() => navigate(`/handlers/${handler.id}`)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <td colSpan={5}>
+                      <div className="d-flex justify-content-between align-items-center">
+                        <strong>{handlerName}</strong>
+                        <Button
+                          variant="outline-success"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            navigate(`/dogs/new?ownerId=${handler.id}`)
+                          }}
+                        >
+                          <PlusLg className="me-1" />
+                          New Dog
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                  {handler.dogs?.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="ps-4 text-muted">
+                        No active dogs
                       </td>
                     </tr>
-                    {handler.dogs?.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="ps-4 text-muted">
-                          No active dogs
+                  ) : (
+                    handler.dogs?.map((dog: DogWithBasicInfo) => (
+                      <tr
+                        key={dog.id}
+                        onClick={() => handleRowClick(dog.id)}
+                        style={{ cursor: 'pointer' }}
+                        className={`align-middle`}
+                      >
+                        <td className={`ps-4 ${dog.status === 'Inactive' ? 'text-muted' : ''} col-6 col-md-4`}>{dog.name}</td>
+                        <td className="font-monospace col-3 col-md-2">{dog.crn}</td>
+                        {showInactive && <td className="d-none d-md-table-cell col-md-2">{getStatusBadge(dog.status)}</td>}
+                        <td className="col-2 col-md-2">{<TrainingLevelBadge level={dog.trainingLevel} />}</td>
+                        <td className="col-1 text-nowrap text-end">
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={(e) => handleDelete(e, dog)}
+                          >
+                            <Trash className="me-md-1" />
+                            <span className="d-none d-md-inline">Delete</span>
+                          </Button>
                         </td>
                       </tr>
-                    ) : (
-                      handler.dogs?.map((dog: DogWithBasicInfo) => (
-                        <tr
-                          key={dog.id}
-                          onClick={() => handleRowClick(dog.id)}
-                          style={{ cursor: 'pointer' }}
-                          className={`align-middle`}
-                        >
-                          <td className={`ps-4 ${dog.status === 'Inactive' ? 'text-muted' : ''} col-6 col-md-4`}>{dog.name}</td>
-                          <td className="font-monospace col-3 col-md-2">{dog.crn}</td>
-                          <td className="d-none d-md-table-cell col-md-2">{getStatusBadge(dog.status)}</td>
-                          <td className="col-2 col-md-2">{<TrainingLevelBadge level={dog.trainingLevel} />}</td>
-                          <td className="col-1 text-nowrap text-end">
-                            <Button
-                              variant="outline-danger"
-                              size="sm"
-                              onClick={(e) => handleDelete(e, dog)}
-                            >
-                              <Trash className="me-md-1" />
-                              <span className="d-none d-md-inline">Delete</span>
-                            </Button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </React.Fragment>
-                )
-              })
-            )}
-          </tbody>
-        </Table>
-      )}
+                    ))
+                  )}
+                </React.Fragment>
+              )
+            })
+          )}
+        </tbody>
+      </Table>
 
       <DeleteConfirmationModal
         show={showDeleteModal}

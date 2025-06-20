@@ -18,9 +18,9 @@ export const GetSets = gql`
   }
 `
 
-export const DeleteSet = gql`
-  mutation DeleteSet($id: String!) {
-    deleteSet(id: $id)
+export const DeleteSets = gql`
+  mutation DeleteSets($ids: [String!]!) {
+    deleteSets(ids: $ids)
   }
 `
 

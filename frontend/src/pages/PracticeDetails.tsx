@@ -7,10 +7,10 @@ import { SaveSpinner } from '../components/SaveSpinner'
 import { ChevronLeft, ChevronRight, Trash, CheckLg } from 'react-bootstrap-icons'
 import { formatRelativeTime, isPastDay } from '../utils/dateUtils'
 import { PracticeAttendance } from '../components/PracticeSet/PracticeAttendance'
-import { useQuery, useMutation } from '@apollo/client'
-import { GetPractice, CreatePractice, UpdatePractice, DeletePractice } from '../graphql/practice'
+import { useMutation } from '@apollo/client'
+import { CreatePractice, UpdatePractice, DeletePractice } from '../graphql/practice'
 import { AttendanceStatus, PracticeStatus } from '../graphql/generated/graphql'
-import type { Practice, GetPracticeQuery, CreatePracticeMutation, UpdatePracticeMutation, DeletePracticeMutation, PracticeAttendance as PracticeAttendanceType } from '../graphql/generated/graphql'
+import type { CreatePracticeMutation, UpdatePracticeMutation, DeletePracticeMutation } from '../graphql/generated/graphql'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import { PracticeValidationService, type ValidationError } from '../services/practiceValidation'
 import { PracticeValidation } from '../components/PracticeSet/PracticeValidation'
@@ -22,21 +22,18 @@ function PracticeDetailsContent() {
   const { practiceId } = useParams()
   const location = useLocation()
   const { selectedClub } = useClub()
-  const { attendances, isAttendancesLoading, sets, isSetsLoading } = usePractice()
+  const {
+    practice,
+    isPracticeLoading,
+    practiceError,
+    attendances,
+    sets
+  } = usePractice()
   const [scheduledAt, setScheduledAt] = useState<Date | null>(null)
   const [isDirty, setIsDirty] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([])
-
-  const { data: practiceData, loading: isPracticeLoading } = useQuery<GetPracticeQuery>(GetPractice, {
-    variables: { id: practiceId! },
-    skip: !practiceId,
-    onError: (err) => {
-      setError('Failed to load practice details. Please try again later.')
-      console.error('Error loading practice:', err)
-    }
-  })
 
   const [createPractice, { loading: isCreating }] = useMutation<CreatePracticeMutation>(CreatePractice, {
     onError: (err) => {
@@ -64,7 +61,6 @@ function PracticeDetailsContent() {
     }
   })
 
-  const practice = practiceData?.practice
   const isPastPractice = practiceId ? isPastDay(practice?.scheduledAt ?? null) : false
   const isSaving = isCreating || isUpdating
 
@@ -81,7 +77,6 @@ function PracticeDetailsContent() {
   }
 
   const handleScheduledAtChange = (newScheduledAt: Date) => {
-    console.log('newScheduledAt', newScheduledAt)
     setScheduledAt(newScheduledAt)
     setIsDirty(true)
   }
@@ -95,13 +90,13 @@ function PracticeDetailsContent() {
 
   useEffect(() => {
     if (practice) {
-      const practiceToValidate: Partial<Practice> = {
+      const practiceToValidate = {
         id: practice.id,
         scheduledAt: practice.scheduledAt,
         status: practice.status,
         clubId: practice.clubId,
-        attendances: attendances as PracticeAttendanceType[],
-        sets: sets as any || []
+        attendances: attendances as any,
+        sets: sets as any
       }
       const validationResult = PracticeValidationService.validatePractice(practiceToValidate)
       setValidationErrors(validationResult.errors)
@@ -185,6 +180,16 @@ function PracticeDetailsContent() {
         <Spinner animation="border" role="status">
           <span className="visually-hidden">Loading...</span>
         </Spinner>
+      </Container>
+    )
+  }
+
+  if (practiceError) {
+    return (
+      <Container>
+        <Alert variant="danger" className="mt-4">
+          {practiceError}
+        </Alert>
       </Container>
     )
   }
@@ -282,13 +287,9 @@ function PracticeDetailsContent() {
             <span>
               {practiceId && !attendances.some(a => a.attending === AttendanceStatus.Unknown) ? <CheckLg className="me-2 text-success" /> : ""}
               Attendance
-              {isAttendancesLoading ? (
-                <Spinner animation="border" size="sm" className="ms-2" />
-              ) : (
-                  <Badge bg={practiceId ? 'primary' : 'secondary'} className="ms-2">
-                    {attendances.filter(a => a.attending === AttendanceStatus.Attending).length}
-                  </Badge>
-              )}
+              <Badge bg={practiceId ? 'primary' : 'secondary'} className="ms-2">
+                {attendances.filter(a => a.attending === AttendanceStatus.Attending).length}
+              </Badge>
             </span>
           }
           disabled={!practiceId}
@@ -318,13 +319,9 @@ function PracticeDetailsContent() {
         <Tab eventKey="sets" title={
           <span>
             Sets
-            {isSetsLoading ? (
-              <Spinner animation="border" size="sm" className="ms-2" />
-            ) : (
-              <Badge bg={practiceId ? 'primary' : 'secondary'} className="ms-2">
-                {sets.length}
-              </Badge>
-            )}
+            <Badge bg={practiceId ? 'primary' : 'secondary'} className="ms-2">
+              {sets.length}
+            </Badge>
           </span>
         } disabled={!practiceId}>
           {practiceId && (
@@ -354,23 +351,16 @@ function PracticeDetailsContent() {
           title={
             <span>
               Checks
-              {isAttendancesLoading || isSetsLoading ?
-                <Spinner animation="border" size="sm" className="ms-2" /> :
-                validationErrors.length > 0 && (
-                  <Badge bg="primary" className="ms-2">
-                    {validationErrors.length}
-                  </Badge>
-                )}
+              {validationErrors.length > 0 && (
+                <Badge bg="primary" className="ms-2">
+                  {validationErrors.length}
+                </Badge>
+              )}
             </span>
           }
           disabled={!practiceId}
         >
-          {isAttendancesLoading || isSetsLoading ?
-            <Spinner animation="border" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </Spinner> :
-            <PracticeValidation validationErrors={validationErrors} />
-          }
+          <PracticeValidation validationErrors={validationErrors} />
           <div className="d-flex justify-content-start mb-3">
             <Button
               variant="outline-secondary"
@@ -388,8 +378,10 @@ function PracticeDetailsContent() {
 }
 
 function PracticeDetails() {
+  const { practiceId } = useParams()
+
   return (
-    <PracticeProvider>
+    <PracticeProvider practiceId={practiceId}>
       <PracticeDetailsContent />
     </PracticeProvider>
   )

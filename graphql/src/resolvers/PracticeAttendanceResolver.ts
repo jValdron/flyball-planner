@@ -2,6 +2,9 @@ import { Resolver, Query, Mutation, Arg } from 'type-graphql';
 import { PracticeAttendance, AttendanceStatus } from '../models/PracticeAttendance';
 import { AppDataSource } from '../db';
 import { InputType, Field, ID } from 'type-graphql';
+import { PubSubService, SubscriptionEvents } from '../services/PubSubService';
+import { PracticeSummaryService } from '../services/PracticeSummaryService';
+import { Practice } from '../models/Practice';
 
 @InputType()
 class AttendanceUpdate {
@@ -15,6 +18,7 @@ class AttendanceUpdate {
 @Resolver(PracticeAttendance)
 export class PracticeAttendanceResolver {
   private practiceAttendanceRepository = AppDataSource.getRepository(PracticeAttendance);
+  private practiceRepository = AppDataSource.getRepository(Practice);
 
   @Query(() => [PracticeAttendance])
   async practiceAttendances(@Arg('practiceId') practiceId: string): Promise<PracticeAttendance[]> {
@@ -42,10 +46,8 @@ export class PracticeAttendanceResolver {
         });
 
         if (attendance) {
-          // Update existing record
           attendance.attending = update.attending;
         } else {
-          // Create new record
           attendance = queryRunner.manager.create(PracticeAttendance, {
             practiceId,
             dogId: update.dogId,
@@ -58,6 +60,16 @@ export class PracticeAttendanceResolver {
       }
 
       await queryRunner.commitTransaction();
+
+      for (const attendance of updatedAttendances) {
+        await PubSubService.publishPracticeAttendanceEvent(SubscriptionEvents.PRACTICE_ATTENDANCE_UPDATED, attendance);
+      }
+
+      const summary = await PracticeSummaryService.createPracticeSummaryById(practiceId);
+      if (summary) {
+        await PubSubService.publishPracticeSummaryEvent(SubscriptionEvents.PRACTICE_ATTENDANCE_UPDATED, summary);
+      }
+
       return updatedAttendances;
     } catch (err) {
       await queryRunner.rollbackTransaction();

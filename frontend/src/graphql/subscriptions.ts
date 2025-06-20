@@ -106,3 +106,77 @@ export const LOCATION_CHANGED_SUBSCRIPTION = gql`
     }
   }
 `;
+
+export const PRACTICE_CHANGED_SUBSCRIPTION = gql`
+  subscription PracticeChanged($practiceId: String!) {
+    practiceChanged(practiceId: $practiceId) {
+      practice {
+        id
+        scheduledAt
+        status
+        clubId
+        createdAt
+        updatedAt
+      }
+      eventType
+    }
+  }
+`;
+
+export const PRACTICE_ATTENDANCE_CHANGED_SUBSCRIPTION = gql`
+  subscription PracticeAttendanceChanged($practiceId: String!) {
+    practiceAttendanceChanged(practiceId: $practiceId) {
+      attendance {
+        id
+        attending
+        dogId
+        practiceId
+        createdAt
+        updatedAt
+      }
+      eventType
+    }
+  }
+`;
+
+export const PRACTICE_SET_CHANGED_SUBSCRIPTION = gql`
+  subscription PracticeSetChanged($practiceId: String!) {
+    practiceSetChanged(practiceId: $practiceId) {
+      set {
+        id
+        index
+        notes
+        type
+        typeCustom
+        practiceId
+        locationId
+        createdAt
+        updatedAt
+        dogs {
+          id
+          index
+          lane
+          dogId
+        }
+      }
+      eventType
+    }
+  }
+`;
+
+export const PRACTICE_SUMMARY_CHANGED_SUBSCRIPTION = gql`
+  subscription PracticeSummaryChanged($clubId: String!) {
+    practiceSummaryChanged(clubId: $clubId) {
+      practice {
+        id
+        scheduledAt
+        status
+        setsCount
+        attendingCount
+        notAttendingCount
+        unconfirmedCount
+      }
+      eventType
+    }
+  }
+`;

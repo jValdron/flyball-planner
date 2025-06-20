@@ -3,6 +3,9 @@ import { Club } from '../models/Club';
 import { Dog } from '../models/Dog';
 import { Handler } from '../models/Handler';
 import { Location } from '../models/Location';
+import { Practice, PracticeStatus } from '../models/Practice';
+import { PracticeAttendance } from '../models/PracticeAttendance';
+import { Set as SetModel } from '../models/Set';
 
 export enum EventType {
   CREATED = 'CREATED',
@@ -46,6 +49,69 @@ export class HandlerEvent {
 export class LocationEvent {
   @Field(() => Location)
   location!: Location;
+
+  @Field(() => EventType)
+  eventType!: EventType;
+}
+
+@ObjectType()
+export class PracticeEvent {
+  @Field(() => Practice)
+  practice!: Practice;
+
+  @Field(() => EventType)
+  eventType!: EventType;
+}
+
+@ObjectType()
+export class PracticeAttendanceEvent {
+  @Field(() => PracticeAttendance)
+  attendance!: PracticeAttendance;
+
+  @Field(() => EventType)
+  eventType!: EventType;
+}
+
+@ObjectType()
+export class PracticeSetEvent {
+  @Field(() => SetModel)
+  set!: SetModel;
+
+  @Field(() => EventType)
+  eventType!: EventType;
+}
+
+@ObjectType()
+export class PracticeSummary {
+  @Field(() => String)
+  id!: string;
+
+  @Field(() => String)
+  clubId!: string;
+
+  @Field(() => Date)
+  scheduledAt!: Date;
+
+  @Field(() => PracticeStatus)
+  status!: PracticeStatus;
+
+  @Field(() => Number)
+  setsCount!: number;
+
+  @Field(() => Number)
+  attendingCount!: number;
+
+  @Field(() => Number)
+  notAttendingCount!: number;
+
+  @Field(() => Number)
+  unconfirmedCount!: number;
+}
+
+@ObjectType()
+export class PracticeSummaryEvent {
+  @Field(() => PracticeSummary)
+  practice!: PracticeSummary;
 
   @Field(() => EventType)
   eventType!: EventType;

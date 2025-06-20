@@ -2,17 +2,14 @@ import { graphql } from './generated/gql';
 
 export const GetPracticesByClub = graphql(`
     query GetPracticesByClub($clubId: String!) {
-      practicesByClub(clubId: $clubId) {
+      practiceSummariesByClub(clubId: $clubId) {
         id
         scheduledAt
         status
-        attendances {
-          id
-          attending
-        }
-        sets {
-          id
-        }
+        setsCount
+        attendingCount
+        notAttendingCount
+        unconfirmedCount
       }
     }
   `);
@@ -24,6 +21,31 @@ export const GetPractice = graphql(`
       scheduledAt
       status
       clubId
+      createdAt
+      updatedAt
+      attendances {
+        id
+        attending
+        dogId
+        createdAt
+        updatedAt
+      }
+      sets {
+        id
+        index
+        notes
+        type
+        typeCustom
+        createdAt
+        updatedAt
+        locationId
+        dogs {
+          id
+          index
+          lane
+          dogId
+        }
+      }
     }
   }
 `);

@@ -5,6 +5,8 @@ import { InputType, Field, ID } from 'type-graphql';
 import { Set as SetModel, SetType } from '../models/Set';
 import { Location } from '../models/Location';
 import { In } from 'typeorm';
+import { PubSubService, SubscriptionEvents } from '../services/PubSubService';
+import { PracticeSummaryService } from '../services/PracticeSummaryService';
 
 @InputType()
 class SetDogUpdate {
@@ -68,12 +70,6 @@ export class PracticeSetResolver {
     });
   }
 
-  @Mutation(() => Boolean)
-  async deleteSet(@Arg('id') id: string): Promise<boolean> {
-    const result = await this.setRepository.delete(id);
-    return result.affected !== 0;
-  }
-
   @Mutation(() => [SetModel])
   async updateSets(
     @Arg('updates', () => [SetUpdate]) updates: SetUpdate[]
@@ -83,6 +79,8 @@ export class PracticeSetResolver {
     await queryRunner.startTransaction();
     try {
       const results: SetModel[] = [];
+      const affectedPracticeIds = new Set<string>();
+
       for (const update of updates) {
         let set: SetModel;
         let id = update.id;
@@ -101,6 +99,11 @@ export class PracticeSetResolver {
           if (update.type !== undefined) set.type = update.type;
           if (update.typeCustom !== undefined) set.typeCustom = update.typeCustom;
           if (update.notes !== undefined) set.notes = update.notes;
+
+          // Track affected practice
+          if (set.practiceId) {
+            affectedPracticeIds.add(set.practiceId);
+          }
         } else {
           set = queryRunner.manager.create(SetModel, {
             practiceId: update.practiceId,
@@ -110,6 +113,11 @@ export class PracticeSetResolver {
             typeCustom: update.typeCustom,
             notes: update.notes
           });
+
+          // Track affected practice
+          if (update.practiceId) {
+            affectedPracticeIds.add(update.practiceId);
+          }
         }
         const savedSet = await queryRunner.manager.save(set);
         if (id && update.dogs !== undefined) {
@@ -194,6 +202,19 @@ export class PracticeSetResolver {
         }
       }
       await queryRunner.commitTransaction();
+
+      for (const result of results) {
+        const eventType = SubscriptionEvents.PRACTICE_SET_UPDATED;
+        await PubSubService.publishPracticeSetEvent(eventType, result);
+      }
+
+      for (const practiceId of affectedPracticeIds) {
+        const summary = await PracticeSummaryService.createPracticeSummaryById(practiceId);
+        if (summary) {
+          await PubSubService.publishPracticeSummaryEvent(SubscriptionEvents.PRACTICE_SET_UPDATED, summary);
+        }
+      }
+
       return results;
     } catch (err) {
       await queryRunner.rollbackTransaction();
@@ -201,5 +222,53 @@ export class PracticeSetResolver {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  @Mutation(() => Boolean)
+  async deleteSets(@Arg('ids', () => [String]) ids: string[]): Promise<boolean> {
+    if (ids.length === 0) {
+      return true;
+    }
+
+    // Get all sets first to find practice ID and prepare for deletion
+    const sets = await this.setRepository.find({
+      where: { id: In(ids) },
+      relations: ['dogs', 'dogs.dog']
+    });
+
+    if (sets.length === 0) {
+      return false;
+    }
+
+    // All sets should be from the same practice
+    const practiceId = sets[0].practiceId;
+    if (!practiceId) {
+      return false;
+    }
+
+    // Verify all sets are from the same practice
+    const allSamePractice = sets.every(set => set.practiceId === practiceId);
+    if (!allSamePractice) {
+      throw new Error('All sets must be from the same practice');
+    }
+
+    // Delete all sets
+    const result = await this.setRepository.delete({ id: In(ids) });
+    const deleted = result.affected !== 0;
+
+    if (deleted) {
+      // Publish events for each deleted set
+      for (const set of sets) {
+        await PubSubService.publishPracticeSetEvent(SubscriptionEvents.PRACTICE_SET_DELETED, set);
+      }
+
+      // Update practice summary
+      const summary = await PracticeSummaryService.createPracticeSummaryById(practiceId);
+      if (summary) {
+        await PubSubService.publishPracticeSummaryEvent(SubscriptionEvents.PRACTICE_SET_DELETED, summary);
+      }
+    }
+
+    return deleted;
   }
 }

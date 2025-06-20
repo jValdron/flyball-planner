@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
-import { Form, Badge, OverlayTrigger, Popover, Button, CloseButton } from 'react-bootstrap'
+import { Form, Badge, Overlay, Popover, Button, CloseButton } from 'react-bootstrap'
 import { GripVertical } from 'react-bootstrap-icons'
 import TrainingLevelBadge from './TrainingLevelBadge'
 import { getTrainingLevelInfo } from '../utils/trainingLevels'
@@ -22,8 +22,10 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
   const [showDropdown, setShowDropdown] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
+  const overlayRef = useRef<any>(null)
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1)
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+  const [isSelecting, setIsSelecting] = useState(false)
 
   const filteredDogs = useMemo(() => {
     const term = searchTerm.toLowerCase()
@@ -47,14 +49,21 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
   }, [searchTerm, availableDogs, value])
 
   const handleSelect = (dog: DogWithSetCount) => {
+    setIsSelecting(true)
     const newSetDog: Partial<SetDog> = {
       dogId: dog.id,
       index: value.length + 1
     }
     onChange([...value, newSetDog])
     setSearchTerm('')
-    setShowDropdown(false)
-    setTimeout(() => inputRef.current?.focus(), 0)
+    setTimeout(() => {
+      inputRef.current?.focus()
+      setIsSelecting(false)
+      setShowDropdown(false)
+      setTimeout(() => {
+        setShowDropdown(true)
+      }, 100)
+    }, 0)
   }
 
   const handleRemove = (index: number) => {
@@ -62,20 +71,16 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
     onChange(newValue)
   }
 
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+  const handleBlur = () => {
+    if (isSelecting) return
+
     setTimeout(() => {
       if (!popoverRef.current?.contains(document.activeElement)) {
         setShowInput(false)
         setShowDropdown(false)
         setSearchTerm('')
       }
-    }, 100)
-  }
-
-  const handlePopoverBlur = () => {
-    setShowInput(false)
-    setShowDropdown(false)
-    setSearchTerm('')
+    }, 150)
   }
 
   useEffect(() => {
@@ -93,7 +98,36 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
     }
   }, [showDropdown, filteredDogs.length])
 
-  // Drag and drop handlers
+  useEffect(() => {
+    if (showDropdown && filteredDogs.length === 0 && availableDogs.length > 0) {
+      const timer = setTimeout(() => {
+        setShowDropdown(false)
+        setShowInput(false)
+      }, 1000)
+
+      return () => clearTimeout(timer)
+    }
+  }, [showDropdown, filteredDogs.length, availableDogs.length])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isSelecting) return
+
+      if (showDropdown && popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+        setShowInput(false)
+        setShowDropdown(false)
+        setSearchTerm('')
+      }
+    }
+
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }
+  }, [showDropdown, isSelecting])
+
   const handleDragStart = (idx: number) => {
     setDraggedIndex(idx)
   }
@@ -115,10 +149,12 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
 
   const popover = (
     <Popover id="dogs-picker-autocomplete" ref={popoverRef} style={{ minWidth: '500px' }}>
-      <Popover.Body tabIndex={-1} onBlur={handlePopoverBlur}>
+      <Popover.Body tabIndex={-1} onMouseDown={(e) => e.preventDefault()}>
         <div className="d-flex flex-column" style={{ maxHeight: '220px', overflowY: 'auto' }}>
           {filteredDogs.length === 0 ? (
-            <div className="text-muted">No dogs found</div>
+            <div className="text-muted p-2">
+              {availableDogs.length === 0 ? 'No dogs available' : 'All dogs have been added'}
+            </div>
           ) : (
             filteredDogs.map((dog, idx) => {
               const displayName = dog.name
@@ -127,7 +163,7 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
                 <div
                   key={dog.id}
                   className={`p-2 hover-bg-light cursor-pointer${idx === highlightedIndex ? ' bg-primary text-white' : ''}`}
-                  onClick={() => handleSelect(dog)}
+                  onMouseDown={() => handleSelect(dog)}
                   style={{ cursor: 'pointer' }}
                   tabIndex={0}
                 >
@@ -189,13 +225,7 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
         })}
       </div>
       {showInput ? (
-        <OverlayTrigger
-          show={showDropdown}
-          placement="bottom"
-          overlay={popover}
-          trigger="click"
-          rootClose={false}
-        >
+        <div style={{ position: 'relative' }}>
           <Form.Control
             ref={inputRef}
             type="text"
@@ -229,7 +259,17 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
             autoFocus
             className="w-100"
           />
-        </OverlayTrigger>
+          <Overlay
+            ref={overlayRef}
+            target={inputRef.current}
+            show={showDropdown}
+            placement="top"
+            rootClose={false}
+            transition={false}
+          >
+            {popover}
+          </Overlay>
+        </div>
       ) : (
         <Button variant="outline-primary" onClick={() => setShowInput(true)}>
           + Add Dog

@@ -121,7 +121,7 @@ type Mutation {
   deleteHandler(id: String!): Boolean!
   deleteLocation(id: String!): Boolean!
   deletePractice(id: String!): Boolean!
-  deleteSet(id: String!): Boolean!
+  deleteSets(ids: [String!]!): Boolean!
   updateAttendances(practiceId: String!, updates: [AttendanceUpdate!]!): [PracticeAttendance!]!
   updateClub(defaultPracticeTime: String, id: String!, nafaClubNumber: String, name: String): Club
   updateDog(clubId: String, crn: String, id: String!, name: String, ownerId: String, status: DogStatus, trainingLevel: TrainingLevel): Dog
@@ -154,10 +154,41 @@ type PracticeAttendance {
   updatedAt: DateTimeISO!
 }
 
+type PracticeAttendanceEvent {
+  attendance: PracticeAttendance!
+  eventType: EventType!
+}
+
+type PracticeEvent {
+  eventType: EventType!
+  practice: Practice!
+}
+
+type PracticeSetEvent {
+  eventType: EventType!
+  set: Set!
+}
+
 """The status of a practice"""
 enum PracticeStatus {
   Draft
   Ready
+}
+
+type PracticeSummary {
+  attendingCount: Float!
+  clubId: String!
+  id: String!
+  notAttendingCount: Float!
+  scheduledAt: DateTimeISO!
+  setsCount: Float!
+  status: PracticeStatus!
+  unconfirmedCount: Float!
+}
+
+type PracticeSummaryEvent {
+  eventType: EventType!
+  practice: PracticeSummary!
 }
 
 type Query {
@@ -174,8 +205,7 @@ type Query {
   locationsByClub(clubId: ID!): [Location!]!
   practice(id: String!): Practice
   practiceAttendances(practiceId: String!): [PracticeAttendance!]!
-  practices: [Practice!]!
-  practicesByClub(clubId: String!): [Practice!]!
+  practiceSummariesByClub(clubId: String!): [PracticeSummary!]!
   set(id: String!): Set
   sets(practiceId: String!): [Set!]!
 }
@@ -243,6 +273,10 @@ type Subscription {
   dogChanged(clubId: String): DogEvent!
   handlerChanged(clubId: String): HandlerEvent!
   locationChanged(clubId: String): LocationEvent!
+  practiceAttendanceChanged(practiceId: String!): PracticeAttendanceEvent!
+  practiceChanged(practiceId: String!): PracticeEvent!
+  practiceSetChanged(practiceId: String!): PracticeSetEvent!
+  practiceSummaryChanged(clubId: String!): PracticeSummaryEvent!
 }
 
 """The training level of a dog"""

@@ -5,6 +5,7 @@ import {
   DOG_CHANGED_SUBSCRIPTION,
   HANDLER_CHANGED_SUBSCRIPTION,
   LOCATION_CHANGED_SUBSCRIPTION,
+  PRACTICE_SUMMARY_CHANGED_SUBSCRIPTION,
 } from '../graphql/subscriptions';
 import type {
   ClubChangedSubscription,
@@ -17,6 +18,8 @@ import type {
   HandlerChangedSubscriptionVariables,
   LocationChangedSubscription,
   LocationChangedSubscriptionVariables,
+  PracticeSummaryChangedSubscription,
+  PracticeSummaryChangedSubscriptionVariables,
 } from '../graphql/generated/graphql';
 
 export function useClubChangedSubscription(
@@ -107,6 +110,25 @@ export function useLocationChangedSubscription(
       skip: options?.skip ?? !clubId,
       onError: options?.onError || ((error: Error) => {
         console.error('Location subscription error:', error);
+      }),
+    }
+  );
+}
+
+export function usePracticeSummaryChangedSubscription(
+  clubId?: string,
+  options?: {
+    onError?: (error: Error) => void;
+    skip?: boolean;
+  }
+) {
+  return useSubscription<PracticeSummaryChangedSubscription, PracticeSummaryChangedSubscriptionVariables>(
+    PRACTICE_SUMMARY_CHANGED_SUBSCRIPTION,
+    {
+      variables: clubId ? { clubId } : undefined,
+      skip: options?.skip ?? !clubId,
+      onError: options?.onError || ((error: Error) => {
+        console.error('Practice summary subscription error:', error);
       }),
     }
   );

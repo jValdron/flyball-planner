@@ -17,6 +17,7 @@ import { PracticeAttendanceResolver } from './resolvers/PracticeAttendanceResolv
 import { LocationResolver } from './resolvers/LocationResolver';
 import { PracticeSetResolver } from './resolvers/PracticeSetResolver';
 import { ClubSubscriptionResolver } from './resolvers/ClubSubscriptionResolver';
+import { PracticeSubscriptionResolver } from './resolvers/PracticeSubscriptionResolver';
 import { pubsub } from './services/PubSubService';
 
 config();
@@ -44,6 +45,7 @@ async function startServer() {
         PracticeSetResolver,
         LocationResolver,
         ClubSubscriptionResolver,
+        PracticeSubscriptionResolver,
       ],
       emitSchemaFile: true,
       validate: false,

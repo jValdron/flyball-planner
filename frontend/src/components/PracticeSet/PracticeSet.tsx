@@ -1,24 +1,21 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Button, Form, Card } from 'react-bootstrap'
 import { DndContext } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { useQuery, useMutation } from '@apollo/client'
-import { GetSets, UpdateSets, DeleteSet } from '../../graphql/sets'
-import { GetLocationsByClub } from '../../graphql/clubs'
+import { useMutation } from '@apollo/client'
+import { UpdateSets, DeleteSets } from '../../graphql/sets'
 import { SetType, AttendanceStatus, Lane } from '../../graphql/generated/graphql'
 import { GripVertical, PlusLg, Trash } from 'react-bootstrap-icons'
 import { SaveSpinner } from '../SaveSpinner'
 import { useClub } from '../../contexts/ClubContext'
 import { usePractice } from '../../contexts/PracticeContext'
-import type { GetSetsQuery, UpdateSetsMutation, DeleteSetMutation, GetLocationsByClubQuery, PracticeAttendance } from '../../graphql/generated/graphql'
+import type { UpdateSetsMutation, DeleteSetsMutation, Dog, SetDog, Location } from '../../graphql/generated/graphql'
 import { DogsPicker } from '../DogsPicker'
 import { SetTypeAutocomplete } from './SetTypeAutocomplete'
 import { LocationSelector } from './LocationSelector'
-import type { Dog, SetDog } from '../../graphql/generated/graphql'
-
-const SAVE_DELAY = 2500
+import { useTheme } from '../../contexts/ThemeContext'
 
 interface DogWithSetCount extends Dog {
   setCount: number
@@ -30,13 +27,13 @@ interface PracticeSetProps {
 }
 
 interface SortableSetProps {
-  set: GetSetsQuery['sets'][0]
+  set: NonNullable<ReturnType<typeof usePractice>['sets'][0]>
   onDelete: (id: string) => void
   onSetTypeChange: (id: string, type: SetType, typeCustom: string | null) => void
   onSetDogsChange?: (setId: string, dogs: Partial<SetDog>[]) => void
   availableDogs: DogWithSetCount[]
-  availableLocations: Array<{ id: string; name: string; isDefault: boolean; isDoubleLane: boolean }>
-  defaultLocation?: { id: string; name: string; isDefault: boolean; isDoubleLane: boolean } | null
+  otherLocations: Location[]
+  defaultLocation?: Location | null
 }
 
 function SortableSet({
@@ -45,7 +42,7 @@ function SortableSet({
   onSetTypeChange,
   availableDogs,
   onSetDogsChange,
-  availableLocations,
+  otherLocations,
   defaultLocation
 }: SortableSetProps) {
   const handleDogsChange = (lane: Lane | null, setDogs: Partial<SetDog>[]) => {
@@ -64,7 +61,7 @@ function SortableSet({
   }
 
   const hasCustomLocation = set.locationId && set.locationId !== defaultLocation?.id
-  const customLocation = hasCustomLocation ? availableLocations.find(l => l.id === set.locationId) : null
+  const customLocation = hasCustomLocation ? otherLocations.find(l => l.id === set.locationId) : null
   const setLocation = customLocation || defaultLocation || { id: '', name: '', isDefault: false, isDoubleLane: false }
 
   const handleLocationRemove = () => {
@@ -102,35 +99,8 @@ function SortableSet({
   )
 }
 
-type PendingUpdate = { setId?: string, update?: any, delete?: boolean };
-
-function getDisplaySets(setsData: GetSetsQuery | undefined, pendingUpdates: PendingUpdate[]) {
-  const pendingDeletes = new Set(pendingUpdates.filter(u => u.delete).map(u => u.setId))
-  const pendingCreates = pendingUpdates.filter(u => u.setId && u.setId.startsWith('temp-') && !u.delete)
-  const pendingUpdatesMap = Object.fromEntries(
-    pendingUpdates.filter(u => u.update && !u.delete && u.setId && !u.setId.startsWith('temp-')).map(u => [u.setId, u.update])
-  )
-
-  // Filter out pending creates that have been successfully created on the server
-  const serverSets = setsData?.sets || []
-  const filteredPendingCreates = pendingCreates.filter(pendingCreate => {
-    return !serverSets.some(serverSet =>
-      serverSet.index === pendingCreate.update.index &&
-      serverSet.locationId === pendingCreate.update.locationId
-    )
-  })
-
-  return [
-    ...(serverSets.filter(set => !pendingDeletes.has(set.id)).map(set => ({
-      ...set,
-      ...(pendingUpdatesMap[set.id] || {})
-    })) as any[]),
-    ...filteredPendingCreates.map(u => ({ ...u.update, id: u.setId }))
-  ].sort((a, b) => a.index - b.index)
-}
-
 interface DogsSectionProps {
-  set: GetSetsQuery['sets'][0]
+  set: NonNullable<ReturnType<typeof usePractice>['sets'][0]>
   availableDogs: DogWithSetCount[]
   onDogsChange: (lane: Lane | null, setDogs: Partial<SetDog>[]) => void
   location: { id: string; name: string; isDefault: boolean; isDoubleLane: boolean }
@@ -164,7 +134,7 @@ function DogsSection({ set, availableDogs, onDogsChange, location }: DogsSection
                   ...sd,
                   dog
                 }
-              }).filter(Boolean) as any[]}
+              }).filter(Boolean) as unknown as Array<SetDog>}
               onChange={setDogs => onDogsChange(lane, setDogs)}
               availableDogs={availableDogsForLane}
               placeholder={lane ? `Add dog to ${lane} lane` : 'Add dog'}
@@ -177,15 +147,15 @@ function DogsSection({ set, availableDogs, onDogsChange, location }: DogsSection
 }
 
 interface SortableGroupProps {
-  group: { index: number; sets: GetSetsQuery['sets'] }
+  group: { index: number; sets: NonNullable<ReturnType<typeof usePractice>['sets']> }
   onDelete: (id: string) => void
   onDeleteGroup: (index: number) => void
   onSetTypeChange: (id: string, type: SetType, typeCustom: string | null) => void
   onSetDogsChange?: (setId: string, dogs: Partial<SetDog>[]) => void
   onLocationAdd?: (locationId: string, index: number) => void
   availableDogs: DogWithSetCount[]
-  availableLocations: Array<{ id: string; name: string; isDefault: boolean; isDoubleLane: boolean }>
-  defaultLocation?: { id: string; name: string; isDefault: boolean; isDoubleLane: boolean } | null
+  otherLocations: Location[]
+  defaultLocation?: Location | null
 }
 
 function SortableGroup({
@@ -196,9 +166,10 @@ function SortableGroup({
   availableDogs,
   onSetDogsChange,
   onLocationAdd,
-  availableLocations,
+  otherLocations,
   defaultLocation
 }: SortableGroupProps) {
+  const { isDark } = useTheme()
   const {
     attributes,
     listeners,
@@ -216,7 +187,7 @@ function SortableGroup({
 
   const usedLocationIdsInGroup = new Set(group.sets.map(set => set.locationId).filter(Boolean))
 
-  const availableLocationsForThisSet = availableLocations.filter(location =>
+  const availableLocationsForThisSet = otherLocations.filter(location =>
     !usedLocationIdsInGroup.has(location.id) || location.id === group.sets[0].locationId
   )
 
@@ -231,7 +202,7 @@ function SortableGroup({
           <Card.Body
             {...attributes}
             {...listeners}
-            className="bg-light cursor-grab p-4 d-flex align-items-center h-100">
+            className={`${isDark ? 'bg-dark' : 'bg-light'} cursor-grab p-4 d-flex align-items-center h-100`}>
             <h5 className="text-nowrap mb-0">
               <GripVertical />
               <span>{group.index}</span>
@@ -261,7 +232,7 @@ function SortableGroup({
                     onSetTypeChange={onSetTypeChange}
                     onSetDogsChange={onSetDogsChange}
                     availableDogs={availableDogsForThisSet}
-                    availableLocations={availableLocations}
+                    otherLocations={otherLocations}
                     defaultLocation={defaultLocation}
                   />
                 </div>
@@ -287,82 +258,36 @@ function SortableGroup({
   )
 }
 
-export function PracticeSet({ practiceId, isPastPractice }: PracticeSetProps) {
-  const { selectedClub } = useClub()
-  const { attendances, setSets, setIsSetsLoading } = usePractice()
+export function PracticeSet({ practiceId }: PracticeSetProps) {
+  const { dogs, locations } = useClub()
+  const { attendances, sets } = usePractice()
   const [isSaving, setIsSaving] = useState(false)
-  const [pendingUpdates, setPendingUpdates] = useState<PendingUpdate[]>([])
 
-  const { data: locationsData, loading: locationsLoading } = useQuery<GetLocationsByClubQuery>(GetLocationsByClub, {
-    variables: { clubId: selectedClub?.id! },
-    skip: !selectedClub?.id
-  })
-
-  const locations = locationsData?.locationsByClub || []
-  const defaultLocation = useMemo(() => locations.find(l => l.isDefault), [locations])
-
-  const { data: setsData, loading: setsLoading } = useQuery<GetSetsQuery>(GetSets, {
-    variables: {
-      practiceId
-    },
-    skip: !practiceId,
-    onCompleted: (data) => {
-      setSets(data.sets as any || [])
-      setIsSetsLoading(false)
-    },
-    onError: () => {
-      setIsSetsLoading(false)
-    }
-  })
-
-  useEffect(() => {
-    if (practiceId) {
-      setIsSetsLoading(true)
-    }
-  }, [practiceId, setIsSetsLoading])
-
-  const [updateSets] = useMutation<UpdateSetsMutation>(UpdateSets, {
-    onCompleted: () => {
-      setPendingUpdates([])
-    },
-    onError: (err) => {
-      console.error('Error updating sets:', err)
-    }
-  })
-  const [deleteSet] = useMutation<DeleteSetMutation>(DeleteSet, {
-    onCompleted: () => {
-      setPendingUpdates([])
-    },
-    onError: (err) => {
-      console.error('Error deleting set:', err)
-    }
-  })
-
-  const displaySets = useMemo(() => {
-    return getDisplaySets(setsData, pendingUpdates)
-  }, [setsData, pendingUpdates])
+  const [updateSets] = useMutation<UpdateSetsMutation>(UpdateSets)
+  const [deleteSets] = useMutation<DeleteSetsMutation>(DeleteSets)
 
   const availableDogs = useMemo(() => {
     const dogSetCounts = new Map<string, number>()
-    displaySets.forEach(set => {
-      set.dogs.forEach((setDog: GetSetsQuery['sets'][0]['dogs'][0]) => {
+    sets.forEach(set => {
+      set.dogs.forEach(setDog => {
         const currentCount = dogSetCounts.get(setDog.dogId) || 0
         dogSetCounts.set(setDog.dogId, currentCount + 1)
       })
     })
 
-    return attendances
-      .filter((attendance): attendance is PracticeAttendance =>
-        attendance.attending !== AttendanceStatus.NotAttending &&
-        attendance.dog !== undefined
-      )
-      .map(attendance => ({
-        ...attendance.dog!,
-        setCount: dogSetCounts.get(attendance.dog!.id) || 0
+    // Get dogs from club context and filter by attendance
+    return dogs
+      .filter(dog => {
+        const attendance = attendances.find(a => a.dogId === dog.id)
+        return attendance && attendance.attending !== AttendanceStatus.NotAttending
+      })
+      .map(dog => ({
+        ...dog,
+        setCount: dogSetCounts.get(dog.id) || 0
       }))
-  }, [attendances, displaySets])
+  }, [attendances, sets, dogs])
 
-  const handleSetReorder = (event: DragEndEvent) => {
+  const handleSetReorder = async (event: DragEndEvent) => {
     const { active, over } = event
     if (!over || active.id === over.id) return
 
@@ -371,20 +296,16 @@ export function PracticeSet({ practiceId, isPastPractice }: PracticeSetProps) {
 
     if (isNaN(oldGroupIndex) || isNaN(newGroupIndex)) return
 
-    const setsToUpdate = displaySets.filter(set => set.index === oldGroupIndex)
+    const setsToUpdate = sets.filter(set => set.index === oldGroupIndex)
     const targetIndex = newGroupIndex
 
+    const updates: Array<{ id: string; index: number }> = []
+
     setsToUpdate.forEach(set => {
-      queueUpdate({
-        setId: set.id,
-        update: {
-          index: targetIndex
-        }
-      })
+      updates.push({ id: set.id, index: targetIndex })
     })
 
-    // Update all other sets' indices to maintain order
-    displaySets.forEach(set => {
+    sets.forEach(set => {
       if (set.index !== oldGroupIndex) {
         let newIndex = set.index
         if (oldGroupIndex < newGroupIndex && set.index > oldGroupIndex && set.index <= newGroupIndex) {
@@ -393,136 +314,137 @@ export function PracticeSet({ practiceId, isPastPractice }: PracticeSetProps) {
           newIndex = set.index + 1
         }
         if (newIndex !== set.index) {
-          queueUpdate({
-            setId: set.id,
-            update: {
-              index: newIndex
-            }
-          })
+          updates.push({ id: set.id, index: newIndex })
         }
       }
     })
-  }
 
-  const queueUpdate = (
-    action: { setId?: string, update?: any, delete?: boolean },
-    callback?: (next: PendingUpdate[]) => void
-  ) => {
-    setPendingUpdates(prev => {
-      let next: PendingUpdate[] = prev
-      if (action.delete && action.setId) {
-        const filtered = prev.filter(u => u.setId !== action.setId)
-        if (filtered.some(u => u.setId === action.setId && u.delete)) {
-          next = filtered
-        } else {
-          next = [
-            ...filtered,
-            { setId: action.setId, delete: true }
-          ]
-        }
-      } else if (action.update) {
-        if (action.setId) {
-          const existing = prev.find(u => u.setId === action.setId && !u.delete)
-          if (existing) {
-            next = prev.map(u =>
-              u.setId === action.setId && !u.delete
-                ? { ...u, update: { ...u.update, ...action.update } }
-                : u
-            )
-          } else {
-            next = [...prev, { setId: action.setId, update: action.update }]
+    if (updates.length > 0) {
+      try {
+        setIsSaving(true)
+        await updateSets({
+          variables: {
+            updates: updates
           }
-        } else {
-          const tempId = `temp-${Date.now()}`
-          next = [...prev, { setId: tempId, update: action.update }]
-        }
-      } else if (action.setId && !action.update && !action.delete && action.setId.startsWith('temp-')) {
-        next = prev.filter(u => u.setId !== action.setId)
+        })
+      } catch (err) {
+        console.error('Error updating sets during reorder:', err)
+      } finally {
+        setIsSaving(false)
       }
-      if (callback) callback(next)
-      return next
-    })
-  }
-
-  const handleAddSet = () => {
-    const maxIndex = displaySets.length > 0 ? Math.max(...displaySets.map(set => set.index)) : 0
-    const newIndex = maxIndex + 1
-    queueUpdate({
-      update: {
-        practiceId,
-        locationId: defaultLocation?.id!,
-        index: newIndex,
-        dogs: []
-      }
-    })
-  }
-
-  const handleDeleteSet = (setId: string) => {
-    if (setId.startsWith('temp-')) {
-      queueUpdate({ setId }, (next) => reorderSets(next))
-    } else {
-      queueUpdate({ setId, delete: true }, (next) => reorderSets(next))
     }
   }
 
-  const handleDeleteGroup = (index: number) => {
-    const setsToDelete = displaySets.filter(set => set.index === index)
-
-    setsToDelete.forEach(set => {
-      if (set.id.startsWith('temp-')) {
-        queueUpdate({ setId: set.id }, (next) => reorderSets(next))
-      } else {
-        queueUpdate({ setId: set.id, delete: true }, (next) => reorderSets(next))
-      }
-    })
+  const handleSetUpdate = async (setId: string, updates: Partial<{ index: number; type: SetType; typeCustom: string | null; dogs: Partial<SetDog>[] }>) => {
+    try {
+      setIsSaving(true)
+      await updateSets({
+        variables: {
+          updates: [{
+            id: setId,
+            ...updates
+          }]
+        }
+      })
+    } catch (err) {
+      console.error('Error updating set:', err)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
-  const handleSetTypeChange = (setId: string, type: SetType, typeCustom: string | null) => {
-    queueUpdate({ setId, update: { type, typeCustom } })
+  const handleAddSet = async () => {
+    const maxIndex = sets.length > 0 ? Math.max(...sets.map(set => set.index)) : 0
+    const newIndex = maxIndex + 1
+
+    try {
+      setIsSaving(true)
+      await updateSets({
+        variables: {
+          updates: [{
+            practiceId,
+            locationId: defaultLocation?.id,
+            index: newIndex,
+            dogs: []
+          }]
+        }
+      })
+    } catch (err) {
+      console.error('Error creating set:', err)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
-  const reorderSets = (pendingUpdatesArg?: PendingUpdate[]) => {
-    const pending = pendingUpdatesArg ?? pendingUpdates
-    const allSets = pendingUpdatesArg ? getDisplaySets(setsData, pending) : displaySets
-
-    allSets.forEach((set, idx) => {
-      if (set.index !== idx + 1) {
-        queueUpdate({
-          setId: set.id,
-          update: { index: idx + 1 }
-        })
-      }
-    })
+  const handleDeleteSet = async (setId: string) => {
+    try {
+      setIsSaving(true)
+      await deleteSets({
+        variables: { ids: [setId] }
+      })
+    } catch (err) {
+      console.error('Error deleting set:', err)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
-  const handleDogsChange = (setId: string, dogs: Partial<SetDog>[]) => {
-    queueUpdate({ setId, update: { dogs } })
+  const handleDeleteGroup = async (index: number) => {
+    const setsToDelete = sets.filter(set => set.index === index)
+    const setIds = setsToDelete.map(set => set.id)
+
+    try {
+      setIsSaving(true)
+      await deleteSets({
+        variables: { ids: setIds }
+      })
+    } catch (err) {
+      console.error('Error deleting set group:', err)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
-  const handleLocationAdd = (locationId: string, index: number) => {
-    // Create a new set with the same index but different location
-    // Don't pass any setId to ensure a new set is created
-    queueUpdate({
-      update: {
-        practiceId,
-        locationId: locationId,
-        index: index,
-        dogs: []
-      }
-    })
+  const handleSetTypeChange = async (setId: string, type: SetType, typeCustom: string | null) => {
+    await handleSetUpdate(setId, { type, typeCustom })
   }
 
-  // Filter out default location from available locations
-  const availableLocations = useMemo(() =>
+  const handleDogsChange = async (setId: string, dogs: Partial<SetDog>[]) => {
+    await handleSetUpdate(setId, { dogs })
+  }
+
+  const handleLocationAdd = async (locationId: string, index: number) => {
+    try {
+      setIsSaving(true)
+      await updateSets({
+        variables: {
+          updates: [{
+            practiceId,
+            locationId: locationId,
+            index: index,
+            dogs: []
+          }]
+        }
+      })
+    } catch (err) {
+      console.error('Error creating set with location:', err)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const defaultLocation = useMemo(() => locations.find(l => l.isDefault), [locations])
+
+  const otherLocations = useMemo(() =>
     locations.filter(location => !location.isDefault),
     [locations]
   )
 
   // Group sets by index to show them together visually
   const groupedSets = useMemo(() => {
-    const groups = new Map<number, GetSetsQuery['sets']>()
+    const groups = new Map<number, NonNullable<ReturnType<typeof usePractice>['sets']>>()
 
-    displaySets.forEach(set => {
+    sets.forEach(set => {
       if (!groups.has(set.index)) {
         groups.set(set.index, [])
       }
@@ -539,53 +461,12 @@ export function PracticeSet({ practiceId, isPastPractice }: PracticeSetProps) {
         if (!aIsDefault && bIsDefault) return 1
         if (aIsDefault && bIsDefault) return 0
 
-        const aLocation = availableLocations.find(l => l.id === a.locationId)
-        const bLocation = availableLocations.find(l => l.id === b.locationId)
+        const aLocation = otherLocations.find(l => l.id === a.locationId)
+        const bLocation = otherLocations.find(l => l.id === b.locationId)
         return (aLocation?.name || '').localeCompare(bLocation?.name || '')
       })
     }))
-  }, [displaySets, defaultLocation?.id, availableLocations])
-
-  useEffect(() => {
-    setSets(displaySets as any)
-  }, [displaySets, setSets])
-
-  useEffect(() => {
-    if (pendingUpdates.length === 0) return
-    const timer = setTimeout(async () => {
-      try {
-        setIsSaving(true)
-        const deletes = pendingUpdates.filter(u => u.delete)
-        for (const del of deletes) {
-          await deleteSet({
-            variables: { id: del.setId }
-          })
-        }
-        const updatesToSave = pendingUpdates.filter(u => !u.delete && u.update)
-        if (updatesToSave.length > 0) {
-          await updateSets({
-            variables: {
-              updates: updatesToSave.map(u => ({
-                ...u.update,
-                ...(u.setId && !u.setId.startsWith('temp-') ? { id: u.setId } : {})
-              }))
-            }
-          })
-        }
-        // pendingUpdates will be cleared by mutation onCompleted callbacks
-      } catch (err) {
-        console.error('Error updating sets:', err)
-        // Don't clear pending updates on error to allow retry
-      } finally {
-        setIsSaving(false)
-      }
-    }, SAVE_DELAY)
-    return () => clearTimeout(timer)
-  }, [pendingUpdates, updateSets, deleteSet])
-
-  if (setsLoading || locationsLoading) {
-    return <div>Loading...</div>
-  }
+  }, [sets, defaultLocation?.id, otherLocations])
 
   return (
     <div>
@@ -606,7 +487,7 @@ export function PracticeSet({ practiceId, isPastPractice }: PracticeSetProps) {
               onSetDogsChange={handleDogsChange}
               onLocationAdd={handleLocationAdd}
               availableDogs={availableDogs}
-              availableLocations={availableLocations}
+              otherLocations={otherLocations}
               defaultLocation={defaultLocation}
             />
           ))}

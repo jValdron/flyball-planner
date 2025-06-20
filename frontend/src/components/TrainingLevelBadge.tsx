@@ -1,7 +1,8 @@
 import React from 'react'
 import { Badge } from 'react-bootstrap'
 import { TrainingLevel } from '../graphql/generated/graphql'
-import { TRAINING_LEVELS } from '../utils/trainingLevels'
+import { getTrainingLevelInfo } from '../utils/trainingLevels'
+import { useTheme } from '../contexts/ThemeContext'
 
 interface TrainingLevelBadgeProps {
   level: TrainingLevel
@@ -12,12 +13,10 @@ const TrainingLevelBadge: React.FC<TrainingLevelBadgeProps> = ({
   level,
   className = ''
 }) => {
-  const { text, variant, className: badgeClassName } = TRAINING_LEVELS[level as TrainingLevel] || {
-    text: `${level}`,
-    variant: 'secondary'
-  }
+  const { isDark } = useTheme()
+  const { text, variant, className: badgeClassName } = getTrainingLevelInfo(level)
 
-  return <Badge bg={variant} className={`${badgeClassName} ${className}`}>{text}</Badge>
+  return <Badge bg={variant} className={`${isDark ? '' : 'text-dark'} ${badgeClassName} ${className}`}>{text}</Badge>
 }
 
 export default TrainingLevelBadge
