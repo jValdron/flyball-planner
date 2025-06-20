@@ -121,7 +121,6 @@ export function PracticeProvider({ children, practiceId }: PracticeProviderProps
     variables: { practiceId },
     skip: !practiceId,
     onData: ({ data }) => {
-      console.log('practice attendance changed', data)
       if (data?.data?.practiceAttendanceChanged) {
         const { attendance: updatedAttendance } = data.data.practiceAttendanceChanged
         if (updatedAttendance.practiceId === practiceId) {
