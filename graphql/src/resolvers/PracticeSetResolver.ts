@@ -230,7 +230,6 @@ export class PracticeSetResolver {
       return true;
     }
 
-    // Get all sets first to find practice ID and prepare for deletion
     const sets = await this.setRepository.find({
       where: { id: In(ids) },
       relations: ['dogs', 'dogs.dog']
@@ -240,29 +239,24 @@ export class PracticeSetResolver {
       return false;
     }
 
-    // All sets should be from the same practice
     const practiceId = sets[0].practiceId;
     if (!practiceId) {
       return false;
     }
 
-    // Verify all sets are from the same practice
     const allSamePractice = sets.every(set => set.practiceId === practiceId);
     if (!allSamePractice) {
       throw new Error('All sets must be from the same practice');
     }
 
-    // Delete all sets
     const result = await this.setRepository.delete({ id: In(ids) });
     const deleted = result.affected !== 0;
 
     if (deleted) {
-      // Publish events for each deleted set
       for (const set of sets) {
         await PubSubService.publishPracticeSetEvent(SubscriptionEvents.PRACTICE_SET_DELETED, set);
       }
 
-      // Update practice summary
       const summary = await PracticeSummaryService.createPracticeSummaryById(practiceId);
       if (summary) {
         await PubSubService.publishPracticeSummaryEvent(SubscriptionEvents.PRACTICE_SET_DELETED, summary);

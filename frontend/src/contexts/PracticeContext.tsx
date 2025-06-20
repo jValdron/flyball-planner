@@ -27,7 +27,7 @@ interface PracticeContextType {
 
   // Attendance management
   attendances: PracticeAttendanceData[]
-  updateAttendance: (dogId: string, attending: AttendanceStatus) => void
+  updateAttendance: (attendance: PracticeAttendanceData) => void
   getAttendance: (dogId: string) => AttendanceStatus | undefined
 
   // Sets management
@@ -121,10 +121,11 @@ export function PracticeProvider({ children, practiceId }: PracticeProviderProps
     variables: { practiceId },
     skip: !practiceId,
     onData: ({ data }) => {
+      console.log('practice attendance changed', data)
       if (data?.data?.practiceAttendanceChanged) {
         const { attendance: updatedAttendance } = data.data.practiceAttendanceChanged
         if (updatedAttendance.practiceId === practiceId) {
-          updateAttendance(updatedAttendance.dogId, updatedAttendance.attending)
+          updateAttendance(updatedAttendance)
         }
       }
     },
@@ -169,20 +170,27 @@ export function PracticeProvider({ children, practiceId }: PracticeProviderProps
   }, [practiceId, refetch])
 
   // Attendance management
-  const updateAttendance = useCallback((dogId: string, attending: AttendanceStatus) => {
+  const updateAttendance = useCallback((attendance: PracticeAttendanceData) => {
     setPractice(prev => {
       if (!prev) return prev
 
-      const updatedAttendances = prev.attendances.map(a =>
-        a.dogId === dogId ? { ...a, attending } : a
-      )
+      const existingAttendanceIndex = prev.attendances.findIndex(a => a.dogId === attendance.dogId)
+
+      let updatedAttendances
+      if (existingAttendanceIndex >= 0) {
+        updatedAttendances = prev.attendances.map(a =>
+          a.dogId === attendance.dogId ? attendance : a
+        )
+      } else {
+        updatedAttendances = [...prev.attendances, attendance]
+      }
 
       return {
         ...prev,
         attendances: updatedAttendances
       }
     })
-  }, [practice])
+  }, [])
 
   const getAttendance = useCallback((dogId: string) => {
     return practice?.attendances.find(a => a.dogId === dogId)?.attending
