@@ -3,6 +3,7 @@ import { Form, Badge, Overlay, Popover, Button, CloseButton, OverlayTrigger, Too
 import { GripVertical, ExclamationTriangle } from 'react-bootstrap-icons'
 import TrainingLevelBadge from './TrainingLevelBadge'
 import { getTrainingLevelInfo } from '../utils/trainingLevels'
+import { useTheme } from '../contexts/ThemeContext'
 import type { Dog, SetDog } from '../graphql/generated/graphql'
 import type { ValidationError } from '../services/practiceValidation'
 
@@ -18,9 +19,12 @@ interface DogsPickerProps {
   disabled?: boolean
   dogsWithValidationIssues?: Set<string>
   validationErrors?: ValidationError[]
+  getValidationErrorsForSet?: (setId: string) => ValidationError[]
+  currentSetId?: string
 }
 
-export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add dog...', disabled = false, dogsWithValidationIssues, validationErrors }: DogsPickerProps) {
+export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add dog...', disabled = false, dogsWithValidationIssues, validationErrors, getValidationErrorsForSet, currentSetId }: DogsPickerProps) {
+  const { isDark } = useTheme()
   const [showInput, setShowInput] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
@@ -56,12 +60,14 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
   const getValidationErrorForDog = useMemo(() => {
     const dogErrorMap = new Map<string, string>()
 
-    if (!validationErrors) return dogErrorMap
+    if (!validationErrors || !currentSetId) return dogErrorMap
 
-    validationErrors.forEach(error => {
+    const setValidationErrors = getValidationErrorsForSet ? getValidationErrorsForSet(currentSetId) : validationErrors
+
+    setValidationErrors.forEach(error => {
       if (error.code === 'SAME_HANDLER_IN_SET' && error.extra?.conflicts) {
         error.extra.conflicts.forEach((conflict: any) => {
-          if (conflict.dogIds) {
+          if (conflict.setId === currentSetId && conflict.dogIds) {
             conflict.dogIds.forEach((dogId: string) => {
               dogErrorMap.set(dogId, `Multiple dogs from same handler (${conflict.handlerName})`)
             })
@@ -80,7 +86,7 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
     })
 
     return dogErrorMap
-  }, [validationErrors])
+  }, [validationErrors, currentSetId, getValidationErrorsForSet])
 
   const handleSelect = (dog: DogWithSetCount) => {
     setIsSelecting(true)
@@ -196,7 +202,7 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
               return (
                 <div
                   key={dog.id}
-                  className={`p-2 hover-bg-light cursor-pointer${idx === highlightedIndex ? ' bg-primary text-white' : ''}`}
+                  className={`p-2 hover-bg-light cursor-pointer${idx === highlightedIndex ? ` bg-primary ${isDark ? 'text-white' : ''}` : ''}`}
                   onMouseDown={() => handleSelect(dog)}
                   style={{ cursor: 'pointer' }}
                   tabIndex={0}
@@ -204,7 +210,7 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
                   <div className="d-flex justify-content-between align-items-center">
                     <div>
                       <strong>{displayName}</strong>
-                      <span className={`ms-2 small ${idx === highlightedIndex ? 'bg-primary text-white' : 'text-muted'}`}>{ownerName}</span>
+                      <span className={`ms-2 small ${idx === highlightedIndex ? `bg-primary ${isDark ? 'text-white' : ''}` : 'text-muted'}`}>{ownerName}</span>
                     </div>
                     <div className="d-flex align-items-center">
                       <TrainingLevelBadge level={dog.trainingLevel} />
@@ -244,10 +250,10 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
               style={{ opacity: draggedIndex === idx ? 0.5 : 1, cursor: disabled ? 'default' : 'move' }}
             >
               <Badge bg={variant} className={`d-flex align-items-center justify-content-between w-100 ${className}`} style={{ minHeight: 38 }}>
-                <span className="me-2 d-inline-flex align-items-center" style={{ cursor: disabled ? 'default' : 'grab' }}>
+                <span className={`me-2 d-inline-flex align-items-center ${isDark ? '' : 'text-dark'}`} style={{ cursor: disabled ? 'default' : 'grab' }}>
                   {!disabled && <GripVertical />}
                 </span>
-                <span className="flex-grow-1 text-start d-flex align-items-center">
+                <span className={`flex-grow-1 text-start d-flex align-items-center ${isDark ? '' : 'text-dark'}`}>
                   {hasValidationIssue && (
                     <OverlayTrigger
                       placement="top"
@@ -265,7 +271,7 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
                 <span className="p-2 d-inline-flex align-items-center justify-content-center ms-auto" style={{ marginRight: '-8px', cursor: disabled ? 'default' : 'pointer' }} tabIndex={-1}>
                   <CloseButton
                     onClick={() => handleRemove(idx)}
-                    className="btn-close-white"
+                    className={isDark ? 'btn-close-white' : 'btn-close'}
                     aria-label={`Remove ${displayName}`}
                     disabled={disabled}
                   />

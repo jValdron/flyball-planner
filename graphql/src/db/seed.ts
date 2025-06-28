@@ -52,7 +52,7 @@ const dogsData = [
   { name: 'Rogue', ownerName: 'Hilary Fegan', status: 'active', crn: null, trainingLevel: TrainingLevel.Beginner },
   { name: 'Gracie', ownerName: 'Jack Brown', status: 'active', crn: '190795', trainingLevel: TrainingLevel.Solid },
   { name: 'Sly', ownerName: 'Janice Aubé', status: 'active', crn: null, trainingLevel: TrainingLevel.Beginner },
-  { name: 'Timber', ownerName: 'Janice Aubé', status: 'active', crn: '230702', trainingLevel: TrainingLevel.Solid },
+  { name: 'Timber', ownerName: 'Janice Aubé', status: 'active', crn: '230702', trainingLevel: TrainingLevel.Advanced },
   { name: 'Vala', ownerName: 'Jason Valdron', status: 'active', crn: '220653', trainingLevel: TrainingLevel.Solid },
   { name: 'Miso', ownerName: 'Julia Khoury', status: 'active', crn: null, trainingLevel: TrainingLevel.Advanced },
   { name: 'Jupi', ownerName: 'Julia Khoury', status: 'active', crn: null, trainingLevel: TrainingLevel.Beginner },

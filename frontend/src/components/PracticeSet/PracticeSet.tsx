@@ -40,6 +40,7 @@ interface SortableSetProps {
   dogsWithValidationIssues?: Set<string>
   validationErrors?: ValidationError[]
   inputRef?: React.RefObject<HTMLInputElement | null>
+  getValidationErrorsForSet?: (setId: string) => ValidationError[]
 }
 
 function SortableSet({
@@ -53,7 +54,8 @@ function SortableSet({
   disabled = false,
   dogsWithValidationIssues = new Set<string>(),
   validationErrors,
-  inputRef
+  inputRef,
+  getValidationErrorsForSet
 }: SortableSetProps) {
   const handleDogsChange = (lane: Lane | null, setDogs: Partial<SetDog>[]) => {
     const updatedLaneDogs: Partial<SetDog>[] = setDogs.map((setDog, idx) => ({
@@ -109,6 +111,7 @@ function SortableSet({
         disabled={disabled}
         dogsWithValidationIssues={dogsWithValidationIssues}
         validationErrors={validationErrors}
+        getValidationErrorsForSet={getValidationErrorsForSet}
       />
     </div>
   )
@@ -122,9 +125,10 @@ interface DogsSectionProps {
   disabled?: boolean
   dogsWithValidationIssues?: Set<string>
   validationErrors?: ValidationError[]
+  getValidationErrorsForSet?: (setId: string) => ValidationError[]
 }
 
-function DogsSection({ set, availableDogs, onDogsChange, location, disabled, dogsWithValidationIssues, validationErrors }: DogsSectionProps) {
+function DogsSection({ set, availableDogs, onDogsChange, location, disabled, dogsWithValidationIssues, validationErrors, getValidationErrorsForSet }: DogsSectionProps) {
   const getDogsForLane = (lane: Lane | null) => set.dogs.filter(d => d.lane === lane)
 
   // Determine lanes based on location
@@ -159,6 +163,8 @@ function DogsSection({ set, availableDogs, onDogsChange, location, disabled, dog
               disabled={disabled}
               dogsWithValidationIssues={dogsWithValidationIssues}
               validationErrors={validationErrors}
+              getValidationErrorsForSet={getValidationErrorsForSet}
+              currentSetId={set.id}
             />
           </div>
         )
@@ -178,9 +184,10 @@ interface SortableGroupProps {
   otherLocations: Location[]
   defaultLocation?: Location | null
   disabled?: boolean
-  dogsWithValidationIssues?: Set<string>
   validationErrors?: ValidationError[]
   getSetTypeRef: (setId: string) => React.RefObject<HTMLInputElement | null>
+  getDogsWithValidationIssuesForSet: (setId: string) => Set<string>
+  getValidationErrorsForSet: (setId: string) => ValidationError[]
 }
 
 function SortableGroup({
@@ -194,9 +201,10 @@ function SortableGroup({
   otherLocations,
   defaultLocation,
   disabled = false,
-  dogsWithValidationIssues = new Set<string>(),
   validationErrors,
-  getSetTypeRef
+  getSetTypeRef,
+  getDogsWithValidationIssuesForSet,
+  getValidationErrorsForSet
 }: SortableGroupProps) {
   const { isDark } = useTheme()
   const {
@@ -264,9 +272,10 @@ function SortableGroup({
                     otherLocations={otherLocations}
                     defaultLocation={defaultLocation}
                     disabled={disabled}
-                    dogsWithValidationIssues={dogsWithValidationIssues}
+                    dogsWithValidationIssues={getDogsWithValidationIssuesForSet(set.id)}
                     validationErrors={validationErrors}
                     inputRef={getSetTypeRef(set.id)}
+                    getValidationErrorsForSet={getValidationErrorsForSet}
                   />
                 </div>
               )
@@ -302,16 +311,38 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
   const [updateSets] = useMutation<UpdateSetsMutation>(UpdateSets)
   const [deleteSets] = useMutation<DeleteSetsMutation>(DeleteSets)
 
-  // Helper function to get dog IDs with validation issues
-  const getDogsWithValidationIssues = useMemo(() => {
+  // Helper function to get validation errors for a specific set
+  const getValidationErrorsForSet = (setId: string) => {
+    if (!validationErrors) return []
+
+    return validationErrors.filter(error => {
+      if (error.code === 'SAME_HANDLER_IN_SET' && error.extra?.conflicts) {
+        return error.extra.conflicts.some((conflict: any) => conflict.setId === setId)
+      }
+      if (error.code === 'BACK_TO_BACK_HANDLERS' && error.extra?.backToBackHandlers) {
+        return error.extra.backToBackHandlers.some((handler: any) => {
+          if (handler.dogIds) {
+            const set = sets.find(s => s.id === setId)
+            if (set) {
+              return set.dogs.some(setDog => handler.dogIds.includes(setDog.dogId))
+            }
+          }
+          return false
+        })
+      }
+      return false
+    })
+  }
+
+  // Helper function to get dog IDs with validation issues for a specific set
+  const getDogsWithValidationIssuesForSet = (setId: string) => {
     const dogIdsWithIssues = new Set<string>()
+    const setValidationErrors = getValidationErrorsForSet(setId)
 
-    if (!validationErrors) return dogIdsWithIssues
-
-    validationErrors.forEach(error => {
+    setValidationErrors.forEach(error => {
       if (error.code === 'SAME_HANDLER_IN_SET' && error.extra?.conflicts) {
         error.extra.conflicts.forEach((conflict: any) => {
-          if (conflict.dogIds) {
+          if (conflict.setId === setId && conflict.dogIds) {
             conflict.dogIds.forEach((dogId: string) => dogIdsWithIssues.add(dogId))
           }
         })
@@ -319,14 +350,21 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
       if (error.code === 'BACK_TO_BACK_HANDLERS' && error.extra?.backToBackHandlers) {
         error.extra.backToBackHandlers.forEach((handler: any) => {
           if (handler.dogIds) {
-            handler.dogIds.forEach((dogId: string) => dogIdsWithIssues.add(dogId))
+            const set = sets.find(s => s.id === setId)
+            if (set) {
+              set.dogs.forEach(setDog => {
+                if (handler.dogIds.includes(setDog.dogId)) {
+                  dogIdsWithIssues.add(setDog.dogId)
+                }
+              })
+            }
           }
         })
       }
     })
 
     return dogIdsWithIssues
-  }, [validationErrors])
+  }
 
   const availableDogs = useMemo(() => {
     const dogSetCounts = new Map<string, number>()
@@ -556,6 +594,10 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
       if (ref?.current) {
         setTimeout(() => {
           ref.current?.focus()
+          ref.current?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          })
         }, 100)
         setNewlyCreatedSetIds(prev => {
           const newSet = new Set(prev)
@@ -588,9 +630,10 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
               otherLocations={otherLocations}
               defaultLocation={defaultLocation}
               disabled={disabled}
-              dogsWithValidationIssues={getDogsWithValidationIssues}
               validationErrors={validationErrors}
               getSetTypeRef={getSetTypeRef}
+              getDogsWithValidationIssuesForSet={getDogsWithValidationIssuesForSet}
+              getValidationErrorsForSet={getValidationErrorsForSet}
             />
           ))}
         </SortableContext>
