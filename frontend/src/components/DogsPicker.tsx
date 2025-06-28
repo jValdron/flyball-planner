@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
-import { Form, Badge, Overlay, Popover, Button, CloseButton } from 'react-bootstrap'
-import { GripVertical } from 'react-bootstrap-icons'
+import { Form, Badge, Overlay, Popover, Button, CloseButton, OverlayTrigger, Tooltip } from 'react-bootstrap'
+import { GripVertical, ExclamationTriangle } from 'react-bootstrap-icons'
 import TrainingLevelBadge from './TrainingLevelBadge'
 import { getTrainingLevelInfo } from '../utils/trainingLevels'
 import type { Dog, SetDog } from '../graphql/generated/graphql'
+import type { ValidationError } from '../services/practiceValidation'
 
 interface DogWithSetCount extends Dog {
   setCount: number
@@ -15,9 +16,11 @@ interface DogsPickerProps {
   availableDogs: DogWithSetCount[]
   placeholder?: string
   disabled?: boolean
+  dogsWithValidationIssues?: Set<string>
+  validationErrors?: ValidationError[]
 }
 
-export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add dog...', disabled = false }: DogsPickerProps) {
+export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add dog...', disabled = false, dogsWithValidationIssues, validationErrors }: DogsPickerProps) {
   const [showInput, setShowInput] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
@@ -48,6 +51,36 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
         return a.name.localeCompare(b.name)
       })
   }, [searchTerm, availableDogs, value])
+
+  // Helper function to get validation error message for a specific dog
+  const getValidationErrorForDog = useMemo(() => {
+    const dogErrorMap = new Map<string, string>()
+
+    if (!validationErrors) return dogErrorMap
+
+    validationErrors.forEach(error => {
+      if (error.code === 'SAME_HANDLER_IN_SET' && error.extra?.conflicts) {
+        error.extra.conflicts.forEach((conflict: any) => {
+          if (conflict.dogIds) {
+            conflict.dogIds.forEach((dogId: string) => {
+              dogErrorMap.set(dogId, `Multiple dogs from same handler (${conflict.handlerName})`)
+            })
+          }
+        })
+      }
+      if (error.code === 'BACK_TO_BACK_HANDLERS' && error.extra?.backToBackHandlers) {
+        error.extra.backToBackHandlers.forEach((handler: any) => {
+          if (handler.dogIds) {
+            handler.dogIds.forEach((dogId: string) => {
+              dogErrorMap.set(dogId, `${handler.handlerName} is back to back in sets ${handler.setIndices.join(' ↔ ')}`)
+            })
+          }
+        })
+      }
+    })
+
+    return dogErrorMap
+  }, [validationErrors])
 
   const handleSelect = (dog: DogWithSetCount) => {
     setIsSelecting(true)
@@ -198,6 +231,8 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
         {value.sort((a, b) => a.index - b.index).map((setDog, idx) => {
           const displayName = setDog.dog.name
           const { variant, className } = getTrainingLevelInfo(setDog.dog.trainingLevel)
+          const hasValidationIssue = dogsWithValidationIssues?.has(setDog.dog.id)
+
           return (
             <div
               key={`${setDog.id}-${idx}`}
@@ -212,7 +247,21 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
                 <span className="me-2 d-inline-flex align-items-center" style={{ cursor: disabled ? 'default' : 'grab' }}>
                   {!disabled && <GripVertical />}
                 </span>
-                <span className="flex-grow-1 text-start">{displayName}</span>
+                <span className="flex-grow-1 text-start d-flex align-items-center">
+                  {hasValidationIssue && (
+                    <OverlayTrigger
+                      placement="top"
+                      overlay={
+                        <Tooltip id={`validation-error-${setDog.dog.id}`}>
+                          {getValidationErrorForDog.get(setDog.dog.id) || 'This dog has validation issues'}
+                        </Tooltip>
+                      }
+                    >
+                      <ExclamationTriangle size={18} className="me-2 text-warning" title="This dog has validation issues" />
+                    </OverlayTrigger>
+                  )}
+                  {displayName}
+                </span>
                 <span className="p-2 d-inline-flex align-items-center justify-content-center ms-auto" style={{ marginRight: '-8px', cursor: disabled ? 'default' : 'pointer' }} tabIndex={-1}>
                   <CloseButton
                     onClick={() => handleRemove(idx)}

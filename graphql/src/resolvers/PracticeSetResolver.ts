@@ -249,6 +249,26 @@ export class PracticeSetResolver {
       throw new Error('All sets must be from the same practice');
     }
 
+    // Validation: Don't delete default set if others with same index remain
+    const allSetsBeforeDelete = await this.setRepository.find({ where: { practiceId } });
+    const idsToDeleteSet = new Set(ids);
+    const defaultLocationIds = new Set(
+      (await AppDataSource.getRepository(Location).find({ where: { isDefault: true } })).map(l => l.id)
+    );
+    for (const set of sets) {
+      if (defaultLocationIds.has(set.locationId)) {
+        const otherSet = allSetsBeforeDelete.find(
+          s => s.index === set.index && s.locationId !== set.locationId && !idsToDeleteSet.has(s.id)
+        );
+        if (otherSet) {
+          throw new Error(
+            `Cannot delete set with default location at index ${set.index} while another set with the same index in a different location remains.`
+          );
+        }
+      }
+    }
+
+    // Delete sets
     const result = await this.setRepository.delete({ id: In(ids) });
     const deleted = result.affected !== 0;
 
@@ -257,6 +277,39 @@ export class PracticeSetResolver {
         await PubSubService.publishPracticeSetEvent(SubscriptionEvents.PRACTICE_SET_DELETED, set);
       }
 
+      // Reorder indices globally
+      const remainingSets = await this.setRepository.find({
+        where: { practiceId },
+        order: { index: 'ASC' }
+      });
+      const deletedIndices = Array.from(new Set(sets.map(s => s.index)));
+      const updatedSets: SetModel[] = [];
+
+      for (const deletedIndex of deletedIndices.sort((a, b) => a - b)) {
+        for (const set of remainingSets) {
+          if (set.index > deletedIndex) {
+            set.index = set.index - 1;
+            updatedSets.push(set);
+          }
+        }
+      }
+
+      if (updatedSets.length > 0) {
+        for (const set of updatedSets) {
+          await this.setRepository.update(set.id, { index: set.index });
+        }
+
+        const fullUpdatedSets = await this.setRepository.find({
+          where: { id: In(updatedSets.map(s => s.id)) },
+          relations: ['dogs', 'dogs.dog']
+        });
+
+        for (const set of fullUpdatedSets) {
+          await PubSubService.publishPracticeSetEvent(SubscriptionEvents.PRACTICE_SET_UPDATED, set);
+        }
+      }
+
+      // Publish summary event
       const summary = await PracticeSummaryService.createPracticeSummaryById(practiceId);
       if (summary) {
         await PubSubService.publishPracticeSummaryEvent(SubscriptionEvents.PRACTICE_SET_DELETED, summary);

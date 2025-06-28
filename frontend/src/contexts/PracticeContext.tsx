@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useReducer } from 'react'
 import { useSubscription, useQuery } from '@apollo/client'
 import {
   PRACTICE_CHANGED_SUBSCRIPTION,
@@ -13,6 +13,8 @@ import type {
   PracticeSetChangedSubscription,
   GetPracticeQuery
 } from '../graphql/generated/graphql'
+import { useClub } from './ClubContext'
+import type { VirtualAttendanceData, MergedAttendanceData } from '../types/attendance'
 
 // Types for the practice data we're managing
 type PracticeData = NonNullable<GetPracticeQuery['practice']>
@@ -26,7 +28,7 @@ interface PracticeContextType {
   practiceError: string | null
 
   // Attendance management
-  attendances: PracticeAttendanceData[]
+  attendances: MergedAttendanceData[]
   updateAttendance: (attendance: PracticeAttendanceData) => void
   getAttendance: (dogId: string) => AttendanceStatus | undefined
 
@@ -52,10 +54,36 @@ const sortSetsByIndex = (sets: SetData[]): SetData[] => {
   return [...sets].sort((a, b) => a.index - b.index)
 }
 
+// Sets reducer for race-condition-free updates
+type SetAction =
+  | { type: 'SET_SETS'; sets: SetData[] }
+  | { type: 'ADD_SET'; set: SetData }
+  | { type: 'UPDATE_SET'; setId: string; updates: Partial<SetData> }
+  | { type: 'REMOVE_SET'; setId: string }
+
+function setsReducer(state: SetData[], action: SetAction): SetData[] {
+  switch (action.type) {
+    case 'SET_SETS':
+      return sortSetsByIndex(action.sets)
+    case 'ADD_SET':
+      return sortSetsByIndex([...state, action.set])
+    case 'UPDATE_SET':
+      return sortSetsByIndex(
+        state.map(s => s.id === action.setId ? { ...s, ...action.updates, updatedAt: new Date().toISOString() } : s)
+      )
+    case 'REMOVE_SET':
+      return sortSetsByIndex(state.filter(s => s.id !== action.setId))
+    default:
+      return state
+  }
+}
+
 export function PracticeProvider({ children, practiceId }: PracticeProviderProps) {
   const [practice, setPractice] = useState<PracticeData | null>(null)
   const [isPracticeLoading, setIsPracticeLoading] = useState(false)
   const [practiceError, setPracticeError] = useState<string | null>(null)
+  const [sets, dispatchSets] = useReducer(setsReducer, [])
+  const { dogs } = useClub()
 
   // Load practice data
   const { data: practiceData, loading: practiceQueryLoading, error: practiceQueryError, refetch } = useQuery<GetPracticeQuery>(GetPractice, {
@@ -88,8 +116,50 @@ export function PracticeProvider({ children, practiceId }: PracticeProviderProps
         sets: sortSetsByIndex(practiceData.practice.sets)
       }
       setPractice(practiceWithSortedSets)
+      dispatchSets({ type: 'SET_SETS', sets: practiceData.practice.sets })
     }
   }, [practiceData])
+
+  // Merge attendance data with active dogs
+  const mergedAttendances = useMemo(() => {
+    if (!practice || !practiceId) return []
+
+    const existingAttendances = practice.attendances || []
+    const activeDogs = dogs.filter(dog => dog.status === 'Active')
+
+    // Create a map of existing attendance records by dogId
+    const attendanceMap = new Map<string, PracticeAttendanceData>()
+    existingAttendances.forEach(attendance => {
+      attendanceMap.set(attendance.dogId, attendance)
+    })
+
+    // Create merged attendance list
+    const merged: MergedAttendanceData[] = []
+
+    // Add existing attendance records
+    existingAttendances.forEach(attendance => {
+      merged.push(attendance)
+    })
+
+    // Add virtual attendance records for active dogs without attendance records
+    activeDogs.forEach(dog => {
+      if (!attendanceMap.has(dog.id)) {
+        const virtualAttendance: VirtualAttendanceData = {
+          id: dog.id, // Use dogId as virtual ID
+          dogId: dog.id,
+          attending: AttendanceStatus.Unknown,
+          practiceId: practiceId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          isVirtual: true,
+          dog: dog
+        }
+        merged.push(virtualAttendance)
+      }
+    })
+
+    return merged
+  }, [practice, practiceId, dogs])
 
   // Subscribe to practice changes (basic fields only)
   useSubscription<PracticeChangedSubscription>(PRACTICE_CHANGED_SUBSCRIPTION, {
@@ -142,16 +212,16 @@ export function PracticeProvider({ children, practiceId }: PracticeProviderProps
         if (updatedSet.practiceId === practiceId) {
           switch (eventType) {
             case 'UPDATED':
-              const existingSet = practice?.sets.find(s => s.id === updatedSet.id)
+              const existingSet = sets.find(s => s.id === updatedSet.id)
               if (existingSet) {
-                updateSet(updatedSet.id, updatedSet)
+                dispatchSets({ type: 'UPDATE_SET', setId: updatedSet.id, updates: updatedSet })
               } else {
-                addSet(updatedSet as SetData)
+                dispatchSets({ type: 'ADD_SET', set: updatedSet as SetData })
               }
               break
 
             case 'DELETED':
-              removeSet(updatedSet.id)
+              dispatchSets({ type: 'REMOVE_SET', setId: updatedSet.id })
               break
           }
         }
@@ -192,64 +262,32 @@ export function PracticeProvider({ children, practiceId }: PracticeProviderProps
   }, [])
 
   const getAttendance = useCallback((dogId: string) => {
-    return practice?.attendances.find(a => a.dogId === dogId)?.attending
-  }, [practice])
+    const attendance = mergedAttendances.find(a => a.dogId === dogId)
+    return attendance?.attending
+  }, [mergedAttendances])
 
-  // Sets management
+  // Sets management - now using reducer
   const addSet = useCallback((set: Partial<SetData>) => {
-    if (!practice) return
-
-    setPractice(prev => {
-      if (!prev) return prev
-
-      const newSets = [...prev.sets, set as SetData]
-      return {
-        ...prev,
-        sets: sortSetsByIndex(newSets)
-      }
-    })
-  }, [practice])
+    dispatchSets({ type: 'ADD_SET', set: set as SetData })
+  }, [])
 
   const updateSet = useCallback((setId: string, updates: Partial<SetData>) => {
-    if (!practice) return
-
-    setPractice(prev => {
-      if (!prev) return prev
-
-      const updatedSets = prev.sets.map(s =>
-        s.id === setId ? { ...s, ...updates, updatedAt: new Date().toISOString() } : s
-      )
-
-      return {
-        ...prev,
-        sets: sortSetsByIndex(updatedSets)
-      }
-    })
-  }, [practice])
+    dispatchSets({ type: 'UPDATE_SET', setId, updates })
+  }, [])
 
   const removeSet = useCallback((setId: string) => {
-    if (!practice) return
-
-    setPractice(prev => {
-      if (!prev) return prev
-
-      const filteredSets = prev.sets.filter(s => s.id !== setId)
-      return {
-        ...prev,
-        sets: sortSetsByIndex(filteredSets)
-      }
-    })
-  }, [practice])
+    dispatchSets({ type: 'REMOVE_SET', setId })
+  }, [])
 
   return (
     <PracticeContext.Provider value={{
       practice,
       isPracticeLoading,
       practiceError,
-      attendances: practice?.attendances || [],
+      attendances: mergedAttendances,
       updateAttendance,
       getAttendance,
-      sets: sortSetsByIndex(practice?.sets || []),
+      sets: sets,
       addSet,
       updateSet,
       removeSet,

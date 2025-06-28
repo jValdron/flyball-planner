@@ -21,7 +21,7 @@ function PracticeDetailsContent() {
   const navigate = useNavigate()
   const { practiceId } = useParams()
   const location = useLocation()
-  const { selectedClub } = useClub()
+  const { selectedClub, dogs, handlers } = useClub()
   const {
     practice,
     isPracticeLoading,
@@ -98,10 +98,11 @@ function PracticeDetailsContent() {
         attendances: attendances as any,
         sets: sets as any
       }
-      const validationResult = PracticeValidationService.validatePractice(practiceToValidate)
+      const validationContext = { dogs, handlers }
+      const validationResult = PracticeValidationService.validatePractice(practiceToValidate, validationContext)
       setValidationErrors(validationResult.errors)
     }
-  }, [practice, attendances, sets])
+  }, [practice, attendances, sets, dogs, handlers])
 
   const savePractice = useCallback(async () => {
     if (!selectedClub || !scheduledAt) return
@@ -331,6 +332,7 @@ function PracticeDetailsContent() {
             <PracticeSet
               practiceId={practiceId}
               disabled={isPastPractice}
+              validationErrors={validationErrors}
             />
           )}
           <div className="d-flex justify-content-between mb-3">

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { Button, Form, Card } from 'react-bootstrap'
 import { DndContext } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
@@ -6,7 +6,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities'
 import { useMutation } from '@apollo/client'
 import { UpdateSets, DeleteSets } from '../../graphql/sets'
-import { SetType, AttendanceStatus, Lane } from '../../graphql/generated/graphql'
+import { SetType, AttendanceStatus, Lane, DogStatus } from '../../graphql/generated/graphql'
 import { GripVertical, PlusLg, Trash } from 'react-bootstrap-icons'
 import { SaveSpinner } from '../SaveSpinner'
 import { useClub } from '../../contexts/ClubContext'
@@ -16,6 +16,7 @@ import { DogsPicker } from '../DogsPicker'
 import { SetTypeAutocomplete } from './SetTypeAutocomplete'
 import { LocationSelector } from './LocationSelector'
 import { useTheme } from '../../contexts/ThemeContext'
+import type { ValidationError } from '../../services/practiceValidation'
 
 interface DogWithSetCount extends Dog {
   setCount: number
@@ -24,17 +25,21 @@ interface DogWithSetCount extends Dog {
 interface PracticeSetProps {
   practiceId: string
   disabled: boolean
+  validationErrors?: ValidationError[]
 }
 
 interface SortableSetProps {
   set: NonNullable<ReturnType<typeof usePractice>['sets'][0]>
   onDelete: (id: string) => void
-  onSetTypeChange: (id: string, type: SetType, typeCustom: string | null) => void
+  onSetTypeChange: (id: string, type: SetType | null, typeCustom: string | null) => void
   onSetDogsChange?: (setId: string, dogs: Partial<SetDog>[]) => void
   availableDogs: DogWithSetCount[]
   otherLocations: Location[]
   defaultLocation?: Location | null
   disabled?: boolean
+  dogsWithValidationIssues?: Set<string>
+  validationErrors?: ValidationError[]
+  inputRef?: React.RefObject<HTMLInputElement | null>
 }
 
 function SortableSet({
@@ -45,7 +50,10 @@ function SortableSet({
   onSetDogsChange,
   otherLocations,
   defaultLocation,
-  disabled = false
+  disabled = false,
+  dogsWithValidationIssues = new Set<string>(),
+  validationErrors,
+  inputRef
 }: SortableSetProps) {
   const handleDogsChange = (lane: Lane | null, setDogs: Partial<SetDog>[]) => {
     const updatedLaneDogs: Partial<SetDog>[] = setDogs.map((setDog, idx) => ({
@@ -84,10 +92,11 @@ function SortableSet({
       <div className="d-flex justify-content-between align-items-center mb-3">
         <Form.Group className="flex-grow-1">
           <SetTypeAutocomplete
-            value={set.typeCustom ?? set.type ?? null}
+            value={set.typeCustom ? SetType.Custom : (set.type ?? null)}
             typeCustom={set.typeCustom ?? null}
             onChange={(type, typeCustom) => onSetTypeChange(set.id, type, typeCustom)}
             disabled={disabled}
+            inputRef={inputRef}
           />
         </Form.Group>
       </div>
@@ -98,6 +107,8 @@ function SortableSet({
         onDogsChange={handleDogsChange}
         location={setLocation}
         disabled={disabled}
+        dogsWithValidationIssues={dogsWithValidationIssues}
+        validationErrors={validationErrors}
       />
     </div>
   )
@@ -109,9 +120,11 @@ interface DogsSectionProps {
   onDogsChange: (lane: Lane | null, setDogs: Partial<SetDog>[]) => void
   location: { id: string; name: string; isDefault: boolean; isDoubleLane: boolean }
   disabled?: boolean
+  dogsWithValidationIssues?: Set<string>
+  validationErrors?: ValidationError[]
 }
 
-function DogsSection({ set, availableDogs, onDogsChange, location, disabled }: DogsSectionProps) {
+function DogsSection({ set, availableDogs, onDogsChange, location, disabled, dogsWithValidationIssues, validationErrors }: DogsSectionProps) {
   const getDogsForLane = (lane: Lane | null) => set.dogs.filter(d => d.lane === lane)
 
   // Determine lanes based on location
@@ -144,6 +157,8 @@ function DogsSection({ set, availableDogs, onDogsChange, location, disabled }: D
               availableDogs={availableDogsForLane}
               placeholder={lane ? `Add dog to ${lane} lane` : 'Add dog'}
               disabled={disabled}
+              dogsWithValidationIssues={dogsWithValidationIssues}
+              validationErrors={validationErrors}
             />
           </div>
         )
@@ -156,13 +171,16 @@ interface SortableGroupProps {
   group: { index: number; sets: NonNullable<ReturnType<typeof usePractice>['sets']> }
   onDelete: (id: string) => void
   onDeleteGroup: (index: number) => void
-  onSetTypeChange: (id: string, type: SetType, typeCustom: string | null) => void
+  onSetTypeChange: (id: string, type: SetType | null, typeCustom: string | null) => void
   onSetDogsChange?: (setId: string, dogs: Partial<SetDog>[]) => void
   onLocationAdd?: (locationId: string, index: number) => void
   availableDogs: DogWithSetCount[]
   otherLocations: Location[]
   defaultLocation?: Location | null
   disabled?: boolean
+  dogsWithValidationIssues?: Set<string>
+  validationErrors?: ValidationError[]
+  getSetTypeRef: (setId: string) => React.RefObject<HTMLInputElement | null>
 }
 
 function SortableGroup({
@@ -175,7 +193,10 @@ function SortableGroup({
   onLocationAdd,
   otherLocations,
   defaultLocation,
-  disabled = false
+  disabled = false,
+  dogsWithValidationIssues = new Set<string>(),
+  validationErrors,
+  getSetTypeRef
 }: SortableGroupProps) {
   const { isDark } = useTheme()
   const {
@@ -243,6 +264,9 @@ function SortableGroup({
                     otherLocations={otherLocations}
                     defaultLocation={defaultLocation}
                     disabled={disabled}
+                    dogsWithValidationIssues={dogsWithValidationIssues}
+                    validationErrors={validationErrors}
+                    inputRef={getSetTypeRef(set.id)}
                   />
                 </div>
               )
@@ -268,13 +292,41 @@ function SortableGroup({
   )
 }
 
-export function PracticeSet({ practiceId, disabled }: PracticeSetProps) {
+export function PracticeSet({ practiceId, disabled, validationErrors }: PracticeSetProps) {
   const { dogs, locations } = useClub()
   const { attendances, sets } = usePractice()
   const [isSaving, setIsSaving] = useState(false)
+  const [newlyCreatedSetIds, setNewlyCreatedSetIds] = useState<Set<string>>(new Set())
+  const setTypeRefs = useRef<Map<string, React.RefObject<HTMLInputElement | null>>>(new Map())
 
   const [updateSets] = useMutation<UpdateSetsMutation>(UpdateSets)
   const [deleteSets] = useMutation<DeleteSetsMutation>(DeleteSets)
+
+  // Helper function to get dog IDs with validation issues
+  const getDogsWithValidationIssues = useMemo(() => {
+    const dogIdsWithIssues = new Set<string>()
+
+    if (!validationErrors) return dogIdsWithIssues
+
+    validationErrors.forEach(error => {
+      if (error.code === 'SAME_HANDLER_IN_SET' && error.extra?.conflicts) {
+        error.extra.conflicts.forEach((conflict: any) => {
+          if (conflict.dogIds) {
+            conflict.dogIds.forEach((dogId: string) => dogIdsWithIssues.add(dogId))
+          }
+        })
+      }
+      if (error.code === 'BACK_TO_BACK_HANDLERS' && error.extra?.backToBackHandlers) {
+        error.extra.backToBackHandlers.forEach((handler: any) => {
+          if (handler.dogIds) {
+            handler.dogIds.forEach((dogId: string) => dogIdsWithIssues.add(dogId))
+          }
+        })
+      }
+    })
+
+    return dogIdsWithIssues
+  }, [validationErrors])
 
   const availableDogs = useMemo(() => {
     const dogSetCounts = new Map<string, number>()
@@ -285,11 +337,11 @@ export function PracticeSet({ practiceId, disabled }: PracticeSetProps) {
       })
     })
 
-    // Get dogs from club context and filter by attendance
+    // Get dogs from club context and filter by attendance and status
     return dogs
       .filter(dog => {
         const attendance = attendances.find(a => a.dogId === dog.id)
-        return attendance && attendance.attending !== AttendanceStatus.NotAttending
+        return attendance && attendance.attending !== AttendanceStatus.NotAttending && dog.status === DogStatus.Active
       })
       .map(dog => ({
         ...dog,
@@ -347,7 +399,7 @@ export function PracticeSet({ practiceId, disabled }: PracticeSetProps) {
     }
   }
 
-  const handleSetUpdate = async (setId: string, updates: Partial<{ index: number; type: SetType; typeCustom: string | null; dogs: Partial<SetDog>[] }>) => {
+  const handleSetUpdate = async (setId: string, updates: Partial<{ index: number; type: SetType | null; typeCustom: string | null; dogs: Partial<SetDog>[] }>) => {
     try {
       setIsSaving(true)
       await updateSets({
@@ -366,12 +418,13 @@ export function PracticeSet({ practiceId, disabled }: PracticeSetProps) {
   }
 
   const handleAddSet = async () => {
-    const maxIndex = sets.length > 0 ? Math.max(...sets.map(set => set.index)) : 0
+    const defaultLocationSets = sets.filter(set => set.locationId === defaultLocation?.id)
+    const maxIndex = defaultLocationSets.length > 0 ? Math.max(...defaultLocationSets.map(set => set.index)) : 0
     const newIndex = maxIndex + 1
 
     try {
       setIsSaving(true)
-      await updateSets({
+      const result = await updateSets({
         variables: {
           updates: [{
             practiceId,
@@ -381,6 +434,14 @@ export function PracticeSet({ practiceId, disabled }: PracticeSetProps) {
           }]
         }
       })
+
+      // Track the newly created set for focusing
+      if (result.data?.updateSets) {
+        const newSetId = result.data.updateSets[0]?.id
+        if (newSetId) {
+          setNewlyCreatedSetIds(prev => new Set([...prev, newSetId]))
+        }
+      }
     } catch (err) {
       console.error('Error creating set:', err)
     } finally {
@@ -417,7 +478,7 @@ export function PracticeSet({ practiceId, disabled }: PracticeSetProps) {
     }
   }
 
-  const handleSetTypeChange = async (setId: string, type: SetType, typeCustom: string | null) => {
+  const handleSetTypeChange = async (setId: string, type: SetType | null, typeCustom: string | null) => {
     await handleSetUpdate(setId, { type, typeCustom })
   }
 
@@ -480,6 +541,31 @@ export function PracticeSet({ practiceId, disabled }: PracticeSetProps) {
     }))
   }, [sets, defaultLocation?.id, otherLocations])
 
+  // Helper function to get or create a ref for a set
+  const getSetTypeRef = (setId: string) => {
+    if (!setTypeRefs.current.has(setId)) {
+      setTypeRefs.current.set(setId, { current: null })
+    }
+    return setTypeRefs.current.get(setId)!
+  }
+
+  // Focus newly created sets
+  useEffect(() => {
+    newlyCreatedSetIds.forEach(setId => {
+      const ref = setTypeRefs.current.get(setId)
+      if (ref?.current) {
+        setTimeout(() => {
+          ref.current?.focus()
+        }, 100)
+        setNewlyCreatedSetIds(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(setId)
+          return newSet
+        })
+      }
+    })
+  }, [newlyCreatedSetIds, sets])
+
   return (
     <div>
       <DndContext
@@ -502,6 +588,9 @@ export function PracticeSet({ practiceId, disabled }: PracticeSetProps) {
               otherLocations={otherLocations}
               defaultLocation={defaultLocation}
               disabled={disabled}
+              dogsWithValidationIssues={getDogsWithValidationIssues}
+              validationErrors={validationErrors}
+              getSetTypeRef={getSetTypeRef}
             />
           ))}
         </SortableContext>

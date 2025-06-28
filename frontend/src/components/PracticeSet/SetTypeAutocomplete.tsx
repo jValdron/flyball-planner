@@ -5,21 +5,25 @@ import { SetType } from '../../graphql/generated/graphql'
 import { getSetTypeDisplayName, findSetTypeByDisplayName, findSetTypeByPartialMatch } from '../../utils/setTypeUtils'
 
 interface SetTypeAutocompleteProps {
-  value: string | null
+  value: SetType | null
   typeCustom: string | null
-  onChange: (type: SetType, typeCustom: string | null) => void
+  onChange: (type: SetType | null, typeCustom: string | null) => void
   disabled?: boolean
+  inputRef?: React.RefObject<HTMLInputElement | null>
 }
 
-export function SetTypeAutocomplete({ value, typeCustom, onChange, disabled = false }: SetTypeAutocompleteProps) {
+export function SetTypeAutocomplete({ value, typeCustom, onChange, disabled = false, inputRef }: SetTypeAutocompleteProps) {
   const [show, setShow] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [inputValue, setInputValue] = useState(
     value === SetType.Custom && typeCustom ? typeCustom : (value ? getSetTypeDisplayName(value as SetType) : '')
   )
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const fallbackRef = useRef<HTMLInputElement>(null)
   const skipBlur = useRef(false)
+
+  // Use provided ref or fallback to internal ref
+  const actualInputRef = inputRef || fallbackRef
 
   useEffect(() => {
     setInputValue(value === SetType.Custom && typeCustom ? typeCustom : (value ? getSetTypeDisplayName(value as SetType) : ''))
@@ -59,6 +63,14 @@ export function SetTypeAutocomplete({ value, typeCustom, onChange, disabled = fa
       setShow(false)
     }, 100)
     const newValue = inputValue.trim()
+
+    if (newValue === '') {
+      if (value !== null || typeCustom !== null) {
+        onChange(null, null)
+      }
+      return
+    }
+
     let newType: SetType
     let newTypeCustom: string | null
     const matchingType = findSetTypeByDisplayName(newValue)
@@ -83,7 +95,7 @@ export function SetTypeAutocomplete({ value, typeCustom, onChange, disabled = fa
       onChange(type, null)
     }
     setTimeout(() => {
-      inputRef.current?.focus()
+      actualInputRef?.current?.focus()
     }, 0)
   }
 
@@ -93,7 +105,7 @@ export function SetTypeAutocomplete({ value, typeCustom, onChange, disabled = fa
 
   const handleCaretClick = (e: React.MouseEvent) => {
     e.preventDefault()
-    inputRef.current?.focus()
+    actualInputRef?.current?.focus()
     setShow(true)
     setSearchTerm('')
   }
@@ -123,13 +135,13 @@ export function SetTypeAutocomplete({ value, typeCustom, onChange, disabled = fa
     }
   }
 
-  const shouldShowDropdown = show && (searchTerm.length > 0 || (document.activeElement === inputRef.current && show && searchTerm === ''))
+  const shouldShowDropdown = show && filteredTypes.length > 0 && (searchTerm.length > 0 || (document.activeElement === actualInputRef.current && show && searchTerm === ''))
 
   return (
     <Dropdown show={shouldShowDropdown} onToggle={setShow} className="set-type-autocomplete">
       <InputGroup>
         <Form.Control
-          ref={inputRef}
+          ref={actualInputRef}
           type="text"
           value={inputValue}
           onChange={handleInputChange}
@@ -152,19 +164,15 @@ export function SetTypeAutocomplete({ value, typeCustom, onChange, disabled = fa
         </Button>
       </InputGroup>
       <Dropdown.Menu show={shouldShowDropdown} className="w-100">
-        {filteredTypes.length === 0 ? (
-          <Dropdown.Item disabled>No existing types found</Dropdown.Item>
-        ) : (
-          filteredTypes.map((type, idx) => (
-            <Dropdown.Item
-              key={type}
-              onMouseDown={() => handleSelect(type)}
-              active={idx === highlightedIndex}
-            >
-              {getSetTypeDisplayName(type)}
-            </Dropdown.Item>
-          ))
-        )}
+        {filteredTypes.map((type, idx) => (
+          <Dropdown.Item
+            key={type}
+            onMouseDown={() => handleSelect(type)}
+            active={idx === highlightedIndex}
+          >
+            {getSetTypeDisplayName(type)}
+          </Dropdown.Item>
+        ))}
       </Dropdown.Menu>
     </Dropdown>
   )

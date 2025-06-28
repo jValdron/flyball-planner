@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Button, Table } from 'react-bootstrap'
+import React, { useState, useEffect, useRef } from 'react'
+import { Button, Table, Form, InputGroup } from 'react-bootstrap'
 import { CheckLg, XLg } from 'react-bootstrap-icons'
 import { useClub } from '../../contexts/ClubContext'
 import { usePractice } from '../../contexts/PracticeContext'
@@ -8,6 +8,8 @@ import { UpdateAttendances } from '../../graphql/attendance'
 import { AttendanceStatus, DogStatus } from '../../graphql/generated/graphql'
 import type { UpdateAttendancesMutation } from '../../graphql/generated/graphql'
 import { useTheme } from '../../contexts/ThemeContext'
+import { getFilteredAndSortedDogsByHandlers, getHandlerName } from '../../utils/dogsUtils'
+import type { HandlerWithDogs } from '../../utils/dogsUtils'
 
 const SAVE_DELAY = 25
 
@@ -19,10 +21,75 @@ interface PracticeAttendanceProps {
 export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAttendanceProps) {
   const { selectedClub, dogsByHandlersInSelectedClub } = useClub()
   const { isDark } = useTheme()
-  const { getAttendance } = usePractice()
+  const { getAttendance, attendances } = usePractice()
   const [pendingUpdates, setPendingUpdates] = useState<{ dogId: string, attending: AttendanceStatus }[]>([])
+  const [optimisticAttendances, setOptimisticAttendances] = useState<Map<string, AttendanceStatus>>(new Map())
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showOnlyUnconfirmed, setShowOnlyUnconfirmed] = useState(true)
+  const [initiallyVisibleHandlers, setInitiallyVisibleHandlers] = useState<Set<string>>(new Set())
+  const hasInitialized = useRef(false)
 
   const [updateAttendances] = useMutation<UpdateAttendancesMutation>(UpdateAttendances)
+
+  // Get the effective attendance status for a dog, considering optimistic updates
+  const getEffectiveAttendance = (dogId: string): AttendanceStatus => {
+    const optimisticStatus = optimisticAttendances.get(dogId)
+    if (optimisticStatus !== undefined) {
+      return optimisticStatus
+    }
+
+    return getAttendance(dogId) || AttendanceStatus.Unknown
+  }
+
+  // Initialize the set of handlers that should remain visible
+  useEffect(() => {
+    if (!hasInitialized.current && dogsByHandlersInSelectedClub.length > 0) {
+      const handlersWithUnconfirmed = dogsByHandlersInSelectedClub
+        .filter(handler => {
+          const handlerDogs = handler.dogs?.filter(dog => dog.status === DogStatus.Active) || []
+          return handlerDogs.some(dog => getEffectiveAttendance(dog.id) === AttendanceStatus.Unknown)
+        })
+        .map(handler => handler.id)
+
+      setInitiallyVisibleHandlers(new Set(handlersWithUnconfirmed))
+      hasInitialized.current = true
+    }
+  }, [dogsByHandlersInSelectedClub, getEffectiveAttendance])
+
+  // Handle checkbox change and reset initially visible handlers
+  const handleShowOnlyUnconfirmedChange = (checked: boolean) => {
+    setShowOnlyUnconfirmed(checked)
+
+    if (checked) {
+      const handlersWithUnconfirmed = dogsByHandlersInSelectedClub
+        .filter(handler => {
+          const handlerDogs = handler.dogs?.filter(dog => dog.status === DogStatus.Active) || []
+          return handlerDogs.some(dog => getEffectiveAttendance(dog.id) === AttendanceStatus.Unknown)
+        })
+        .map(handler => handler.id)
+
+      setInitiallyVisibleHandlers(new Set(handlersWithUnconfirmed))
+    } else {
+      setInitiallyVisibleHandlers(new Set())
+    }
+  }
+
+  // Filter handlers based on search query and unconfirmed attendance preference
+  const filteredHandlers = getFilteredAndSortedDogsByHandlers(dogsByHandlersInSelectedClub, searchQuery, false)
+    .filter(handler => {
+      if (!showOnlyUnconfirmed) return true
+
+      if (initiallyVisibleHandlers.has(handler.id)) return true
+
+      const handlerDogs = handler.dogs?.filter(dog => dog.status === DogStatus.Active) || []
+      return handlerDogs.some(dog => getEffectiveAttendance(dog.id) === AttendanceStatus.Unknown)
+    })
+
+  // Check if there are any unconfirmed attendances
+  const hasUnconfirmedAttendances = dogsByHandlersInSelectedClub.some(handler => {
+    const handlerDogs = handler.dogs?.filter(dog => dog.status === DogStatus.Active) || []
+    return handlerDogs.some(dog => getEffectiveAttendance(dog.id) === AttendanceStatus.Unknown)
+  })
 
   useEffect(() => {
     if (pendingUpdates.length === 0) return
@@ -36,14 +103,30 @@ export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAtten
           }
         })
         setPendingUpdates([])
+        setOptimisticAttendances(prev => {
+          const newMap = new Map(prev)
+          pendingUpdates.forEach(update => {
+            newMap.delete(update.dogId)
+          })
+          return newMap
+        })
       } catch (err) {
         console.error('Error updating attendances:', err)
+        setOptimisticAttendances(prev => {
+          const newMap = new Map(prev)
+          pendingUpdates.forEach(update => {
+            newMap.delete(update.dogId)
+          })
+          return newMap
+        })
       }
     }, SAVE_DELAY)
     return () => clearTimeout(timer)
   }, [pendingUpdates, selectedClub, practiceId, updateAttendances])
 
   const handleAttendanceChange = (dogId: string, status: AttendanceStatus) => {
+    setOptimisticAttendances(prev => new Map(prev).set(dogId, status))
+
     setPendingUpdates(prev => {
       const existingUpdate = prev.find(u => u.dogId === dogId)
       if (existingUpdate) {
@@ -55,6 +138,14 @@ export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAtten
 
   const handleOwnerAttendanceChange = (ownerId: string, status: AttendanceStatus) => {
     const ownerDogs = dogsByHandlersInSelectedClub.find(o => o.id === ownerId)?.dogs || []
+
+    setOptimisticAttendances(prev => {
+      const newMap = new Map(prev)
+      ownerDogs.forEach(dog => {
+        newMap.set(dog.id, status)
+      })
+      return newMap
+    })
 
     setPendingUpdates(prev => {
       const existingUpdates = prev.filter(u => !ownerDogs.some(d => d.id === u.dogId))
@@ -76,19 +167,52 @@ export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAtten
 
   return (
     <React.Fragment>
+      <div className="d-flex align-items-center gap-3 mb-3">
+        <InputGroup style={{ maxWidth: '300px' }}>
+          <Form.Control
+            type="text"
+            placeholder="Search handlers or dogs..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </InputGroup>
+        <Form.Check
+          type="switch"
+          id="show-unconfirmed"
+          label="Unconfirmed attendance only"
+          checked={showOnlyUnconfirmed}
+          onChange={(e) => handleShowOnlyUnconfirmedChange(e.target.checked)}
+        />
+      </div>
+
       <Table striped bordered hover className="align-middle">
         <tbody>
-          {[...dogsByHandlersInSelectedClub]
-            .filter(owner => owner.dogs?.some(dog => dog.status === DogStatus.Active))
-            .sort((a, b) => a.givenName.localeCompare(b.givenName))
-            .map(owner => {
+          {filteredHandlers.length === 0 && showOnlyUnconfirmed && !hasUnconfirmedAttendances ? (
+            <tr style={{ pointerEvents: 'none' }}>
+              <td colSpan={2} className="text-center py-4">
+                <div className="text-muted">
+                  <p className="mb-0">No unconfirmed attendances found.</p>
+                  <small>Everyone has confirmed their attendance.</small>
+                </div>
+              </td>
+            </tr>
+          ) : filteredHandlers.length === 0 ? (
+            <tr style={{ pointerEvents: 'none' }}>
+              <td colSpan={2} className="text-center py-4">
+                <div className="text-muted">
+                  <p className="mb-0">No handlers or dogs found matching your search.</p>
+                </div>
+              </td>
+            </tr>
+          ) : (
+            filteredHandlers.map(owner => {
               const ownerDogs = owner.dogs?.filter(dog => dog.status === DogStatus.Active) || []
-              const ownerName = `${owner.givenName} ${owner.surname}`
+              const ownerName = getHandlerName(owner)
               const allDogsSameStatus = ownerDogs.length > 0 && ownerDogs.every(dog =>
-                getAttendance(dog.id) === getAttendance(ownerDogs[0].id)
+                getEffectiveAttendance(dog.id) === getEffectiveAttendance(ownerDogs[0].id)
               )
               const ownerStatus = allDogsSameStatus ?
-                getAttendance(ownerDogs[0].id) || AttendanceStatus.Unknown :
+                getEffectiveAttendance(ownerDogs[0].id) :
                 AttendanceStatus.Unknown
 
               return (
@@ -136,11 +260,17 @@ export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAtten
                     </td>
                   </tr>
                   {ownerDogs.map(dog => {
-                    const dogAttendance = getAttendance(dog.id)
+                    const dogAttendance = getEffectiveAttendance(dog.id)
+                    const isOptimistic = optimisticAttendances.has(dog.id)
+
                     return (
                       <tr
                         key={dog.id}
-                        style={{ cursor: 'pointer' }}
+                        style={{
+                          cursor: 'pointer',
+                          opacity: isOptimistic ? 0.7 : 1,
+                          backgroundColor: isOptimistic ? '#f8f9fa' : undefined
+                        }}
                         onClick={() => {
                           if (!isPastPractice) {
                             const newStatus = dogAttendance === AttendanceStatus.Attending ?
@@ -150,7 +280,9 @@ export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAtten
                           }
                         }}
                       >
-                        <td className="ps-4">{dog.name}</td>
+                        <td className="ps-4">
+                          {dog.name}
+                        </td>
                         <td className="text-left">
                           <div className="btn-group" role="group">
                             <Button
@@ -184,7 +316,8 @@ export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAtten
                   })}
                 </React.Fragment>
               )
-          })}
+            })
+          )}
         </tbody>
       </Table>
     </React.Fragment>
