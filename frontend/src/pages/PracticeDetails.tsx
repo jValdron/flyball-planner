@@ -236,9 +236,12 @@ function PracticeDetailsContent() {
         show={showDeleteModal}
         onHide={() => setShowDeleteModal(false)}
         onConfirm={handleDelete}
-        title="Confirm Practice Cancellation"
-        message="Are you sure you want to cancel this practice? This action cannot be undone."
-        confirmButtonText="Cancel Practice"
+        title={isPastPractice ? "Confirm Practice Deletion" : "Confirm Practice Cancellation"}
+        message={isPastPractice
+          ? "Are you sure you want to delete this past practice? This action cannot be undone."
+          : "Are you sure you want to cancel this practice? This action cannot be undone."
+        }
+        confirmButtonText={isPastPractice ? "Delete Practice" : "Cancel Practice"}
       />
 
       {error && (
@@ -327,7 +330,7 @@ function PracticeDetailsContent() {
           {practiceId && (
             <PracticeSet
               practiceId={practiceId}
-              isPastPractice={isPastPractice}
+              disabled={isPastPractice}
             />
           )}
           <div className="d-flex justify-content-between mb-3">
@@ -349,7 +352,7 @@ function PracticeDetailsContent() {
         <Tab
           eventKey="checks"
           title={
-            <span>
+            <span className={!practiceId || !scheduledAt ? 'text-muted' : ''}>
               Checks
               {validationErrors.length > 0 && (
                 <Badge bg="primary" className="ms-2">

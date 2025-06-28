@@ -77,7 +77,7 @@ export class TimingValidator extends BaseValidator<Partial<Practice>> {
     if (practiceDate < now) {
       this.addError(
         'PAST_PRACTICE',
-        'Practice is scheduled in the past',
+        'Practice has already happened, you cannot edit it anymore',
         'error'
       )
     }

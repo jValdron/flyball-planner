@@ -4,9 +4,10 @@ import { PlusLg } from 'react-bootstrap-icons'
 interface LocationSelectorProps {
   availableLocations: Array<{ id: string; name: string; isDefault: boolean }>
   onSelect: (locationId: string) => void
+  disabled?: boolean
 }
 
-export function LocationSelector({ availableLocations, onSelect }: LocationSelectorProps) {
+export function LocationSelector({ availableLocations, onSelect, disabled = false }: LocationSelectorProps) {
   const sortedLocations = [...availableLocations].sort((a, b) => a.name.localeCompare(b.name))
   const nextLocation = sortedLocations[0]
 
@@ -18,12 +19,13 @@ export function LocationSelector({ availableLocations, onSelect }: LocationSelec
         variant="outline-secondary"
         onClick={() => onSelect(nextLocation.id)}
         className="text-start"
+        disabled={disabled}
       >
         <PlusLg className="me-2" />
         {nextLocation.name}
       </Button>
       <Dropdown>
-        <Dropdown.Toggle variant="outline-secondary" />
+        <Dropdown.Toggle variant="outline-secondary" disabled={disabled} />
         <Dropdown.Menu>
           {sortedLocations.map(location => (
             <Dropdown.Item

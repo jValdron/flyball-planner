@@ -72,7 +72,7 @@ export class Set {
   updatedAt: Date;
 
   @Field(() => Practice)
-  @ManyToOne(() => Practice, practice => practice.sets)
+  @ManyToOne(() => Practice, practice => practice.sets, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'practiceId' })
   practice: Practice;
 

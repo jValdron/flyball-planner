@@ -46,7 +46,7 @@ export class PracticeAttendance {
   updatedAt: Date;
 
   @Field(() => Practice)
-  @ManyToOne(() => Practice, practice => practice.attendances)
+  @ManyToOne(() => Practice, practice => practice.attendances, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'practiceId' })
   practice: Practice;
 

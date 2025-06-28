@@ -8,9 +8,10 @@ interface SetTypeAutocompleteProps {
   value: string | null
   typeCustom: string | null
   onChange: (type: SetType, typeCustom: string | null) => void
+  disabled?: boolean
 }
 
-export function SetTypeAutocomplete({ value, typeCustom, onChange }: SetTypeAutocompleteProps) {
+export function SetTypeAutocomplete({ value, typeCustom, onChange, disabled = false }: SetTypeAutocompleteProps) {
   const [show, setShow] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [inputValue, setInputValue] = useState(
@@ -137,6 +138,7 @@ export function SetTypeAutocomplete({ value, typeCustom, onChange }: SetTypeAuto
           onBlur={handleInputBlur}
           onKeyDown={handleInputKeyDown}
           autoComplete="off"
+          disabled={disabled}
         />
         <Button
           variant="outline-secondary"
@@ -144,6 +146,7 @@ export function SetTypeAutocomplete({ value, typeCustom, onChange }: SetTypeAuto
           onMouseDown={handleCaretMouseDown}
           onClick={handleCaretClick}
           style={{ borderLeft: 0 }}
+          disabled={disabled}
         >
           <ChevronDown />
         </Button>

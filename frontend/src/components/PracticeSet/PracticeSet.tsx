@@ -23,7 +23,7 @@ interface DogWithSetCount extends Dog {
 
 interface PracticeSetProps {
   practiceId: string
-  isPastPractice: boolean
+  disabled: boolean
 }
 
 interface SortableSetProps {
@@ -34,6 +34,7 @@ interface SortableSetProps {
   availableDogs: DogWithSetCount[]
   otherLocations: Location[]
   defaultLocation?: Location | null
+  disabled?: boolean
 }
 
 function SortableSet({
@@ -43,7 +44,8 @@ function SortableSet({
   availableDogs,
   onSetDogsChange,
   otherLocations,
-  defaultLocation
+  defaultLocation,
+  disabled = false
 }: SortableSetProps) {
   const handleDogsChange = (lane: Lane | null, setDogs: Partial<SetDog>[]) => {
     const updatedLaneDogs: Partial<SetDog>[] = setDogs.map((setDog, idx) => ({
@@ -73,7 +75,7 @@ function SortableSet({
       {customLocation && (
         <div className="d-flex align-items-center justify-content-between mb-3">
           <h6 className="mb-0">{customLocation.name}</h6>
-          <Button variant="outline-danger" size="sm" onClick={handleLocationRemove}>
+          <Button variant="outline-danger" size="sm" onClick={handleLocationRemove} disabled={disabled}>
             <Trash />
           </Button>
         </div>
@@ -85,6 +87,7 @@ function SortableSet({
             value={set.typeCustom ?? set.type ?? null}
             typeCustom={set.typeCustom ?? null}
             onChange={(type, typeCustom) => onSetTypeChange(set.id, type, typeCustom)}
+            disabled={disabled}
           />
         </Form.Group>
       </div>
@@ -94,6 +97,7 @@ function SortableSet({
         availableDogs={availableDogs}
         onDogsChange={handleDogsChange}
         location={setLocation}
+        disabled={disabled}
       />
     </div>
   )
@@ -104,9 +108,10 @@ interface DogsSectionProps {
   availableDogs: DogWithSetCount[]
   onDogsChange: (lane: Lane | null, setDogs: Partial<SetDog>[]) => void
   location: { id: string; name: string; isDefault: boolean; isDoubleLane: boolean }
+  disabled?: boolean
 }
 
-function DogsSection({ set, availableDogs, onDogsChange, location }: DogsSectionProps) {
+function DogsSection({ set, availableDogs, onDogsChange, location, disabled }: DogsSectionProps) {
   const getDogsForLane = (lane: Lane | null) => set.dogs.filter(d => d.lane === lane)
 
   // Determine lanes based on location
@@ -138,6 +143,7 @@ function DogsSection({ set, availableDogs, onDogsChange, location }: DogsSection
               onChange={setDogs => onDogsChange(lane, setDogs)}
               availableDogs={availableDogsForLane}
               placeholder={lane ? `Add dog to ${lane} lane` : 'Add dog'}
+              disabled={disabled}
             />
           </div>
         )
@@ -156,6 +162,7 @@ interface SortableGroupProps {
   availableDogs: DogWithSetCount[]
   otherLocations: Location[]
   defaultLocation?: Location | null
+  disabled?: boolean
 }
 
 function SortableGroup({
@@ -167,7 +174,8 @@ function SortableGroup({
   onSetDogsChange,
   onLocationAdd,
   otherLocations,
-  defaultLocation
+  defaultLocation,
+  disabled = false
 }: SortableGroupProps) {
   const { isDark } = useTheme()
   const {
@@ -177,7 +185,7 @@ function SortableGroup({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: group.index.toString() })
+  } = useSortable({ id: group.index.toString(), disabled })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -202,9 +210,9 @@ function SortableGroup({
           <Card.Body
             {...attributes}
             {...listeners}
-            className={`${isDark ? 'bg-dark' : 'bg-light'} cursor-grab p-4 d-flex align-items-center h-100`}>
+            className={`${isDark ? 'bg-dark' : 'bg-light'} cursor-grab p-4 d-flex align-items-center h-100 ${disabled ? '' : 'cursor-grab'}`}>
             <h5 className="text-nowrap mb-0">
-              <GripVertical />
+              {!disabled && <GripVertical />}
               <span>{group.index}</span>
             </h5>
           </Card.Body>
@@ -234,6 +242,7 @@ function SortableGroup({
                     availableDogs={availableDogsForThisSet}
                     otherLocations={otherLocations}
                     defaultLocation={defaultLocation}
+                    disabled={disabled}
                   />
                 </div>
               )
@@ -245,9 +254,10 @@ function SortableGroup({
                 <LocationSelector
                   availableLocations={availableLocationsForThisSet}
                   onSelect={handleLocationAdd}
+                  disabled={disabled}
                 />
               )}
-              <Button variant="outline-danger" size="sm" className="text-nowrap" onClick={() => onDeleteGroup(group.index)}>
+              <Button variant="outline-danger" size="sm" className="text-nowrap" onClick={() => onDeleteGroup(group.index)} disabled={disabled}>
                 <Trash /> Remove Set
               </Button>
             </div>
@@ -258,7 +268,7 @@ function SortableGroup({
   )
 }
 
-export function PracticeSet({ practiceId }: PracticeSetProps) {
+export function PracticeSet({ practiceId, disabled }: PracticeSetProps) {
   const { dogs, locations } = useClub()
   const { attendances, sets } = usePractice()
   const [isSaving, setIsSaving] = useState(false)
@@ -288,6 +298,8 @@ export function PracticeSet({ practiceId }: PracticeSetProps) {
   }, [attendances, sets, dogs])
 
   const handleSetReorder = async (event: DragEndEvent) => {
+    if (disabled) return
+
     const { active, over } = event
     if (!over || active.id === over.id) return
 
@@ -489,12 +501,13 @@ export function PracticeSet({ practiceId }: PracticeSetProps) {
               availableDogs={availableDogs}
               otherLocations={otherLocations}
               defaultLocation={defaultLocation}
+              disabled={disabled}
             />
           ))}
         </SortableContext>
       </DndContext>
       <div className="d-flex justify-content-end mb-4">
-        <Button variant="primary" onClick={handleAddSet}>
+        <Button variant="primary" onClick={handleAddSet} disabled={disabled}>
           <PlusLg className="me-2" />
           Add Set
         </Button>

@@ -115,6 +115,13 @@ function Practices() {
     !showDraftsOnly || practice.status === 'Draft'
   )
 
+  // Check if there are any planned (future) practices
+  const hasPlannedPractices = filteredPractices.some(practice => !isPastDay(practice.scheduledAt))
+
+  // Get the practice being deleted to determine if it's in the past
+  const practiceBeingDeleted = practiceToDelete ? practices.find(p => p.id === practiceToDelete) : null
+  const isPastPractice = practiceBeingDeleted ? isPastDay(practiceBeingDeleted.scheduledAt) : false
+
   if (!selectedClub) {
     return (
       <Container>
@@ -171,6 +178,12 @@ function Practices() {
             checked={showDraftsOnly}
             onChange={(e) => setShowDraftsOnly(e.target.checked)}
           />
+
+          {!hasPlannedPractices && (
+            <Alert variant="info" className="mb-4">
+              No planned practices scheduled. <Link to="/practices/new">Schedule a new practice now</Link>.
+            </Alert>
+          )}
 
           <div className="row">
             {filteredPractices.map((practice, index) => {
@@ -245,9 +258,12 @@ function Practices() {
         show={showDeleteModal}
         onHide={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteConfirm}
-        title="Confirm Practice Cancellation"
-        message="Are you sure you want to cancel this practice? This action cannot be undone."
-        confirmButtonText="Cancel Practice"
+        title={isPastPractice ? "Confirm Practice Deletion" : "Confirm Practice Cancellation"}
+        message={isPastPractice
+          ? "Are you sure you want to delete this past practice? This action cannot be undone."
+          : "Are you sure you want to cancel this practice? This action cannot be undone."
+        }
+        confirmButtonText={isPastPractice ? "Delete Practice" : "Cancel Practice"}
       />
     </Container>
   )

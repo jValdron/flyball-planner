@@ -14,9 +14,10 @@ interface DogsPickerProps {
   onChange: (dogs: Partial<SetDog>[]) => void
   availableDogs: DogWithSetCount[]
   placeholder?: string
+  disabled?: boolean
 }
 
-export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add dog...' }: DogsPickerProps) {
+export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add dog...', disabled = false }: DogsPickerProps) {
   const [showInput, setShowInput] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
@@ -201,22 +202,23 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
             <div
               key={`${setDog.id}-${idx}`}
               className="mb-2"
-              draggable
+              draggable={!disabled}
               onDragStart={() => handleDragStart(idx)}
               onDragOver={e => handleDragOver(idx, e)}
               onDragEnd={handleDragEnd}
-              style={{ opacity: draggedIndex === idx ? 0.5 : 1, cursor: 'move' }}
+              style={{ opacity: draggedIndex === idx ? 0.5 : 1, cursor: disabled ? 'default' : 'move' }}
             >
               <Badge bg={variant} className={`d-flex align-items-center justify-content-between w-100 ${className}`} style={{ minHeight: 38 }}>
-                <span className="me-2 d-inline-flex align-items-center" style={{ cursor: 'grab' }}>
-                  <GripVertical />
+                <span className="me-2 d-inline-flex align-items-center" style={{ cursor: disabled ? 'default' : 'grab' }}>
+                  {!disabled && <GripVertical />}
                 </span>
                 <span className="flex-grow-1 text-start">{displayName}</span>
-                <span className="p-2 d-inline-flex align-items-center justify-content-center ms-auto" style={{ marginRight: '-8px', cursor: 'pointer' }} tabIndex={-1}>
+                <span className="p-2 d-inline-flex align-items-center justify-content-center ms-auto" style={{ marginRight: '-8px', cursor: disabled ? 'default' : 'pointer' }} tabIndex={-1}>
                   <CloseButton
                     onClick={() => handleRemove(idx)}
                     className="btn-close-white"
                     aria-label={`Remove ${displayName}`}
+                    disabled={disabled}
                   />
                 </span>
               </Badge>
@@ -258,6 +260,7 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
             }}
             autoFocus
             className="w-100"
+            disabled={disabled}
           />
           <Overlay
             ref={overlayRef}
@@ -271,7 +274,7 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
           </Overlay>
         </div>
       ) : (
-        <Button variant="outline-primary" onClick={() => setShowInput(true)}>
+        <Button variant="outline-primary" onClick={() => setShowInput(true)} disabled={disabled}>
           + Add Dog
         </Button>
       )}
