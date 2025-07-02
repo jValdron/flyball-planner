@@ -1,12 +1,14 @@
-import { Resolver, Query, Mutation, Arg } from 'type-graphql';
+import { Resolver, Query, Mutation, Arg, UseMiddleware, Ctx } from 'type-graphql';
 import { SetDog, Lane } from '../models/SetDog';
 import { AppDataSource } from '../db';
 import { InputType, Field, ID } from 'type-graphql';
 import { Set as SetModel, SetType } from '../models/Set';
 import { Location } from '../models/Location';
+import { Practice } from '../models/Practice';
 import { In } from 'typeorm';
 import { PubSubService, SubscriptionEvents } from '../services/PubSubService';
 import { PracticeSummaryService } from '../services/PracticeSummaryService';
+import { AuthContext, isAuth, createClubFilter } from '../middleware/auth';
 
 @InputType()
 class SetDogUpdate {
@@ -50,11 +52,26 @@ class SetUpdate {
 @Resolver(SetModel)
 export class PracticeSetResolver {
   private setRepository = AppDataSource.getRepository(SetModel);
+  private practiceRepository = AppDataSource.getRepository(Practice);
 
   @Query(() => [SetModel])
+  @UseMiddleware(isAuth)
   async sets(
-    @Arg('practiceId') practiceId: string
+    @Arg('practiceId') practiceId: string,
+    @Ctx() { user }: AuthContext
   ): Promise<SetModel[]> {
+    const clubFilter = createClubFilter(user);
+    if (!clubFilter) return [];
+
+    // Check that the practice belongs to user's club
+    const practice = await this.practiceRepository.findOne({
+      where: {
+        id: practiceId,
+        ...clubFilter
+      }
+    });
+    if (!practice) return [];
+
     return await this.setRepository.find({
       where: { practiceId },
       relations: ['dogs', 'dogs.dog'],
@@ -63,17 +80,75 @@ export class PracticeSetResolver {
   }
 
   @Query(() => SetModel, { nullable: true })
-  async set(@Arg('id') id: string): Promise<SetModel | null> {
-    return await this.setRepository.findOne({
+  @UseMiddleware(isAuth)
+  async set(@Arg('id') id: string, @Ctx() { user }: AuthContext): Promise<SetModel | null> {
+    const clubFilter = createClubFilter(user);
+    if (!clubFilter) return null;
+
+    // Check that the set's practice belongs to user's club
+    const set = await this.setRepository.findOne({
       where: { id },
       relations: ['dogs', 'dogs.dog']
     });
+    if (!set || !set.practiceId) return null;
+
+    const practice = await this.practiceRepository.findOne({
+      where: {
+        id: set.practiceId,
+        ...clubFilter
+      }
+    });
+    if (!practice) return null;
+
+    return set;
   }
 
   @Mutation(() => [SetModel])
+  @UseMiddleware(isAuth)
   async updateSets(
-    @Arg('updates', () => [SetUpdate]) updates: SetUpdate[]
+    @Arg('updates', () => [SetUpdate]) updates: SetUpdate[],
+    @Ctx() { user }: AuthContext
   ): Promise<SetModel[]> {
+    const clubFilter = createClubFilter(user);
+    if (!clubFilter) {
+      throw new Error('Access denied: You are not a member of any clubs');
+    }
+
+    // Get the practiceId from the first update that has one
+    const practiceId = updates.find(u => u.practiceId)?.practiceId;
+    if (practiceId) {
+      // Check that the practice belongs to user's club
+      const practice = await this.practiceRepository.findOne({
+        where: {
+          id: practiceId,
+          ...clubFilter
+        }
+      });
+      if (!practice) {
+        throw new Error('Access denied: Practice not found or you do not have access to it');
+      }
+    }
+
+    // For existing sets, verify they belong to the same practice
+    const existingSetIds = updates.map(u => u.id).filter(Boolean) as string[];
+    if (existingSetIds.length > 0) {
+      const existingSets = await this.setRepository.find({
+        where: { id: In(existingSetIds) },
+        relations: ['dogs']
+      });
+
+      // Check that all existing sets belong to the same practice
+      const setPracticeIds = [...new Set(existingSets.map(s => s.practiceId).filter(Boolean))];
+      if (setPracticeIds.length > 1) {
+        throw new Error('All sets must belong to the same practice');
+      }
+
+      // If we have a practiceId from existing sets, verify it matches
+      if (setPracticeIds.length === 1 && practiceId && setPracticeIds[0] !== practiceId) {
+        throw new Error('All sets must belong to the same practice');
+      }
+    }
+
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -93,7 +168,6 @@ export class PracticeSetResolver {
             throw new Error('Set not found');
           }
           set = existingSet;
-          if (update.practiceId !== undefined) set.practiceId = update.practiceId;
           if (update.locationId !== undefined) set.locationId = update.locationId;
           if (update.index !== undefined) set.index = update.index;
           if (update.type !== undefined) set.type = update.type;
@@ -225,9 +299,15 @@ export class PracticeSetResolver {
   }
 
   @Mutation(() => Boolean)
-  async deleteSets(@Arg('ids', () => [String]) ids: string[]): Promise<boolean> {
+  @UseMiddleware(isAuth)
+  async deleteSets(@Arg('ids', () => [String]) ids: string[], @Ctx() { user }: AuthContext): Promise<boolean> {
     if (ids.length === 0) {
       return true;
+    }
+
+    const clubFilter = createClubFilter(user);
+    if (!clubFilter) {
+      throw new Error('Access denied: You are not a member of any clubs');
     }
 
     const sets = await this.setRepository.find({
@@ -247,6 +327,17 @@ export class PracticeSetResolver {
     const allSamePractice = sets.every(set => set.practiceId === practiceId);
     if (!allSamePractice) {
       throw new Error('All sets must be from the same practice');
+    }
+
+    // Check that the practice belongs to user's club
+    const practice = await this.practiceRepository.findOne({
+      where: {
+        id: practiceId,
+        ...clubFilter
+      }
+    });
+    if (!practice) {
+      throw new Error('Access denied: Practice not found or you do not have access to it');
     }
 
     // Validation: Don't delete default set if others with same index remain

@@ -1,20 +1,29 @@
-import { Resolver, Query, Mutation, Arg } from 'type-graphql';
+import { Resolver, Query, Mutation, Arg, Ctx, UseMiddleware } from 'type-graphql';
 import { Club } from '../models/Club';
 import { AppDataSource } from '../db';
-import { Dog } from '../models/Dog';
+import { In } from 'typeorm';
 import { PubSubService, SubscriptionEvents } from '../services/PubSubService';
+import { AuthContext, isAuth, hasClubAccess, createClubFilter } from '../middleware/auth';
 
 @Resolver(Club)
 export class ClubResolver {
   private clubRepository = AppDataSource.getRepository(Club);
-  private dogRepository = AppDataSource.getRepository(Dog);
 
   @Query(() => [Club])
-  async clubs(): Promise<Club[]> {
-    return await this.clubRepository.find();
+  @UseMiddleware(isAuth)
+  async clubs(@Ctx() { user }: AuthContext): Promise<Club[]> {
+    if (!user || user.clubIds.length === 0) {
+      throw new Error('Access denied: You are not a member of any clubs');
+    }
+
+    return await this.clubRepository.find({
+      where: { id: In(user.clubIds) },
+      relations: ['dogs', 'handlers', 'locations']
+    });
   }
 
   @Query(() => Club, { nullable: true })
+  @UseMiddleware(isAuth, hasClubAccess)
   async club(@Arg('id') id: string): Promise<Club | null> {
     return await this.clubRepository.findOne({
       where: { id },
@@ -22,17 +31,8 @@ export class ClubResolver {
     });
   }
 
-  @Mutation(() => Club)
-  async createClub(@Arg('name') name: string): Promise<Club> {
-    const club = this.clubRepository.create({ name });
-    const savedClub = await this.clubRepository.save(club);
-
-    await PubSubService.publishClubEvent(SubscriptionEvents.CLUB_CREATED, savedClub);
-
-    return savedClub;
-  }
-
   @Mutation(() => Club, { nullable: true })
+  @UseMiddleware(isAuth, hasClubAccess)
   async updateClub(
     @Arg('id') id: string,
     @Arg('name', { nullable: true }) name?: string,
@@ -56,6 +56,7 @@ export class ClubResolver {
   }
 
   @Mutation(() => Boolean)
+  @UseMiddleware(isAuth, hasClubAccess)
   async deleteClub(@Arg('id') id: string): Promise<boolean> {
     const club = await this.clubRepository.findOneBy({ id });
     if (!club) return false;

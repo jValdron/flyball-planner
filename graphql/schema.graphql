@@ -26,7 +26,6 @@ type Club {
   locations: [Location!]!
   nafaClubNumber: String!
   name: String!
-  practices: [Practice!]!
   updatedAt: DateTimeISO!
 }
 
@@ -110,8 +109,13 @@ type LocationEvent {
   location: Location!
 }
 
+type LoginResponse {
+  token: String!
+  user: User!
+}
+
 type Mutation {
-  createClub(name: String!): Club!
+  changePassword(currentPassword: String!, newPassword: String!): Boolean!
   createDog(clubId: String!, crn: String, name: String!, ownerId: String!, status: DogStatus!, trainingLevel: TrainingLevel!): Dog!
   createHandler(clubId: ID!, givenName: String!, surname: String!): Handler!
   createLocation(clubId: ID!, isDefault: Boolean, isDoubleLane: Boolean, name: String!): Location!
@@ -122,13 +126,15 @@ type Mutation {
   deleteLocation(id: String!): Boolean!
   deletePractice(id: String!): Boolean!
   deleteSets(ids: [String!]!): Boolean!
+  loginUser(password: String!, username: String!): LoginResponse!
   updateAttendances(practiceId: String!, updates: [AttendanceUpdate!]!): [PracticeAttendance!]!
   updateClub(defaultPracticeTime: String, id: String!, nafaClubNumber: String, name: String): Club
-  updateDog(clubId: String, crn: String, id: String!, name: String, ownerId: String, status: DogStatus, trainingLevel: TrainingLevel): Dog
+  updateDog(crn: String, id: String!, name: String, ownerId: String, status: DogStatus, trainingLevel: TrainingLevel): Dog
   updateHandler(givenName: String, id: String!, surname: String): Handler
   updateLocation(id: String!, isDefault: Boolean, isDoubleLane: Boolean, name: String): Location
-  updatePractice(clubId: String, id: String!, scheduledAt: DateTimeISO, status: PracticeStatus): Practice
+  updatePractice(id: String!, scheduledAt: DateTimeISO, status: PracticeStatus): Practice
   updateSets(updates: [SetUpdate!]!): [Set!]!
+  updateUser(email: String, firstName: String, lastName: String): User!
 }
 
 type Practice {
@@ -137,6 +143,8 @@ type Practice {
   clubId: ID!
   createdAt: DateTimeISO!
   id: ID!
+  plannedBy: User!
+  plannedById: ID!
   scheduledAt: DateTimeISO!
   sets: [Set!]!
   status: PracticeStatus!
@@ -195,6 +203,7 @@ type Query {
   activeDogsInClub(clubId: ID!): Int!
   club(id: String!): Club
   clubs: [Club!]!
+  currentUser: User!
   dog(id: String!): Dog
   dogs: [Dog!]!
   dogsByHandlersInClub(clubId: ID!): [Handler!]
@@ -203,11 +212,14 @@ type Query {
   location(id: String!): Location
   locations: [Location!]!
   locationsByClub(clubId: ID!): [Location!]!
+  me: User!
   practice(id: String!): Practice
   practiceAttendances(practiceId: String!): [PracticeAttendance!]!
   practiceSummariesByClub(clubId: String!): [PracticeSummary!]!
   set(id: String!): Set
   sets(practiceId: String!): [Set!]!
+  user(id: String!): User
+  users: [User!]!
 }
 
 type Set {
@@ -286,4 +298,15 @@ enum TrainingLevel {
   Intermediate
   Novice
   Solid
+}
+
+type User {
+  clubs: [Club!]!
+  createdAt: DateTimeISO!
+  email: String!
+  firstName: String!
+  id: ID!
+  lastName: String!
+  updatedAt: DateTimeISO!
+  username: String!
 }

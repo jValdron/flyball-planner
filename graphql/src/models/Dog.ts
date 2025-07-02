@@ -27,7 +27,7 @@ registerEnumType(TrainingLevel, {
 });
 
 @ObjectType()
-@Entity('dogs')
+@Entity()
 export class Dog {
   @Field(() => ID)
   @PrimaryGeneratedColumn('uuid')
@@ -76,10 +76,10 @@ export class Dog {
   @Field(() => Handler, { nullable: true })
   @ManyToOne(() => Handler, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'ownerId' })
-  owner: Handler | null;
+  owner: Promise<Handler>;
 
   @Field(() => Club, { nullable: true })
   @ManyToOne(() => Club)
   @JoinColumn({ name: 'clubId' })
-  club: Club | null;
+  club: Promise<Club>;
 }

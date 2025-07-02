@@ -23,7 +23,7 @@ registerEnumType(SetType, {
 });
 
 @ObjectType()
-@Entity('sets')
+@Entity()
 export class Set {
   @Field(() => ID)
   @PrimaryGeneratedColumn('uuid')

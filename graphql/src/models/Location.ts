@@ -3,7 +3,7 @@ import { ObjectType, Field, ID } from 'type-graphql';
 import { Club } from './Club';
 
 @ObjectType()
-@Entity('locations')
+@Entity()
 export class Location {
   @Field(() => ID)
   @PrimaryGeneratedColumn('uuid')
@@ -36,5 +36,5 @@ export class Location {
   @Field(() => Club, { nullable: true })
   @ManyToOne(() => Club)
   @JoinColumn({ name: 'clubId' })
-  club?: Club;
+  club?: Promise<Club>;
 }

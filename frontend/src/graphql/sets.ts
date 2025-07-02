@@ -1,6 +1,6 @@
-import { gql } from '@apollo/client'
+import { graphql } from './generated/gql';
 
-export const GetSets = gql`
+export const GetSets = graphql(`
   query GetSets($practiceId: String!) {
     sets(practiceId: $practiceId) {
       id
@@ -16,15 +16,15 @@ export const GetSets = gql`
       }
     }
   }
-`
+`);
 
-export const DeleteSets = gql`
+export const DeleteSets = graphql(`
   mutation DeleteSets($ids: [String!]!) {
     deleteSets(ids: $ids)
   }
-`
+`);
 
-export const UpdateSets = gql`
+export const UpdateSets = graphql(`
   mutation UpdateSets($updates: [SetUpdate!]!) {
     updateSets(updates: $updates) {
       id
@@ -40,4 +40,4 @@ export const UpdateSets = gql`
       }
     }
   }
-`
+`);

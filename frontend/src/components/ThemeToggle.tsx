@@ -1,5 +1,5 @@
 import React from 'react'
-import { Dropdown, Button } from 'react-bootstrap'
+import { Dropdown } from 'react-bootstrap'
 import { useTheme } from '../contexts/ThemeContext'
 import {
   SunFill,
@@ -36,46 +36,33 @@ export const ThemeToggle: React.FC = () => {
     }
   }
 
-  return (
-    <Dropdown align="end">
-      <Dropdown.Toggle
-        variant="outline-secondary"
-        size="sm"
-        className="d-flex align-items-center gap-1"
-      >
-        {getThemeIcon()}
-        <span className="d-none d-sm-inline">{getThemeLabel()}</span>
-      </Dropdown.Toggle>
+  const cycleTheme = () => {
+    switch (theme) {
+      case 'light':
+        setTheme('dark')
+        break
+      case 'dark':
+        setTheme('auto')
+        break
+      case 'auto':
+        setTheme('light')
+        break
+      default:
+        setTheme('light')
+    }
+  }
 
-      <Dropdown.Menu>
-        <Dropdown.Header>Theme</Dropdown.Header>
-        <Dropdown.Item
-          onClick={() => setTheme('light')}
-          active={theme === 'light'}
-        >
-          <SunFill className="me-2" />
-          Light
-        </Dropdown.Item>
-        <Dropdown.Item
-          onClick={() => setTheme('dark')}
-          active={theme === 'dark'}
-        >
-          <MoonFill className="me-2" />
-          Dark
-        </Dropdown.Item>
-        <Dropdown.Item
-          onClick={() => setTheme('auto')}
-          active={theme === 'auto'}
-        >
-          <CircleHalf className="me-2" />
-          Auto
-          {theme === 'auto' && (
-            <small className="text-muted ms-2">
-              ({isDark ? 'Dark' : 'Light'})
-            </small>
-          )}
-        </Dropdown.Item>
-      </Dropdown.Menu>
-    </Dropdown>
+  return (
+    <Dropdown.Item onClick={cycleTheme}>
+      <div className="d-flex align-items-center gap-2">
+        {getThemeIcon()}
+        <span>Theme: {getThemeLabel()}</span>
+        {theme === 'auto' && (
+          <small className="text-muted ms-auto">
+            ({isDark ? 'Dark' : 'Light'})
+          </small>
+        )}
+      </div>
+    </Dropdown.Item>
   )
 }

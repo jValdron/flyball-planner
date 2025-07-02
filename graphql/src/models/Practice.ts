@@ -3,6 +3,7 @@ import { ObjectType, Field, ID, registerEnumType } from 'type-graphql';
 import { Club } from './Club';
 import { PracticeAttendance } from './PracticeAttendance';
 import { Set } from './Set';
+import { User } from './User';
 
 export enum PracticeStatus {
   Draft = 'Draft',
@@ -15,7 +16,7 @@ registerEnumType(PracticeStatus, {
 });
 
 @ObjectType()
-@Entity('practices')
+@Entity()
 export class Practice {
   @Field(() => ID)
   @PrimaryGeneratedColumn('uuid')
@@ -24,6 +25,10 @@ export class Practice {
   @Field(() => ID)
   @Column('uuid')
   clubId: string;
+
+  @Field(() => ID)
+  @Column('uuid')
+  plannedById: string;
 
   @Field()
   @Column({ type: 'timestamp' })
@@ -48,7 +53,12 @@ export class Practice {
   @Field(() => Club)
   @ManyToOne(() => Club)
   @JoinColumn({ name: 'clubId' })
-  club: Club;
+  club: Promise<Club>;
+
+  @Field(() => User)
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'plannedById' })
+  plannedBy: User;
 
   @Field(() => [PracticeAttendance])
   @OneToMany(() => PracticeAttendance, attendance => attendance.practice)

@@ -3,10 +3,9 @@ import { ObjectType, Field, ID } from 'type-graphql';
 import { Dog } from './Dog';
 import { Handler } from './Handler';
 import { Location } from './Location';
-import { Practice } from './Practice';
 
 @ObjectType()
-@Entity('clubs')
+@Entity()
 export class Club {
   @Field(() => ID)
   @PrimaryGeneratedColumn('uuid')
@@ -43,8 +42,4 @@ export class Club {
   @Field(() => [Location])
   @OneToMany(() => Location, location => location.club)
   locations: Location[];
-
-  @Field(() => [Practice])
-  @OneToMany(() => Practice, practice => practice.club)
-  practices: Practice[];
 }

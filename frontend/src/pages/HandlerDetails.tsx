@@ -7,6 +7,7 @@ import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import { useQuery, useMutation } from '@apollo/client'
 import { GetHandlerById, CreateHandler, UpdateHandler, DeleteHandler } from '../graphql/handlers'
 import { formatFullDateTime } from '../utils/dateUtils'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import type { GetHandlerByIdQuery, GetHandlerByIdQueryVariables } from '../graphql/generated/graphql'
 
 type HandlerFormData = {
@@ -44,6 +45,9 @@ function HandlerDetails() {
       console.error('Error loading handler:', error)
     }
   })
+
+  const title = isNewHandler ? 'New Handler' : `${handlerData?.handler?.givenName} ${handlerData?.handler?.surname} - Handler Details`
+  useDocumentTitle(title)
 
   // Mutations
   const [createHandler] = useMutation(CreateHandler, {

@@ -3,6 +3,8 @@ import { Club } from '../models/Club';
 import { Handler } from '../models/Handler';
 import { Dog, DogStatus, TrainingLevel } from '../models/Dog';
 import { Location } from '../models/Location';
+import { User } from '../models/User';
+import { AuthService } from '../services/AuthService';
 
 const ownersData = [
   { givenName: 'Amanda', surname: 'Baker' },
@@ -130,6 +132,22 @@ export async function seedDatabase(dataSource: DataSource) {
     defaultPracticeTime: '10:00',
   });
   await dataSource.getRepository(Club).save(club);
+
+  // Create user 'jvaldron'
+  const userRepository = dataSource.getRepository(User);
+  const existingUser = await userRepository.findOne({ where: { username: 'jvaldron' } });
+  if (!existingUser) {
+    const hashedPassword = await AuthService.hashPassword('password');
+    const user = userRepository.create({
+      username: 'jvaldron',
+      email: 'jason@valdron.ca',
+      firstName: 'Jason',
+      lastName: 'Valdron',
+      password: hashedPassword,
+      clubs: [club],
+    });
+    await userRepository.save(user);
+  }
 
   // Create locations
   const locations = [

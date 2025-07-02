@@ -1,45 +1,95 @@
-import { ApolloClient, InMemoryCache, createHttpLink, split } from '@apollo/client';
+import { ApolloClient, InMemoryCache, createHttpLink, split, from } from '@apollo/client';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { getMainDefinition } from '@apollo/client/utilities';
 import { createClient } from 'graphql-ws';
+import { setContext } from '@apollo/client/link/context';
+import { onError } from '@apollo/client/link/error';
+
+// Create auth link to add token to headers
+const authLink = setContext((_, { headers }) => {
+  const token = localStorage.getItem('authToken');
+  return {
+    headers: {
+      ...headers,
+      authorization: token ? `Bearer ${token}` : '',
+    }
+  };
+});
+
+// Create error link to handle auth errors
+const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
+  if (graphQLErrors) {
+    graphQLErrors.forEach(({ message, locations, path }) => {
+      console.error(
+        `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`
+      );
+
+      if (message.includes('Not authenticated') || message.includes('Invalid token')) {
+        if (operation.operationName !== 'LoginUser') {
+          localStorage.removeItem('authToken');
+          window.location.href = '/login';
+        }
+      }
+    });
+  }
+
+  if (networkError) {
+    console.error(`[Network error]: ${networkError}`);
+  }
+});
 
 const httpLink = createHttpLink({
   uri: 'http://localhost:4000/graphql',
 });
 
-const wsClient = createClient({
-  url: 'ws://localhost:4000/subscriptions',
-  on: {
-    connecting: () => {
-      if (__DEV__) {
-        console.log('WebSocket: Connecting...');
-      }
+// Create WebSocket client with authentication
+const createWsClient = () => {
+  const token = localStorage.getItem('authToken');
+
+  return createClient({
+    url: 'ws://localhost:4000/subscriptions',
+    connectionParams: {
+      authorization: token ? `Bearer ${token}` : '',
     },
-    connected: () => {
-      if (__DEV__) {
-        console.log('WebSocket: Connected successfully');
-      }
+          on: {
+        connecting: () => {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('WebSocket: Connecting...');
+          }
+        },
+        connected: () => {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('WebSocket: Connected successfully');
+          }
+        },
+        closed: () => {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('WebSocket: Connection closed');
+          }
+        },
+        error: (error) => {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('WebSocket error:', error);
+          }
+        },
+      },
+    retryAttempts: 3,
+    retryWait: async (retries) => {
+      const delay = Math.min(1000 * 2 ** retries, 10000);
+      await new Promise(resolve => setTimeout(resolve, delay));
     },
-    closed: () => {
-      if (__DEV__) {
-        console.log('WebSocket: Connection closed');
-      }
-    },
-    error: (error) => {
-      if (__DEV__) {
-        console.error('WebSocket error:', error);
-      }
-    },
-  },
-  connectionParams: {},
-  retryAttempts: 3,
-  retryWait: async (retries) => {
-    const delay = Math.min(1000 * 2 ** retries, 10000);
-    await new Promise(resolve => setTimeout(resolve, delay));
-  },
-  lazyCloseTimeout: 5000,
-  disablePong: false,
-});
+    lazyCloseTimeout: 5000,
+    disablePong: false,
+  });
+};
+
+let wsClient = createWsClient();
+
+// Function to recreate WebSocket client with new token
+export const recreateWsClient = () => {
+  wsClient = createWsClient();
+  return wsClient;
+};
 
 const wsLink = new GraphQLWsLink(wsClient);
 
@@ -52,7 +102,7 @@ const splitLink = split(
     );
   },
   wsLink,
-  httpLink
+  from([errorLink, authLink, httpLink])
 );
 
 export const client = new ApolloClient({
@@ -69,7 +119,7 @@ export const client = new ApolloClient({
       errorPolicy: 'all',
     },
   },
-  connectToDevTools: __DEV__,
+  connectToDevTools: process.env.NODE_ENV === 'development',
 });
 
 export { wsClient };

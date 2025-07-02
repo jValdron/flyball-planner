@@ -1,8 +1,9 @@
-import { Resolver, Query, Mutation, Arg } from 'type-graphql';
+import { Resolver, Query, Mutation, Arg, UseMiddleware, Ctx } from 'type-graphql';
 import { Location } from '../models/Location';
 import { AppDataSource } from '../db';
 import { ID } from 'type-graphql';
 import { PubSubService, SubscriptionEvents } from '../services/PubSubService';
+import { AuthContext, isAuth, hasClubAccess, createClubFilter } from '../middleware/auth';
 
 @Resolver(Location)
 export class LocationResolver {
@@ -27,16 +28,32 @@ export class LocationResolver {
   }
 
   @Query(() => [Location])
-  async locations(): Promise<Location[]> {
-    return await this.locationRepository.find();
+  @UseMiddleware(isAuth)
+  async locations(@Ctx() { user }: AuthContext): Promise<Location[]> {
+    const clubFilter = createClubFilter(user);
+    if (!clubFilter) return [];
+
+    return await this.locationRepository.find({
+      where: clubFilter
+    });
   }
 
   @Query(() => Location, { nullable: true })
-  async location(@Arg('id') id: string): Promise<Location | null> {
-    return await this.locationRepository.findOneBy({ id });
+  @UseMiddleware(isAuth)
+  async location(@Arg('id') id: string, @Ctx() { user }: AuthContext): Promise<Location | null> {
+    const clubFilter = createClubFilter(user);
+    if (!clubFilter) return null;
+
+    return await this.locationRepository.findOne({
+      where: {
+        id,
+        ...clubFilter
+      }
+    });
   }
 
   @Query(() => [Location])
+  @UseMiddleware(isAuth, hasClubAccess)
   async locationsByClub(@Arg('clubId', () => ID) clubId: string): Promise<Location[]> {
     return await this.locationRepository.find({
       where: { clubId }
@@ -44,6 +61,7 @@ export class LocationResolver {
   }
 
   @Mutation(() => Location)
+  @UseMiddleware(isAuth, hasClubAccess)
   async createLocation(
     @Arg('name') name: string,
     @Arg('clubId', () => ID) clubId: string,
@@ -69,13 +87,23 @@ export class LocationResolver {
   }
 
   @Mutation(() => Location, { nullable: true })
+  @UseMiddleware(isAuth)
   async updateLocation(
     @Arg('id') id: string,
+    @Ctx() { user }: AuthContext,
     @Arg('name', { nullable: true }) name?: string,
     @Arg('isDefault', { nullable: true }) isDefault?: boolean,
     @Arg('isDoubleLane', { nullable: true }) isDoubleLane?: boolean
   ): Promise<Location | null> {
-    const location = await this.locationRepository.findOneBy({ id });
+    const clubFilter = createClubFilter(user);
+    if (!clubFilter) return null;
+
+    const location = await this.locationRepository.findOne({
+      where: {
+        id,
+        ...clubFilter
+      }
+    });
     if (!location) return null;
 
     if (isDefault) {
@@ -96,8 +124,17 @@ export class LocationResolver {
   }
 
   @Mutation(() => Boolean)
-  async deleteLocation(@Arg('id') id: string): Promise<boolean> {
-    const location = await this.locationRepository.findOneBy({ id });
+  @UseMiddleware(isAuth)
+  async deleteLocation(@Arg('id') id: string, @Ctx() { user }: AuthContext): Promise<boolean> {
+    const clubFilter = createClubFilter(user);
+    if (!clubFilter) return false;
+
+    const location = await this.locationRepository.findOne({
+      where: {
+        id,
+        ...clubFilter
+      }
+    });
     if (!location) return false;
 
     if (location.isDefault) {

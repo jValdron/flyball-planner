@@ -9,6 +9,7 @@ import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import TrainingLevelBadge from '../components/TrainingLevelBadge'
 import { PlusLg, Trash, PersonPlus } from 'react-bootstrap-icons'
 import { DeleteDog } from '../graphql/dogs'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import type { DogStatus } from '../graphql/generated/graphql'
 import { getFilteredAndSortedDogsByHandlers, getHandlerName } from '../utils/dogsUtils'
 import type { HandlerWithDogs, DogWithBasicInfo } from '../utils/dogsUtils'
@@ -32,6 +33,8 @@ function Dogs() {
   const [dogToDelete, setDogToDelete] = useState<DogWithBasicInfo | null>(null)
   const [showInactive, setShowInactive] = useState(searchParams.get('showInactive') === 'true')
   const [searchQuery, setSearchQuery] = useState('')
+
+  useDocumentTitle('Handlers & Dogs')
 
   const [deleteDog] = useMutation(DeleteDog)
 

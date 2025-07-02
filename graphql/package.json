@@ -2,7 +2,7 @@
   "name": "flyball-practice-planner-graphql",
   "private": true,
   "version": "1.0.0",
-  "description": "GraphQL server for Flyball Practice Planner",
+  "description": "GraphQL server for Flyball Planner",
   "main": "dist/index.js",
   "scripts": {
     "start": "node dist/index.js",
@@ -14,13 +14,17 @@
   "dependencies": {
     "@apollo/server": "^4.12.2",
     "@as-integrations/express5": "^1.1.0",
+    "@auth/core": "^0.40.0",
+    "@auth/typeorm-adapter": "^2.10.0",
     "@graphql-yoga/subscription": "^5.0.5",
     "@types/ws": "^8.18.1",
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.1",
     "express": "^5.1.0",
     "graphql": "^16.8.1",
     "graphql-ws": "^5.5.5",
+    "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.3",
     "reflect-metadata": "^0.2.1",
     "type-graphql": "^2.0.0-rc.2",
@@ -29,8 +33,10 @@
     "ws": "^8.18.2"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.11.16",
     "@types/pg": "^8.11.0",
     "@types/uuid": "^9.0.8",

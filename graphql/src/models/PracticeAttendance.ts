@@ -15,7 +15,7 @@ registerEnumType(AttendanceStatus, {
 });
 
 @ObjectType()
-@Entity('practice_attendances')
+@Entity()
 export class PracticeAttendance {
   @Field(() => ID)
   @PrimaryGeneratedColumn('uuid')

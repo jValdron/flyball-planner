@@ -1,24 +1,41 @@
-import { Resolver, Query, Mutation, Arg } from 'type-graphql';
+import { Resolver, Query, Mutation, Arg, UseMiddleware, Ctx } from 'type-graphql';
 import { Handler } from '../models/Handler';
 import { AppDataSource } from '../db';
 import { ID } from 'type-graphql';
 import { PubSubService, SubscriptionEvents } from '../services/PubSubService';
+import { AuthContext, isAuth, hasClubAccess, createClubFilter } from '../middleware/auth';
 
 @Resolver(Handler)
 export class HandlerResolver {
   private handlerRepository = AppDataSource.getRepository(Handler);
 
   @Query(() => [Handler])
-  async handlers(): Promise<Handler[]> {
-    return await this.handlerRepository.find();
+  @UseMiddleware(isAuth)
+  async handlers(@Ctx() { user }: AuthContext): Promise<Handler[]> {
+    const clubFilter = createClubFilter(user);
+    if (!clubFilter) return [];
+
+    return await this.handlerRepository.find({
+      where: clubFilter
+    });
   }
 
   @Query(() => Handler, { nullable: true })
-  async handler(@Arg('id') id: string): Promise<Handler | null> {
-    return await this.handlerRepository.findOneBy({ id });
+  @UseMiddleware(isAuth)
+  async handler(@Arg('id') id: string, @Ctx() { user }: AuthContext): Promise<Handler | null> {
+    const clubFilter = createClubFilter(user);
+    if (!clubFilter) return null;
+
+    return await this.handlerRepository.findOne({
+      where: {
+        id,
+        ...clubFilter
+      }
+    });
   }
 
   @Query(() => [Handler], { nullable: true })
+  @UseMiddleware(isAuth, hasClubAccess)
   async dogsByHandlersInClub(@Arg('clubId', () => ID) clubId: string): Promise<Handler[]> {
     return await this.handlerRepository.find({
       where: {
@@ -29,6 +46,7 @@ export class HandlerResolver {
   }
 
   @Mutation(() => Handler)
+  @UseMiddleware(isAuth, hasClubAccess)
   async createHandler(
     @Arg('givenName') givenName: string,
     @Arg('surname') surname: string,
@@ -43,12 +61,22 @@ export class HandlerResolver {
   }
 
   @Mutation(() => Handler, { nullable: true })
+  @UseMiddleware(isAuth)
   async updateHandler(
     @Arg('id') id: string,
+    @Ctx() { user }: AuthContext,
     @Arg('givenName', { nullable: true }) givenName?: string,
     @Arg('surname', { nullable: true }) surname?: string
   ): Promise<Handler | null> {
-    const handler = await this.handlerRepository.findOneBy({ id });
+    const clubFilter = createClubFilter(user);
+    if (!clubFilter) return null;
+
+    const handler = await this.handlerRepository.findOne({
+      where: {
+        id,
+        ...clubFilter
+      }
+    });
     if (!handler) return null;
 
     Object.assign(handler, {
@@ -64,8 +92,17 @@ export class HandlerResolver {
   }
 
   @Mutation(() => Boolean)
-  async deleteHandler(@Arg('id') id: string): Promise<boolean> {
-    const handler = await this.handlerRepository.findOneBy({ id });
+  @UseMiddleware(isAuth)
+  async deleteHandler(@Arg('id') id: string, @Ctx() { user }: AuthContext): Promise<boolean> {
+    const clubFilter = createClubFilter(user);
+    if (!clubFilter) return false;
+
+    const handler = await this.handlerRepository.findOne({
+      where: {
+        id,
+        ...clubFilter
+      }
+    });
     if (!handler) return false;
 
     const result = await this.handlerRepository.delete(id);

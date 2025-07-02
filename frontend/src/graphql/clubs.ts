@@ -1,6 +1,6 @@
-import { gql } from '@apollo/client'
+import { graphql } from './generated/gql';
 
-export const GetClubs = gql(`
+export const GetClubs = graphql(`
   query GetClubs {
     clubs {
       id
@@ -11,7 +11,7 @@ export const GetClubs = gql(`
   }
 `);
 
-export const GetClubById = gql`
+export const GetClubById = graphql(`
   query GetClubById($id: String!) {
     club(id: $id) {
       id
@@ -20,9 +20,9 @@ export const GetClubById = gql`
       defaultPracticeTime
     }
   }
-`
+`);
 
-export const GetLocationById = gql`
+export const GetLocationById = graphql(`
   query GetLocationById($id: String!) {
     location(id: $id) {
       id
@@ -33,9 +33,9 @@ export const GetLocationById = gql`
       updatedAt
     }
   }
-`
+`);
 
-export const GetLocationsByClub = gql`
+export const GetLocationsByClub = graphql(`
   query GetLocationsByClub($clubId: ID!) {
     locationsByClub(clubId: $clubId) {
       id
@@ -44,9 +44,9 @@ export const GetLocationsByClub = gql`
       isDoubleLane
     }
   }
-`
+`);
 
-export const CreateLocation = gql`
+export const CreateLocation = graphql(`
   mutation CreateLocation($clubId: ID!, $name: String!, $isDefault: Boolean!, $isDoubleLane: Boolean!) {
     createLocation(clubId: $clubId, name: $name, isDefault: $isDefault, isDoubleLane: $isDoubleLane) {
       id
@@ -57,9 +57,9 @@ export const CreateLocation = gql`
       updatedAt
     }
   }
-`
+`);
 
-export const UpdateLocation = gql`
+export const UpdateLocation = graphql(`
   mutation UpdateLocation($id: String!, $name: String, $isDefault: Boolean, $isDoubleLane: Boolean) {
     updateLocation(id: $id, name: $name, isDefault: $isDefault, isDoubleLane: $isDoubleLane) {
       id
@@ -69,15 +69,15 @@ export const UpdateLocation = gql`
       updatedAt
     }
   }
-`
+`);
 
-export const DeleteLocation = gql`
+export const DeleteLocation = graphql(`
   mutation DeleteLocation($id: String!) {
     deleteLocation(id: $id)
   }
-`
+`);
 
-export const UpdateClub = gql`
+export const UpdateClub = graphql(`
   mutation UpdateClub($id: String!, $name: String, $nafaClubNumber: String, $defaultPracticeTime: String) {
     updateClub(id: $id, name: $name, nafaClubNumber: $nafaClubNumber, defaultPracticeTime: $defaultPracticeTime) {
       id
@@ -87,4 +87,4 @@ export const UpdateClub = gql`
       updatedAt
     }
   }
-`
+`);

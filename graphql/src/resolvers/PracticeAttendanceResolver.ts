@@ -1,10 +1,11 @@
-import { Resolver, Query, Mutation, Arg } from 'type-graphql';
+import { Resolver, Query, Mutation, Arg, UseMiddleware, Ctx } from 'type-graphql';
 import { PracticeAttendance, AttendanceStatus } from '../models/PracticeAttendance';
 import { AppDataSource } from '../db';
 import { InputType, Field, ID } from 'type-graphql';
 import { PubSubService, SubscriptionEvents } from '../services/PubSubService';
 import { PracticeSummaryService } from '../services/PracticeSummaryService';
 import { Practice } from '../models/Practice';
+import { AuthContext, isAuth, createClubFilter } from '../middleware/auth';
 
 @InputType()
 class AttendanceUpdate {
@@ -21,7 +22,20 @@ export class PracticeAttendanceResolver {
   private practiceRepository = AppDataSource.getRepository(Practice);
 
   @Query(() => [PracticeAttendance])
-  async practiceAttendances(@Arg('practiceId') practiceId: string): Promise<PracticeAttendance[]> {
+  @UseMiddleware(isAuth)
+  async practiceAttendances(@Arg('practiceId') practiceId: string, @Ctx() { user }: AuthContext): Promise<PracticeAttendance[]> {
+    const clubFilter = createClubFilter(user);
+    if (!clubFilter) return [];
+
+    // Check that the practice belongs to user's club
+    const practice = await this.practiceRepository.findOne({
+      where: {
+        id: practiceId,
+        ...clubFilter
+      }
+    });
+    if (!practice) return [];
+
     return await this.practiceAttendanceRepository.find({
       where: { practiceId },
       relations: ['practice', 'dog', 'dog.owner']
@@ -29,10 +43,28 @@ export class PracticeAttendanceResolver {
   }
 
   @Mutation(() => [PracticeAttendance])
+  @UseMiddleware(isAuth)
   async updateAttendances(
     @Arg('practiceId') practiceId: string,
-    @Arg('updates', () => [AttendanceUpdate]) updates: AttendanceUpdate[]
+    @Arg('updates', () => [AttendanceUpdate]) updates: AttendanceUpdate[],
+    @Ctx() { user }: AuthContext
   ): Promise<PracticeAttendance[]> {
+    const clubFilter = createClubFilter(user);
+    if (!clubFilter) {
+      throw new Error('Access denied: You are not a member of any clubs');
+    }
+
+    // Check that the practice belongs to user's club
+    const practice = await this.practiceRepository.findOne({
+      where: {
+        id: practiceId,
+        ...clubFilter
+      }
+    });
+    if (!practice) {
+      throw new Error('Access denied: Practice not found or you do not have access to it');
+    }
+
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();

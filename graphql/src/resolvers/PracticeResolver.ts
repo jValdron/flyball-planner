@@ -1,28 +1,36 @@
-import { Resolver, Query, Mutation, Arg } from 'type-graphql';
+import { Resolver, Query, Mutation, Arg, UseMiddleware, Ctx } from 'type-graphql';
 import { Practice, PracticeStatus } from '../models/Practice';
 import { AppDataSource } from '../db';
 import { PubSubService, SubscriptionEvents } from '../services/PubSubService';
 import { PracticeSummaryService } from '../services/PracticeSummaryService';
 import { PracticeSummary } from '../types/SubscriptionTypes';
+import { AuthContext, isAuth, hasClubAccess, createClubFilter } from '../middleware/auth';
 
 @Resolver(Practice)
 export class PracticeResolver {
   private practiceRepository = AppDataSource.getRepository(Practice);
 
   @Query(() => [PracticeSummary])
+  @UseMiddleware(isAuth, hasClubAccess)
   async practiceSummariesByClub(@Arg('clubId') clubId: string): Promise<PracticeSummary[]> {
     const practices = await this.practiceRepository.find({
       where: { clubId },
       relations: ['attendances', 'sets']
     });
-
     return Promise.all(practices.map(practice => PracticeSummaryService.createPracticeSummary(practice)));
   }
 
   @Query(() => Practice, { nullable: true })
-  async practice(@Arg('id') id: string): Promise<Practice | null> {
+  @UseMiddleware(isAuth)
+  async practice(@Arg('id') id: string, @Ctx() { user }: AuthContext): Promise<Practice | null> {
+    const clubFilter = createClubFilter(user);
+    if (!clubFilter) return null;
+
     return await this.practiceRepository.findOne({
-      where: { id },
+      where: {
+        id,
+        ...clubFilter
+      },
       relations: [
         'attendances',
         'sets',
@@ -32,15 +40,22 @@ export class PracticeResolver {
   }
 
   @Mutation(() => Practice)
+  @UseMiddleware(isAuth, hasClubAccess)
   async createPractice(
     @Arg('clubId') clubId: string,
     @Arg('scheduledAt') scheduledAt: Date,
-    @Arg('status', () => PracticeStatus) status: PracticeStatus
+    @Arg('status', () => PracticeStatus) status: PracticeStatus,
+    @Ctx() { user }: AuthContext
   ): Promise<Practice> {
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
     const practice = this.practiceRepository.create({
       clubId,
       scheduledAt,
-      status
+      status,
+      plannedById: user.id
     });
     const savedPractice = await this.practiceRepository.save(practice);
 
@@ -59,17 +74,25 @@ export class PracticeResolver {
   }
 
   @Mutation(() => Practice, { nullable: true })
+  @UseMiddleware(isAuth)
   async updatePractice(
     @Arg('id') id: string,
-    @Arg('clubId', { nullable: true }) clubId?: string,
+    @Ctx() { user }: AuthContext,
     @Arg('scheduledAt', { nullable: true }) scheduledAt?: Date,
     @Arg('status', () => PracticeStatus, { nullable: true }) status?: PracticeStatus
   ): Promise<Practice | null> {
-    const practice = await this.practiceRepository.findOneBy({ id });
+    const clubFilter = createClubFilter(user);
+    if (!clubFilter) return null;
+
+    const practice = await this.practiceRepository.findOne({
+      where: {
+        id,
+        ...clubFilter
+      }
+    });
     if (!practice) return null;
 
     Object.assign(practice, {
-      clubId: clubId ?? practice.clubId,
       scheduledAt: scheduledAt ?? practice.scheduledAt,
       status: status ?? practice.status
     });
@@ -87,9 +110,16 @@ export class PracticeResolver {
   }
 
   @Mutation(() => Boolean)
-  async deletePractice(@Arg('id') id: string): Promise<boolean> {
+  @UseMiddleware(isAuth)
+  async deletePractice(@Arg('id') id: string, @Ctx() { user }: AuthContext): Promise<boolean> {
+    const clubFilter = createClubFilter(user);
+    if (!clubFilter) return false;
+
     const practice = await this.practiceRepository.findOne({
-      where: { id },
+      where: {
+        id,
+        ...clubFilter
+      },
       relations: ['attendances', 'sets']
     });
 

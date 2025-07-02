@@ -1,6 +1,6 @@
-import { gql } from '@apollo/client';
+import { graphql } from './generated/gql';
 
-export const CLUB_CHANGED_SUBSCRIPTION = gql`
+export const CLUB_CHANGED_SUBSCRIPTION = graphql(`
   subscription ClubChanged {
     clubChanged {
       club {
@@ -14,9 +14,9 @@ export const CLUB_CHANGED_SUBSCRIPTION = gql`
       eventType
     }
   }
-`;
+`);
 
-export const CLUB_BY_ID_SUBSCRIPTION = gql`
+export const CLUB_BY_ID_SUBSCRIPTION = graphql(`
   subscription ClubById($clubId: String) {
     clubById(clubId: $clubId) {
       club {
@@ -30,9 +30,9 @@ export const CLUB_BY_ID_SUBSCRIPTION = gql`
       eventType
     }
   }
-`;
+`);
 
-export const DOG_CHANGED_SUBSCRIPTION = gql`
+export const DOG_CHANGED_SUBSCRIPTION = graphql(`
   subscription DogChanged($clubId: String) {
     dogChanged(clubId: $clubId) {
       dog {
@@ -58,9 +58,9 @@ export const DOG_CHANGED_SUBSCRIPTION = gql`
       eventType
     }
   }
-`;
+`);
 
-export const HANDLER_CHANGED_SUBSCRIPTION = gql`
+export const HANDLER_CHANGED_SUBSCRIPTION = graphql(`
   subscription HandlerChanged($clubId: String) {
     handlerChanged(clubId: $clubId) {
       handler {
@@ -84,9 +84,9 @@ export const HANDLER_CHANGED_SUBSCRIPTION = gql`
       eventType
     }
   }
-`;
+`);
 
-export const LOCATION_CHANGED_SUBSCRIPTION = gql`
+export const LOCATION_CHANGED_SUBSCRIPTION = graphql(`
   subscription LocationChanged($clubId: String) {
     locationChanged(clubId: $clubId) {
       location {
@@ -105,9 +105,9 @@ export const LOCATION_CHANGED_SUBSCRIPTION = gql`
       eventType
     }
   }
-`;
+`);
 
-export const PRACTICE_CHANGED_SUBSCRIPTION = gql`
+export const PRACTICE_CHANGED_SUBSCRIPTION = graphql(`
   subscription PracticeChanged($practiceId: String!) {
     practiceChanged(practiceId: $practiceId) {
       practice {
@@ -121,9 +121,9 @@ export const PRACTICE_CHANGED_SUBSCRIPTION = gql`
       eventType
     }
   }
-`;
+`);
 
-export const PRACTICE_ATTENDANCE_CHANGED_SUBSCRIPTION = gql`
+export const PRACTICE_ATTENDANCE_CHANGED_SUBSCRIPTION = graphql(`
   subscription PracticeAttendanceChanged($practiceId: String!) {
     practiceAttendanceChanged(practiceId: $practiceId) {
       attendance {
@@ -137,9 +137,9 @@ export const PRACTICE_ATTENDANCE_CHANGED_SUBSCRIPTION = gql`
       eventType
     }
   }
-`;
+`);
 
-export const PRACTICE_SET_CHANGED_SUBSCRIPTION = gql`
+export const PRACTICE_SET_CHANGED_SUBSCRIPTION = graphql(`
   subscription PracticeSetChanged($practiceId: String!) {
     practiceSetChanged(practiceId: $practiceId) {
       set {
@@ -162,9 +162,9 @@ export const PRACTICE_SET_CHANGED_SUBSCRIPTION = gql`
       eventType
     }
   }
-`;
+`);
 
-export const PRACTICE_SUMMARY_CHANGED_SUBSCRIPTION = gql`
+export const PRACTICE_SUMMARY_CHANGED_SUBSCRIPTION = graphql(`
   subscription PracticeSummaryChanged($clubId: String!) {
     practiceSummaryChanged(clubId: $clubId) {
       practice {
@@ -179,4 +179,4 @@ export const PRACTICE_SUMMARY_CHANGED_SUBSCRIPTION = gql`
       eventType
     }
   }
-`;
+`);

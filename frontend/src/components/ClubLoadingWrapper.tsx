@@ -11,7 +11,7 @@ export const ClubLoadingWrapper: React.FC<ClubLoadingWrapperProps> = ({
   children,
   loadingMessage = 'Loading clubs data...'
 }) => {
-  const { loading, selectedClub, clubs } = useClub();
+  const { loading, selectedClub } = useClub();
 
   if (loading && !selectedClub) {
     return <LoadingSpinner message={loadingMessage} />;

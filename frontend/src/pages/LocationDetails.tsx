@@ -8,6 +8,7 @@ import { useQuery, useMutation } from '@apollo/client'
 import { GetLocationById, CreateLocation, UpdateLocation, DeleteLocation } from '../graphql/clubs'
 import type { Location } from '../graphql/generated/graphql'
 import { formatFullDateTime } from '../utils/dateUtils'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 function LocationDetails() {
   const navigate = useNavigate()
@@ -38,6 +39,9 @@ function LocationDetails() {
       console.error('Error loading location:', error)
     }
   })
+
+  const title = locationId ? `${locationData?.location?.name} - Location Details` : 'New Location'
+  useDocumentTitle(title)
 
   const [createLocation, { loading: creating }] = useMutation(CreateLocation, {
     onCompleted: () => navigate('/club'),

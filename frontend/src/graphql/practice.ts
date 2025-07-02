@@ -62,8 +62,8 @@ export const CreatePractice = graphql(`
 `);
 
 export const UpdatePractice = graphql(`
-  mutation UpdatePractice($id: String!, $clubId: String, $scheduledAt: DateTimeISO, $status: PracticeStatus) {
-    updatePractice(id: $id, clubId: $clubId, scheduledAt: $scheduledAt, status: $status) {
+  mutation UpdatePractice($id: String!, $scheduledAt: DateTimeISO, $status: PracticeStatus) {
+    updatePractice(id: $id, scheduledAt: $scheduledAt, status: $status) {
       id
       scheduledAt
       status

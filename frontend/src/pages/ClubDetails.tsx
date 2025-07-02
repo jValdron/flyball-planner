@@ -7,6 +7,7 @@ import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import { SaveSpinner } from '../components/SaveSpinner'
 import { useMutation } from '@apollo/client'
 import { UpdateClub, DeleteLocation } from '../graphql/clubs'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import type { Location, Club } from '../graphql/generated/graphql'
 
 function ClubDetails() {
@@ -16,6 +17,9 @@ function ClubDetails() {
   const [error, setError] = useState<string | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [locationToDelete, setLocationToDelete] = useState<{ id: string; name: string } | null>(null)
+
+  const title = selectedClub?.name ? `${selectedClub.name} - Club Details` : 'Club Details'
+  useDocumentTitle(title)
 
   useEffect(() => {
     if (selectedClub) {

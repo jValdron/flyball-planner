@@ -1,23 +1,40 @@
-import { Resolver, Query, Mutation, Arg, ID, Int } from 'type-graphql';
+import { Resolver, Query, Mutation, Arg, ID, Int, UseMiddleware, Ctx } from 'type-graphql';
 import { Dog, DogStatus, TrainingLevel } from '../models/Dog';
 import { AppDataSource } from '../db';
 import { PubSubService, SubscriptionEvents } from '../services/PubSubService';
+import { AuthContext, isAuth, hasClubAccess, createClubFilter } from '../middleware/auth';
 
 @Resolver(Dog)
 export class DogResolver {
   private dogRepository = AppDataSource.getRepository(Dog);
 
   @Query(() => [Dog])
-  async dogs(): Promise<Dog[]> {
-    return await this.dogRepository.find();
+  @UseMiddleware(isAuth)
+  async dogs(@Ctx() { user }: AuthContext): Promise<Dog[]> {
+    const clubFilter = createClubFilter(user);
+    if (!clubFilter) return [];
+
+    return await this.dogRepository.find({
+      where: clubFilter
+    });
   }
 
   @Query(() => Dog, { nullable: true })
-  async dog(@Arg('id') id: string): Promise<Dog | null> {
-    return await this.dogRepository.findOneBy({ id });
+  @UseMiddleware(isAuth)
+  async dog(@Arg('id') id: string, @Ctx() { user }: AuthContext): Promise<Dog | null> {
+    const clubFilter = createClubFilter(user);
+    if (!clubFilter) return null;
+
+    return await this.dogRepository.findOne({
+      where: {
+        id,
+        ...clubFilter
+      }
+    });
   }
 
   @Query(() => Int)
+  @UseMiddleware(isAuth, hasClubAccess)
   async activeDogsInClub(@Arg('clubId', () => ID) clubId: string): Promise<number> {
     return await this.dogRepository.count({
       where: {
@@ -28,6 +45,7 @@ export class DogResolver {
   }
 
   @Mutation(() => Dog)
+  @UseMiddleware(isAuth, hasClubAccess)
   async createDog(
     @Arg('name') name: string,
     @Arg('ownerId') ownerId: string,
@@ -52,22 +70,30 @@ export class DogResolver {
   }
 
   @Mutation(() => Dog, { nullable: true })
+  @UseMiddleware(isAuth)
   async updateDog(
     @Arg('id') id: string,
+    @Ctx() { user }: AuthContext,
     @Arg('name', { nullable: true }) name?: string,
     @Arg('ownerId', { nullable: true }) ownerId?: string,
-    @Arg('clubId', { nullable: true }) clubId?: string,
     @Arg('trainingLevel', () => TrainingLevel, { nullable: true }) trainingLevel?: TrainingLevel,
     @Arg('status', () => DogStatus, { nullable: true }) status?: DogStatus,
     @Arg('crn', { nullable: true }) crn?: string
   ): Promise<Dog | null> {
-    const dog = await this.dogRepository.findOneBy({ id });
+    const clubFilter = createClubFilter(user);
+    if (!clubFilter) return null;
+
+    const dog = await this.dogRepository.findOne({
+      where: {
+        id,
+        ...clubFilter
+      }
+    });
     if (!dog) return null;
 
     Object.assign(dog, {
       name: name ?? dog.name,
       ownerId: ownerId ?? dog.ownerId,
-      clubId: clubId ?? dog.clubId,
       trainingLevel: trainingLevel ?? dog.trainingLevel,
       status: status ?? dog.status,
       crn: crn ?? (crn === '' ? null : crn)
@@ -81,8 +107,17 @@ export class DogResolver {
   }
 
   @Mutation(() => Boolean)
-  async deleteDog(@Arg('id') id: string): Promise<boolean> {
-    const dog = await this.dogRepository.findOneBy({ id });
+  @UseMiddleware(isAuth)
+  async deleteDog(@Arg('id') id: string, @Ctx() { user }: AuthContext): Promise<boolean> {
+    const clubFilter = createClubFilter(user);
+    if (!clubFilter) return false;
+
+    const dog = await this.dogRepository.findOne({
+      where: {
+        id,
+        ...clubFilter
+      }
+    });
     if (!dog) return false;
 
     const result = await this.dogRepository.delete(id);

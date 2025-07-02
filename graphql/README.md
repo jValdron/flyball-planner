@@ -1,6 +1,13 @@
-# Flyball Practice Planner GraphQL API
+# Flyball Planner
+## GraphQL API
 
-This is the GraphQL API server for the Flyball Practice Planner application. It provides a modern, type-safe API for managing flyball practices, dogs, owners, and clubs.
+This is the GraphQL API server for the Flyball Planner application. It provides a modern, type-safe API for managing flyball practices, dogs, owners, and clubs.
+
+## TODO
+- Fix up subscriptions (filtering by club filters out 100%?)
+- Finish up auth
+- Redis caching (mostly for subscriptions with multiple instances)
+
 
 ## Features
 
@@ -8,7 +15,7 @@ This is the GraphQL API server for the Flyball Practice Planner application. It 
 - PostgreSQL database with TypeORM
 - TypeScript for type safety
 - Full CRUD operations for all entities
-- Real-time updates (coming soon)
+- Real-time updates through subscriptions
 
 ## Prerequisites
 
@@ -71,5 +78,6 @@ The GraphQL API provides the following main types:
 - PracticeAttendance
 - Set
 - SetDog
+- Auth/Users
 
 Each type has corresponding queries and mutations for CRUD operations. Visit the GraphQL playground at http://localhost:4000/graphql for the full schema documentation and to test queries.

@@ -18,14 +18,11 @@ import { LocationResolver } from './resolvers/LocationResolver';
 import { PracticeSetResolver } from './resolvers/PracticeSetResolver';
 import { ClubSubscriptionResolver } from './resolvers/ClubSubscriptionResolver';
 import { PracticeSubscriptionResolver } from './resolvers/PracticeSubscriptionResolver';
+import { UserResolver } from './resolvers/UserResolver';
 import { pubsub } from './services/PubSubService';
+import { AuthContext, isAuth } from './middleware/auth';
 
 config();
-
-interface AppContext {
-  token?: string;
-  dataSource?: typeof AppDataSource;
-}
 
 async function startServer() {
   try {
@@ -46,6 +43,7 @@ async function startServer() {
         LocationResolver,
         ClubSubscriptionResolver,
         PracticeSubscriptionResolver,
+        UserResolver,
       ],
       emitSchemaFile: true,
       validate: false,
@@ -59,7 +57,36 @@ async function startServer() {
 
     const serverCleanup = useServer({
       schema,
-      context: (ctx) => {
+      context: async (ctx) => {
+        const token = (ctx.connectionParams?.authorization as string) || (ctx.connectionParams?.token as string);
+
+        if (token) {
+          try {
+            const { AuthService } = await import('./services/AuthService.js');
+            const decoded = AuthService.verifyToken(token);
+
+            if (decoded) {
+              const user = await AuthService.getUserById(decoded.id);
+              if (user) {
+                return {
+                  ...ctx,
+                  pubsub,
+                  user: {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    clubIds: user.clubs.map(club => club.id)
+                  }
+                };
+              }
+            }
+          } catch (error) {
+            console.error('WebSocket authentication error:', error);
+          }
+        }
+
         return {
           ...ctx,
           pubsub,
@@ -67,7 +94,7 @@ async function startServer() {
       },
     }, wsServer);
 
-    const server = new ApolloServer<AppContext>({
+    const server = new ApolloServer<AuthContext>({
       schema,
       plugins: [
         ApolloServerPluginDrainHttpServer({ httpServer }),
@@ -94,7 +121,7 @@ async function startServer() {
       express.json(),
       expressMiddleware(server, {
         context: async ({ req }) => ({
-          token: req.headers.authorization,
+          req,
           dataSource: AppDataSource,
         }),
       }),

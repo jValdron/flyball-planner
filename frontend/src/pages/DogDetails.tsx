@@ -9,6 +9,7 @@ import { GetDogById, GetDogsByHandlersInClub, CreateDog, UpdateDog, DeleteDog } 
 import { DogStatus, TrainingLevel } from '../graphql/generated/graphql'
 import type { Dog } from '../graphql/generated/graphql'
 import { formatFullDateTime } from '../utils/dateUtils'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 function DogDetails() {
   const navigate = useNavigate()
@@ -44,6 +45,9 @@ function DogDetails() {
       console.error('Error loading dog:', error)
     }
   })
+
+  const title = dogId ? `${dogData?.dog?.name} - Dog Details` : 'New Dog'
+  useDocumentTitle(title)
 
   const { data: ownersData, loading: loadingOwners } = useQuery(GetDogsByHandlersInClub, {
     variables: { clubId: selectedClub?.id || '' },

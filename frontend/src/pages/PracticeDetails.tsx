@@ -16,6 +16,7 @@ import { PracticeValidationService, type ValidationError } from '../services/pra
 import { PracticeValidation } from '../components/PracticeSet/PracticeValidation'
 import { PracticeSet } from '../components/PracticeSet/PracticeSet'
 import { DatePickerComponent } from '../components/PracticeSet/DatePickerComponent'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 function PracticeDetailsContent() {
   const navigate = useNavigate()
@@ -34,6 +35,11 @@ function PracticeDetailsContent() {
   const [error, setError] = useState<string | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([])
+
+  const title = practiceId
+    ? (practice?.scheduledAt ? formatRelativeTime(practice.scheduledAt) : 'Practice Details')
+    : 'New Practice'
+  useDocumentTitle(title)
 
   const [createPractice, { loading: isCreating }] = useMutation<CreatePracticeMutation>(CreatePractice, {
     onError: (err) => {

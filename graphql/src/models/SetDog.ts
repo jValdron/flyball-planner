@@ -14,7 +14,7 @@ registerEnumType(Lane, {
 });
 
 @ObjectType()
-@Entity('set_dogs')
+@Entity()
 export class SetDog {
   @Field(() => ID)
   @PrimaryGeneratedColumn('uuid')

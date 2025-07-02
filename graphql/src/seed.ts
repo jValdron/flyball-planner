@@ -1,38 +1,18 @@
 import 'reflect-metadata';
 import * as dotenv from 'dotenv';
-import { DataSource } from 'typeorm';
 import { seedDatabase } from './db/seed';
-import { Club } from './models/Club';
-import { Handler } from './models/Handler';
-import { Dog } from './models/Dog';
-import { Practice } from './models/Practice';
-import { Set } from './models/Set';
-import { SetDog } from './models/SetDog';
-import { PracticeAttendance } from './models/PracticeAttendance';
-import { Location } from './models/Location';
+import { AppDataSource } from './db';
 
 dotenv.config();
 
-const dataSource = new DataSource({
-  type: 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  username: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres',
-  database: process.env.DB_NAME || 'flyball_practice_planner',
-  ssl: process.env.DB_SSLMODE !== 'disable',
-  entities: [Club, Handler, Dog, Practice, Set, SetDog, PracticeAttendance, Location],
-  synchronize: true,
-});
-
 async function main() {
   try {
-    await dataSource.initialize();
+    await AppDataSource.initialize();
     console.log('Database connection initialized');
 
-    await seedDatabase(dataSource);
+    await seedDatabase(AppDataSource);
 
-    await dataSource.destroy();
+    await AppDataSource.destroy();
     console.log('Database connection closed');
   } catch (error) {
     console.error('Error during seeding:', error);

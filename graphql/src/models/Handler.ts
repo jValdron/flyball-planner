@@ -4,7 +4,7 @@ import { Dog } from './Dog';
 import { Club } from './Club';
 
 @ObjectType()
-@Entity('handlers')
+@Entity()
 export class Handler {
   @Field(() => ID)
   @PrimaryGeneratedColumn('uuid')
@@ -25,7 +25,7 @@ export class Handler {
   @Field(() => Club, { nullable: true })
   @ManyToOne(() => Club)
   @JoinColumn({ name: 'clubId' })
-  club: Club;
+  club: Promise<Club>;
 
   @Field()
   @CreateDateColumn()

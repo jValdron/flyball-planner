@@ -11,6 +11,7 @@ import { GetPracticesByClub, DeletePractice} from '../graphql/practice'
 import { compareDesc, isAfter, isBefore } from 'date-fns'
 import { compareAsc } from 'date-fns'
 import { usePracticeSummaryChangedSubscription } from '../hooks/useSubscription'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import type { PracticeSummary } from '../graphql/generated/graphql'
 
 function Practices() {
@@ -21,6 +22,8 @@ function Practices() {
   const [showDraftsOnly, setShowDraftsOnly] = useState(false)
   const [practices, setPractices] = useState<PracticeSummary[]>([])
   const navigate = useNavigate()
+
+  useDocumentTitle('Practices')
 
   const { loading, error, data } = useQuery(GetPracticesByClub, {
     variables: { clubId: selectedClub?.id ?? '' },
