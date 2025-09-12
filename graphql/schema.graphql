@@ -23,6 +23,9 @@ type Club {
   dogs: [Dog!]!
   handlers: [Handler!]!
   id: ID!
+
+  """Ideal number of sets per dog for this club"""
+  idealSetsPerDog: Float!
   locations: [Location!]!
   nafaClubNumber: String!
   name: String!
@@ -128,7 +131,7 @@ type Mutation {
   deleteSets(ids: [String!]!): Boolean!
   loginUser(password: String!, username: String!): LoginResponse!
   updateAttendances(practiceId: String!, updates: [AttendanceUpdate!]!): [PracticeAttendance!]!
-  updateClub(defaultPracticeTime: String, id: String!, nafaClubNumber: String, name: String): Club
+  updateClub(defaultPracticeTime: String, id: String!, idealSetsPerDog: Float, nafaClubNumber: String, name: String): Club
   updateDog(crn: String, id: String!, name: String, ownerId: String, status: DogStatus, trainingLevel: TrainingLevel): Dog
   updateHandler(givenName: String, id: String!, surname: String): Handler
   updateLocation(id: String!, isDefault: Boolean, isDoubleLane: Boolean, name: String): Location

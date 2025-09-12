@@ -23,9 +23,19 @@ export const createClubFilter = (user: AuthContext['user']) => {
 };
 
 export const isAuth: MiddlewareFn<AuthContext> = async ({ context }, next) => {
+  if (context.user) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('isAuth: using pre-populated user', context.user.id);
+    }
+    return next();
+  }
+
   const authHeader = context.req?.headers?.authorization;
 
   if (!authHeader) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('isAuth: missing Authorization header');
+    }
     throw new Error('Not authenticated');
   }
 
@@ -33,15 +43,24 @@ export const isAuth: MiddlewareFn<AuthContext> = async ({ context }, next) => {
   const decoded = AuthService.verifyToken(token);
 
   if (!decoded) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('isAuth: invalid token');
+    }
     throw new Error('Invalid token');
   }
 
   const user = await AuthService.getUserById(decoded.id);
   if (!user) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('isAuth: user not found for id', decoded.id);
+    }
     throw new Error('User not found');
   }
 
   if (!user.clubs || user.clubs.length === 0) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('isAuth: user has no clubs');
+    }
     throw new Error('No club memberships found. Please contact your administrator to be added to a club.');
   }
 

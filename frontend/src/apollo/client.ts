@@ -44,14 +44,12 @@ const httpLink = createHttpLink({
 
 // Create WebSocket client with authentication
 const createWsClient = () => {
-  const token = localStorage.getItem('authToken');
-
   return createClient({
     url: 'ws://localhost:4000/subscriptions',
-    connectionParams: {
-      authorization: token ? `Bearer ${token}` : '',
-    },
-          on: {
+    connectionParams: () => ({
+      authorization: (localStorage.getItem('authToken') ? `Bearer ${localStorage.getItem('authToken')}` : ''),
+    }),
+    on: {
         connecting: () => {
           if (process.env.NODE_ENV === 'development') {
             console.log('WebSocket: Connecting...');
@@ -85,9 +83,13 @@ const createWsClient = () => {
 
 let wsClient = createWsClient();
 
-// Function to recreate WebSocket client with new token
+// Close current socket so next activity reconnects and pulls fresh connectionParams
 export const recreateWsClient = () => {
-  wsClient = createWsClient();
+  try {
+    wsClient.dispose();
+  } catch (e) {
+    // ignore
+  }
   return wsClient;
 };
 

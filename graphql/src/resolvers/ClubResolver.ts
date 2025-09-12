@@ -37,7 +37,8 @@ export class ClubResolver {
     @Arg('id') id: string,
     @Arg('name', { nullable: true }) name?: string,
     @Arg('nafaClubNumber', { nullable: true }) nafaClubNumber?: string,
-    @Arg('defaultPracticeTime', { nullable: true }) defaultPracticeTime?: string
+    @Arg('defaultPracticeTime', { nullable: true }) defaultPracticeTime?: string,
+    @Arg('idealSetsPerDog', { nullable: true }) idealSetsPerDog?: number
   ): Promise<Club | null> {
     const club = await this.clubRepository.findOneBy({ id });
     if (!club) return null;
@@ -45,7 +46,8 @@ export class ClubResolver {
     Object.assign(club, {
       name: name ?? club.name,
       nafaClubNumber: nafaClubNumber ?? club.nafaClubNumber,
-      defaultPracticeTime: defaultPracticeTime ?? club.defaultPracticeTime
+      defaultPracticeTime: defaultPracticeTime ?? club.defaultPracticeTime,
+      idealSetsPerDog: idealSetsPerDog ?? club.idealSetsPerDog
     });
 
     const updatedClub = await this.clubRepository.save(club);

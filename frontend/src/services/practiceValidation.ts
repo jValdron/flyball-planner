@@ -24,11 +24,10 @@ export interface ValidationResult {
 export interface ValidationContext {
   dogs: Dog[]
   handlers: Handler[]
+  idealSetsPerDog?: number
 }
 
 export type ValidationRule<T> = (data: T, context?: ValidationContext) => ValidationError | null
-
-const IDEAL_SETS_PER_DOG = 2
 
 export class Validator<T> {
   private rules: ValidationRule<T>[]
@@ -415,6 +414,7 @@ export const dogsInOneSetRule: ValidationRule<Partial<Practice>> = (practice, co
   })
 
   const dogsInOneSet: { dog: Dog, setIds: string[] }[] = []
+  const idealSetsPerDog = context?.idealSetsPerDog ?? 2
 
   confirmedDogIds.forEach(dogId => {
     const dogInfo = dogSetCounts.get(dogId)
@@ -428,7 +428,7 @@ export const dogsInOneSetRule: ValidationRule<Partial<Practice>> = (practice, co
   if (dogsInOneSet.length > 0) {
     return {
       code: 'DOGS_IN_ONE_SET',
-      message: `Dogs not assigned to enough sets (ideally ${IDEAL_SETS_PER_DOG} sets per dog)`,
+      message: `Dogs not assigned to enough sets (ideally ${idealSetsPerDog} sets per dog)`,
       severity: 'warning',
       count: dogsInOneSet.length,
       icon: React.createElement(ExclamationTriangle),
@@ -479,11 +479,12 @@ export const dogsInManySetsRule: ValidationRule<Partial<Practice>> = (practice, 
   })
 
   const dogsInManySets: { dog: Dog, setCount: number, setIds: string[] }[] = []
+  const idealSetsPerDog = context?.idealSetsPerDog ?? 2
 
   confirmedDogIds.forEach(dogId => {
     const dogInfo = dogSetCounts.get(dogId)
 
-    if (dogInfo && dogInfo.setCount > IDEAL_SETS_PER_DOG) {
+    if (dogInfo && dogInfo.setCount > idealSetsPerDog) {
       // Dog is in more than ideal number of sets
       dogsInManySets.push({
         dog: dogInfo.dog,
@@ -496,7 +497,7 @@ export const dogsInManySetsRule: ValidationRule<Partial<Practice>> = (practice, 
   if (dogsInManySets.length > 0) {
     return {
       code: 'DOGS_IN_MANY_SETS',
-      message: `Dogs assigned to more than ${IDEAL_SETS_PER_DOG} sets`,
+      message: `Dogs assigned to more than ${idealSetsPerDog} sets`,
       severity: 'info',
       count: dogsInManySets.length,
       icon: React.createElement(ListOl),

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { useLazyQuery, useMutation } from '@apollo/client';
+import { recreateWsClient } from '../apollo/client';
 import { LoginUser, GetCurrentUser } from '../graphql/auth';
 
 interface User {
@@ -89,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('authToken', newToken);
         setToken(newToken);
         setUser(userData);
+        recreateWsClient();
         return true;
       }
 
@@ -117,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setUser(null);
     setError(null);
+    recreateWsClient();
   };
 
   const clearError = () => {

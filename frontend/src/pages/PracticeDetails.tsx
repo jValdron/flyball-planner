@@ -104,7 +104,7 @@ function PracticeDetailsContent() {
         attendances: attendances as any,
         sets: sets as any
       }
-      const validationContext = { dogs, handlers }
+      const validationContext = { dogs, handlers, idealSetsPerDog: selectedClub?.idealSetsPerDog ?? 2 }
       const validationResult = PracticeValidationService.validatePractice(practiceToValidate, validationContext)
       setValidationErrors(validationResult.errors)
     }

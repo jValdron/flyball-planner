@@ -20,6 +20,7 @@ import { ClubSubscriptionResolver } from './resolvers/ClubSubscriptionResolver';
 import { PracticeSubscriptionResolver } from './resolvers/PracticeSubscriptionResolver';
 import { UserResolver } from './resolvers/UserResolver';
 import { pubsub } from './services/PubSubService';
+import { AuthService } from './services/AuthService';
 import { AuthContext, isAuth } from './middleware/auth';
 
 config();
@@ -58,16 +59,26 @@ async function startServer() {
     const serverCleanup = useServer({
       schema,
       context: async (ctx) => {
-        const token = (ctx.connectionParams?.authorization as string) || (ctx.connectionParams?.token as string);
+        let token = (ctx.connectionParams?.authorization as string) || (ctx.connectionParams?.token as string);
+
+        if (token && token.startsWith('Bearer ')) {
+          token = token.replace('Bearer ', '');
+        }
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log('WS context: token present?', Boolean(token));
+        }
 
         if (token) {
           try {
-            const { AuthService } = await import('./services/AuthService.js');
             const decoded = AuthService.verifyToken(token);
 
             if (decoded) {
               const user = await AuthService.getUserById(decoded.id);
               if (user) {
+                if (process.env.NODE_ENV === 'development') {
+                  console.log('WS context: user id', user.id, 'clubs', user.clubs?.map(c => c.id));
+                }
                 return {
                   ...ctx,
                   pubsub,

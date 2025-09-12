@@ -23,6 +23,10 @@ export class Club {
   @Column()
   defaultPracticeTime: string;
 
+  @Field({ description: 'Ideal number of sets per dog for this club' })
+  @Column({ type: 'int', default: 2 })
+  idealSetsPerDog: number;
+
   @Field()
   @CreateDateColumn()
   createdAt: Date;

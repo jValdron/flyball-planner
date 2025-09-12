@@ -61,7 +61,8 @@ function ClubDetails() {
           id: selectedClub?.id || '',
           name: club.name,
           nafaClubNumber: club.nafaClubNumber,
-          defaultPracticeTime: club.defaultPracticeTime
+          defaultPracticeTime: club.defaultPracticeTime,
+          idealSetsPerDog: typeof club.idealSetsPerDog === 'number' ? club.idealSetsPerDog : Number(club.idealSetsPerDog)
         }
       })
     } catch (err) {
@@ -134,6 +135,19 @@ function ClubDetails() {
             value={club.defaultPracticeTime || ''}
             onChange={handleInputChange}
             placeholder="10:00"
+            required
+          />
+        </Form.Group>
+
+        <Form.Group className="mb-3">
+          <Form.Label>Ideal Sets Per Dog</Form.Label>
+          <Form.Control
+            type="number"
+            min={1}
+            step={1}
+            name="idealSetsPerDog"
+            value={club.idealSetsPerDog ?? 2}
+            onChange={handleInputChange}
             required
           />
         </Form.Group>

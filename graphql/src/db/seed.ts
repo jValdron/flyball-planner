@@ -30,7 +30,7 @@ const ownersData = [
   { givenName: 'Raphaëlle', surname: 'Lavigne' },
   { givenName: 'Sam', surname: 'Foster' },
   { givenName: 'Shelby', surname: 'Hallihan' },
-  { givenName: 'Stef', surname: 'Chouinard' },
+  { givenName: 'Stefani', surname: 'Chouinard' },
   { givenName: 'Victoria', surname: 'Perron' },
   { givenName: 'Whitney', surname: 'Yapp' },
 ];
@@ -40,23 +40,22 @@ const dogsData = [
   { name: 'Hellion', ownerName: 'Amanda Baker', status: 'active', crn: null, trainingLevel: TrainingLevel.Intermediate },
   { name: 'Mace', ownerName: 'Amanda Baker', status: 'active', crn: null, trainingLevel: TrainingLevel.Beginner },
   { name: 'Trauma', ownerName: 'Amanda Baker', status: 'active', crn: null, trainingLevel: TrainingLevel.Beginner },
-  { name: 'Lox', ownerName: 'Amanda Keddy', status: 'active', crn: null, trainingLevel: TrainingLevel.Intermediate },
+  { name: 'Lox', ownerName: 'Amanda Keddy', status: 'active', crn: '250687', trainingLevel: TrainingLevel.Advanced },
   { name: 'Fennec', ownerName: 'Andrea Donovan', status: 'active', crn: '160613', trainingLevel: TrainingLevel.Solid },
-  { name: 'Rose', ownerName: 'Andrea Donovan', status: 'active', crn: '230335', trainingLevel: TrainingLevel.Solid },
+  { name: 'Rose', ownerName: 'Andrea Donovan', status: 'active', crn: '230335', trainingLevel: TrainingLevel.Advanced },
   { name: 'Oz', ownerName: 'Andrea Donovan', status: 'active', crn: null, trainingLevel: TrainingLevel.Intermediate },
   { name: 'Atticus', ownerName: 'Brit Walton', status: 'active', crn: '230351', trainingLevel: TrainingLevel.Solid },
   { name: 'Millie', ownerName: 'Brit Walton', status: 'active', crn: '240310', trainingLevel: TrainingLevel.Solid },
   { name: 'Scooter', ownerName: 'Carrie MacAllister', status: 'active', crn: '250455', trainingLevel: TrainingLevel.Solid },
   { name: 'Myst', ownerName: 'Christine NT', status: 'active', crn: '250384', trainingLevel: TrainingLevel.Solid },
+  { name: 'Maeve', ownerName: 'Crystal Carson', status: 'active', crn: null, trainingLevel: TrainingLevel.Beginner },
   { name: 'Sherman', ownerName: 'Crystal Carson', status: 'active', crn: '240750', trainingLevel: TrainingLevel.Solid },
   { name: 'Onyx', ownerName: 'Gerry Teed', status: 'active', crn: '190316', trainingLevel: TrainingLevel.Solid },
   { name: 'Cheddar', ownerName: 'Hilary Fegan', status: 'active', crn: null, trainingLevel: TrainingLevel.Novice },
   { name: 'Rogue', ownerName: 'Hilary Fegan', status: 'active', crn: null, trainingLevel: TrainingLevel.Beginner },
   { name: 'Gracie', ownerName: 'Jack Brown', status: 'active', crn: '190795', trainingLevel: TrainingLevel.Solid },
-  { name: 'Sly', ownerName: 'Janice Aubé', status: 'active', crn: null, trainingLevel: TrainingLevel.Beginner },
-  { name: 'Timber', ownerName: 'Janice Aubé', status: 'active', crn: '230702', trainingLevel: TrainingLevel.Advanced },
   { name: 'Vala', ownerName: 'Jason Valdron', status: 'active', crn: '220653', trainingLevel: TrainingLevel.Solid },
-  { name: 'Miso', ownerName: 'Julia Khoury', status: 'active', crn: null, trainingLevel: TrainingLevel.Advanced },
+  { name: 'Miso', ownerName: 'Julia Khoury', status: 'inactive', crn: null, trainingLevel: TrainingLevel.Advanced },
   { name: 'Jupi', ownerName: 'Julia Khoury', status: 'active', crn: null, trainingLevel: TrainingLevel.Beginner },
   { name: 'Belinda', ownerName: 'Karen Jacobson', status: 'active', crn: '180330', trainingLevel: TrainingLevel.Solid },
   { name: 'Keen', ownerName: 'Kelly Hogg', status: 'active', crn: '190801', trainingLevel: TrainingLevel.Solid },
@@ -76,8 +75,8 @@ const dogsData = [
   { name: 'Boat', ownerName: 'Shelby Hallihan', status: 'active', crn: null, trainingLevel: TrainingLevel.Novice },
   { name: 'Midge', ownerName: 'Shelby Hallihan', status: 'active', crn: null, trainingLevel: TrainingLevel.Novice },
   { name: 'Sloan', ownerName: 'Shelby Hallihan', status: 'active', crn: '240755', trainingLevel: TrainingLevel.Solid },
-  { name: 'Even', ownerName: 'Stef Chouinard', status: 'active', crn: '190829', trainingLevel: TrainingLevel.Solid },
-  { name: 'Prize', ownerName: 'Stef Chouinard', status: 'active', crn: '190529', trainingLevel: TrainingLevel.Solid },
+  { name: 'Even', ownerName: 'Stefani Chouinard', status: 'active', crn: '190829', trainingLevel: TrainingLevel.Solid },
+  { name: 'Prize', ownerName: 'Stefani Chouinard', status: 'active', crn: '190529', trainingLevel: TrainingLevel.Solid },
   { name: 'Logan', ownerName: 'Whitney Yapp', status: 'active', crn: '220285', trainingLevel: TrainingLevel.Solid },
   { name: 'Lupin', ownerName: 'Whitney Yapp', status: 'active', crn: '230712', trainingLevel: TrainingLevel.Advanced },
   { name: 'Pippin', ownerName: 'Whitney Yapp', status: 'active', crn: null, trainingLevel: TrainingLevel.Beginner },
@@ -85,6 +84,8 @@ const dogsData = [
   // Dogs from original list that are no longer active
   { name: 'Prim', ownerName: 'Christine NT', status: 'inactive', crn: null, trainingLevel: TrainingLevel.Beginner },
   { name: 'Lexi', ownerName: 'Janice Aubé', status: 'inactive', crn: null, trainingLevel: TrainingLevel.Beginner },
+  { name: 'Sly', ownerName: 'Janice Aubé', status: 'inactive', crn: null, trainingLevel: TrainingLevel.Beginner },
+  { name: 'Timber', ownerName: 'Janice Aubé', status: 'inactive', crn: '230702', trainingLevel: TrainingLevel.Advanced },
   { name: 'Luna', ownerName: 'Kelly Hogg', status: 'inactive', crn: null, trainingLevel: TrainingLevel.Beginner },
   { name: 'Envy', ownerName: 'Victoria Perron', status: 'inactive', crn: null, trainingLevel: TrainingLevel.Beginner },
   { name: 'Bandit', ownerName: 'Hilary Fegan', status: 'inactive', crn: null, trainingLevel: TrainingLevel.Beginner },
@@ -130,6 +131,7 @@ export async function seedDatabase(dataSource: DataSource) {
     name: 'On My Go!',
     nafaClubNumber: '1002',
     defaultPracticeTime: '10:00',
+    idealSetsPerDog: 2,
   });
   await dataSource.getRepository(Club).save(club);
 
@@ -151,8 +153,8 @@ export async function seedDatabase(dataSource: DataSource) {
 
   // Create locations
   const locations = [
-    { name: 'Main Room', clubId: club.id, isDefault: true },
-    { name: 'Puppy Room', clubId: club.id, isDefault: false },
+    { name: 'Main Room', clubId: club.id, isDefault: true, isDoubleLane: true },
+    { name: 'Puppy Room', clubId: club.id, isDefault: false, isDoubleLane: false },
   ];
   await dataSource.getRepository(Location).save(locations);
 

@@ -4,6 +4,7 @@ import { GripVertical, ExclamationTriangle } from 'react-bootstrap-icons'
 import TrainingLevelBadge from './TrainingLevelBadge'
 import { getTrainingLevelInfo } from '../utils/trainingLevels'
 import { useTheme } from '../contexts/ThemeContext'
+import { useClub } from '../contexts/ClubContext'
 import type { Dog, SetDog } from '../graphql/generated/graphql'
 import type { ValidationError } from '../services/practiceValidation'
 
@@ -25,6 +26,8 @@ interface DogsPickerProps {
 
 export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add dog...', disabled = false, dogsWithValidationIssues, validationErrors, getValidationErrorsForSet, currentSetId }: DogsPickerProps) {
   const { isDark } = useTheme()
+  const { selectedClub } = useClub()
+  const idealSetsPerDog = selectedClub?.idealSetsPerDog ?? 2
   const [showInput, setShowInput] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
@@ -215,7 +218,7 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
                     <div className="d-flex align-items-center">
                       <TrainingLevelBadge level={dog.trainingLevel} />
                       <Badge
-                        bg={dog.setCount < 2 ? 'success' : dog.setCount <= 2 ? 'warning' : 'danger'}
+                        bg={dog.setCount < idealSetsPerDog ? 'success' : dog.setCount <= idealSetsPerDog ? 'warning' : 'danger'}
                         className="ms-2 small"
                       >
                         {dog.setCount} set{dog.setCount !== 1 ? 's' : ''}

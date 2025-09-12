@@ -7,6 +7,7 @@ export const GetClubs = graphql(`
       name
       nafaClubNumber
       defaultPracticeTime
+      idealSetsPerDog
     }
   }
 `);
@@ -18,6 +19,7 @@ export const GetClubById = graphql(`
       name
       nafaClubNumber
       defaultPracticeTime
+      idealSetsPerDog
     }
   }
 `);
@@ -78,12 +80,13 @@ export const DeleteLocation = graphql(`
 `);
 
 export const UpdateClub = graphql(`
-  mutation UpdateClub($id: String!, $name: String, $nafaClubNumber: String, $defaultPracticeTime: String) {
-    updateClub(id: $id, name: $name, nafaClubNumber: $nafaClubNumber, defaultPracticeTime: $defaultPracticeTime) {
+  mutation UpdateClub($id: String!, $name: String, $nafaClubNumber: String, $defaultPracticeTime: String, $idealSetsPerDog: Float) {
+    updateClub(id: $id, name: $name, nafaClubNumber: $nafaClubNumber, defaultPracticeTime: $defaultPracticeTime, idealSetsPerDog: $idealSetsPerDog) {
       id
       name
       nafaClubNumber
       defaultPracticeTime
+      idealSetsPerDog
       updatedAt
     }
   }
