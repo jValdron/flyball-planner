@@ -368,35 +368,52 @@ export class PracticeSetResolver {
         await PubSubService.publishPracticeSetEvent(SubscriptionEvents.PRACTICE_SET_DELETED, set);
       }
 
-      // Reorder indices globally
+      // Reorder indices only when an entire index was removed across all locations
       const remainingSets = await this.setRepository.find({
         where: { practiceId },
         order: { index: 'ASC' }
       });
-      const deletedIndices = Array.from(new Set(sets.map(s => s.index)));
-      const updatedSets: SetModel[] = [];
+      const deletedIndices = Array.from(new Set(sets.map(s => s.index))).sort((a, b) => a - b);
 
-      for (const deletedIndex of deletedIndices.sort((a, b) => a - b)) {
-        for (const set of remainingSets) {
-          if (set.index > deletedIndex) {
-            set.index = set.index - 1;
-            updatedSets.push(set);
+      // Determine which indices are fully removed (no remaining set at that index)
+      const remainingIndexSet = new Set(remainingSets.map(s => s.index));
+      const indicesToCollapse = deletedIndices.filter(idx => !remainingIndexSet.has(idx));
+
+      if (indicesToCollapse.length > 0) {
+        // Work on a local copy to handle multiple collapses in order
+        const setsNeedingUpdate: SetModel[] = [];
+        for (const deletedIndex of indicesToCollapse) {
+          for (const set of remainingSets) {
+            if (set.index > deletedIndex) {
+              set.index = set.index - 1;
+              setsNeedingUpdate.push(set);
+            }
+          }
+          // After collapsing this index, reflect new indices for subsequent iterations
+          for (const set of remainingSets) {
+            // nothing extra needed; we've already mutated remainingSets indices
           }
         }
-      }
 
-      if (updatedSets.length > 0) {
-        for (const set of updatedSets) {
-          await this.setRepository.update(set.id, { index: set.index });
-        }
+        if (setsNeedingUpdate.length > 0) {
+          // Deduplicate by id in case of multiple decrements
+          const latestById = new Map<string, SetModel>();
+          for (const set of setsNeedingUpdate) {
+            latestById.set(set.id, set);
+          }
 
-        const fullUpdatedSets = await this.setRepository.find({
-          where: { id: In(updatedSets.map(s => s.id)) },
-          relations: ['dogs', 'dogs.dog']
-        });
+          for (const set of latestById.values()) {
+            await this.setRepository.update(set.id, { index: set.index });
+          }
 
-        for (const set of fullUpdatedSets) {
-          await PubSubService.publishPracticeSetEvent(SubscriptionEvents.PRACTICE_SET_UPDATED, set);
+          const fullUpdatedSets = await this.setRepository.find({
+            where: { id: In(Array.from(latestById.keys())) },
+            relations: ['dogs', 'dogs.dog']
+          });
+
+          for (const set of fullUpdatedSets) {
+            await PubSubService.publishPracticeSetEvent(SubscriptionEvents.PRACTICE_SET_UPDATED, set);
+          }
         }
       }
 
