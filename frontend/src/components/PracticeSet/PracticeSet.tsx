@@ -7,7 +7,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { useMutation } from '@apollo/client'
 import { UpdateSets, DeleteSets } from '../../graphql/sets'
 import { SetType, AttendanceStatus, Lane, DogStatus } from '../../graphql/generated/graphql'
-import { GripVertical, PlusLg, Trash } from 'react-bootstrap-icons'
+import { GripVertical, PlusLg, Trash, Journal } from 'react-bootstrap-icons'
 import { SaveSpinner } from '../SaveSpinner'
 import { useClub } from '../../contexts/ClubContext'
 import { usePractice } from '../../contexts/PracticeContext'
@@ -33,6 +33,7 @@ interface SortableSetProps {
   onDelete: (id: string) => void
   onSetTypeChange: (id: string, type: SetType | null, typeCustom: string | null) => void
   onSetDogsChange?: (setId: string, dogs: Partial<SetDog>[]) => void
+  onSetNotesChange?: (setId: string, notes: string) => void
   availableDogs: DogWithSetCount[]
   otherLocations: Location[]
   defaultLocation?: Location | null
@@ -41,6 +42,7 @@ interface SortableSetProps {
   validationErrors?: ValidationError[]
   inputRef?: React.RefObject<HTMLInputElement | null>
   getValidationErrorsForSet?: (setId: string) => ValidationError[]
+  showNotes?: boolean
 }
 
 function SortableSet({
@@ -49,14 +51,21 @@ function SortableSet({
   onSetTypeChange,
   availableDogs,
   onSetDogsChange,
+  onSetNotesChange,
   otherLocations,
   defaultLocation,
   disabled = false,
   dogsWithValidationIssues = new Set<string>(),
   validationErrors,
   inputRef,
-  getValidationErrorsForSet
+  getValidationErrorsForSet,
+  showNotes = false
 }: SortableSetProps) {
+  const [notesValue, setNotesValue] = useState<string>(set.notes ?? '')
+
+  useEffect(() => {
+    setNotesValue(set.notes ?? '')
+  }, [set.id, set.notes])
   const handleDogsChange = (lane: Lane | null, setDogs: Partial<SetDog>[]) => {
     const updatedLaneDogs: Partial<SetDog>[] = setDogs.map((setDog, idx) => ({
       dogId: setDog.dogId,
@@ -113,6 +122,22 @@ function SortableSet({
         validationErrors={validationErrors}
         getValidationErrorsForSet={getValidationErrorsForSet}
       />
+
+      {(showNotes || (set.notes && set.notes.trim().length > 0)) && (
+        <div className="mt-3">
+          <Form.Group controlId={`set-notes-${set.id}`}>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              value={notesValue}
+              onChange={(e) => setNotesValue(e.target.value)}
+              onBlur={() => onSetNotesChange?.(set.id, notesValue)}
+              placeholder="Add notes for this set"
+              disabled={disabled}
+            />
+          </Form.Group>
+        </div>
+      )}
     </div>
   )
 }
@@ -179,6 +204,7 @@ interface SortableGroupProps {
   onDeleteGroup: (index: number) => void
   onSetTypeChange: (id: string, type: SetType | null, typeCustom: string | null) => void
   onSetDogsChange?: (setId: string, dogs: Partial<SetDog>[]) => void
+  onSetNotesChange?: (setId: string, notes: string) => void
   onLocationAdd?: (locationId: string, index: number) => void
   availableDogs: DogWithSetCount[]
   otherLocations: Location[]
@@ -188,6 +214,8 @@ interface SortableGroupProps {
   getSetTypeRef: (setId: string) => React.RefObject<HTMLInputElement | null>
   getDogsWithValidationIssuesForSet: (setId: string) => Set<string>
   getValidationErrorsForSet: (setId: string) => ValidationError[]
+  isGroupNotesOpen: boolean
+  onShowGroupNotes: (groupIndex: number) => void
 }
 
 function SortableGroup({
@@ -197,6 +225,7 @@ function SortableGroup({
   onSetTypeChange,
   availableDogs,
   onSetDogsChange,
+  onSetNotesChange,
   onLocationAdd,
   otherLocations,
   defaultLocation,
@@ -204,7 +233,9 @@ function SortableGroup({
   validationErrors,
   getSetTypeRef,
   getDogsWithValidationIssuesForSet,
-  getValidationErrorsForSet
+  getValidationErrorsForSet,
+  isGroupNotesOpen,
+  onShowGroupNotes
 }: SortableGroupProps) {
   const { isDark } = useTheme()
   const {
@@ -268,6 +299,7 @@ function SortableGroup({
                     onDelete={onDelete}
                     onSetTypeChange={onSetTypeChange}
                     onSetDogsChange={onSetDogsChange}
+                    onSetNotesChange={onSetNotesChange}
                     availableDogs={availableDogsForThisSet}
                     otherLocations={otherLocations}
                     defaultLocation={defaultLocation}
@@ -276,6 +308,7 @@ function SortableGroup({
                     validationErrors={validationErrors}
                     inputRef={getSetTypeRef(set.id)}
                     getValidationErrorsForSet={getValidationErrorsForSet}
+                    showNotes={isGroupNotesOpen || (set.notes && set.notes.trim().length > 0) || false}
                   />
                 </div>
               )
@@ -290,8 +323,19 @@ function SortableGroup({
                   disabled={disabled}
                 />
               )}
-              <Button variant="outline-danger" size="sm" className="text-nowrap" onClick={() => onDeleteGroup(group.index)} disabled={disabled}>
-                <Trash /> Remove Set
+              {!isGroupNotesOpen && (
+                <Button
+                  variant="outline-info"
+                  size="sm"
+                  className="text-nowrap d-flex align-items-center"
+                  onClick={() => onShowGroupNotes(group.index)}
+                  disabled={disabled}
+                >
+                  <Journal className="me-1" /> Add Notes
+                </Button>
+              )}
+              <Button variant="outline-danger" size="sm" className="text-nowrap d-flex align-items-center" onClick={() => onDeleteGroup(group.index)} disabled={disabled}>
+                <Trash className="me-1" /> Remove Set
               </Button>
             </div>
           </Card.Footer>
@@ -307,6 +351,7 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
   const [isSaving, setIsSaving] = useState(false)
   const [newlyCreatedSetIds, setNewlyCreatedSetIds] = useState<Set<string>>(new Set())
   const setTypeRefs = useRef<Map<string, React.RefObject<HTMLInputElement | null>>>(new Map())
+  const [openNotesGroupIndices, setOpenNotesGroupIndices] = useState<Set<number>>(new Set())
 
   const [updateSets] = useMutation<UpdateSetsMutation>(UpdateSets)
   const [deleteSets] = useMutation<DeleteSetsMutation>(DeleteSets)
@@ -437,7 +482,7 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
     }
   }
 
-  const handleSetUpdate = async (setId: string, updates: Partial<{ index: number; type: SetType | null; typeCustom: string | null; dogs: Partial<SetDog>[] }>) => {
+  const handleSetUpdate = async (setId: string, updates: Partial<{ index: number; type: SetType | null; typeCustom: string | null; notes: string | null; dogs: Partial<SetDog>[] }>) => {
     try {
       setIsSaving(true)
       await updateSets({
@@ -524,6 +569,10 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
     await handleSetUpdate(setId, { dogs })
   }
 
+  const handleSetNotesChange = async (setId: string, notes: string) => {
+    await handleSetUpdate(setId, { notes })
+  }
+
   const handleLocationAdd = async (locationId: string, index: number) => {
     try {
       setIsSaving(true)
@@ -579,6 +628,21 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
     }))
   }, [sets, defaultLocation?.id, otherLocations])
 
+  // Initialize open notes per group if any set within has notes
+  useEffect(() => {
+    const groupsWithNotes = new Set<number>()
+    groupedSets.forEach(group => {
+      if (group.sets.some(s => (s.notes || '').trim().length > 0)) {
+        groupsWithNotes.add(group.index)
+      }
+    })
+    setOpenNotesGroupIndices(prev => {
+      const next = new Set(prev)
+      groupsWithNotes.forEach(idx => next.add(idx))
+      return next
+    })
+  }, [groupedSets])
+
   // Helper function to get or create a ref for a set
   const getSetTypeRef = (setId: string) => {
     if (!setTypeRefs.current.has(setId)) {
@@ -625,6 +689,7 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
               onDeleteGroup={handleDeleteGroup}
               onSetTypeChange={handleSetTypeChange}
               onSetDogsChange={handleDogsChange}
+              onSetNotesChange={handleSetNotesChange}
               onLocationAdd={handleLocationAdd}
               availableDogs={availableDogs}
               otherLocations={otherLocations}
@@ -634,6 +699,8 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
               getSetTypeRef={getSetTypeRef}
               getDogsWithValidationIssuesForSet={getDogsWithValidationIssuesForSet}
               getValidationErrorsForSet={getValidationErrorsForSet}
+              isGroupNotesOpen={openNotesGroupIndices.has(group.index)}
+              onShowGroupNotes={(groupIndex) => setOpenNotesGroupIndices(prev => new Set([...prev, groupIndex]))}
             />
           ))}
         </SortableContext>

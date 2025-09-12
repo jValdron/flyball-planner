@@ -171,6 +171,8 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
     }
   }, [showDropdown, isSelecting])
 
+
+
   const handleDragStart = (idx: number) => {
     setDraggedIndex(idx)
   }
@@ -218,7 +220,7 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
                     <div className="d-flex align-items-center">
                       <TrainingLevelBadge level={dog.trainingLevel} />
                       <Badge
-                        bg={dog.setCount < idealSetsPerDog ? 'success' : dog.setCount <= idealSetsPerDog ? 'warning' : 'danger'}
+                        bg={dog.setCount < idealSetsPerDog ? 'primary' : dog.setCount <= idealSetsPerDog ? 'success' : 'danger'}
                         className="ms-2 small"
                       >
                         {dog.setCount} set{dog.setCount !== 1 ? 's' : ''}
