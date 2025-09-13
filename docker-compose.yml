@@ -12,22 +12,6 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
 
-  api:
-    build: ./api
-    container_name: flyball-api
-    restart: always
-    depends_on:
-      - db
-    environment:
-      DB_USER: flyball_user
-      DB_PASSWORD: flyball_password
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_NAME: flyball_practice_planner
-      DB_SSLMODE: disable
-    ports:
-      - "8080:8080"
-
   graphql:
     build: ./graphql
     container_name: flyball-graphql
@@ -43,6 +27,17 @@ services:
       DB_SSLMODE: disable
     ports:
       - "4000:4000"
+
+  frontend:
+    build: ./frontend
+    container_name: flyball-frontend
+    restart: always
+    depends_on:
+      - graphql
+    environment:
+      VITE_GRAPHQL_BASE_URL: http://graphql:4000
+    ports:
+      - "3000:80"
 
 volumes:
   db_data:

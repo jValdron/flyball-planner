@@ -16,7 +16,7 @@ export const getFilteredAndSortedDogsByHandlers = (dogsByHandlers: HandlerWithDo
         }).sort((a: DogWithBasicInfo, b: DogWithBasicInfo) => a.name.localeCompare(b.name)) || []
       }))
       .filter((handler: HandlerWithDogs) => {
-        return showInactive || handler.dogs.length > 0
+        return showInactive || (handler.dogs?.length || 0) > 0
       })
       .sort((a: HandlerWithDogs, b: HandlerWithDogs) => getHandlerName(a).localeCompare(getHandlerName(b)))
   }
@@ -51,7 +51,7 @@ export const getFilteredAndSortedDogsByHandlers = (dogsByHandlers: HandlerWithDo
       }).sort((a: DogWithBasicInfo, b: DogWithBasicInfo) => a.name.localeCompare(b.name)) || []
     }))
     .filter((handler: HandlerWithDogs) => {
-      return showInactive || handler.dogs.length > 0
+      return showInactive || (handler.dogs?.length || 0) > 0
     })
     .sort((a: HandlerWithDogs, b: HandlerWithDogs) => getHandlerName(a).localeCompare(getHandlerName(b)))
 

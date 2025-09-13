@@ -2,26 +2,29 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "flyball.fullname" . }}-frontend
+  name: {{ include "flyball-planner.fullname" . }}-frontend
   labels:
-    {{- include "flyball.frontend.labels" . | nindent 4 }}
+    {{- include "flyball-planner.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
 spec:
   replicas: {{ .Values.frontend.replicaCount }}
   selector:
     matchLabels:
-      {{- include "flyball.frontend.labels" . | nindent 6 }}
+      {{- include "flyball-planner.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: frontend
   template:
     metadata:
       labels:
-        {{- include "flyball.frontend.labels" . | nindent 8 }}
+        {{- include "flyball-planner.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: frontend
     spec:
       containers:
         - name: frontend
           image: {{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}
           imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
           env:
-            - name: API_BASE_URL
-              value: {{ .Values.frontend.env.API_BASE_URL }}
+            - name: VITE_GRAPHQL_BASE_URL
+              value: {{ .Values.frontend.env.VITE_GRAPHQL_BASE_URL }}
           ports:
             - containerPort: 80
           livenessProbe:

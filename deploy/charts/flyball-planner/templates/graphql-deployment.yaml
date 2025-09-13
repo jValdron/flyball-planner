@@ -2,18 +2,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "flyball.fullname" . }}-graphql
+  name: {{ include "flyball-planner.fullname" . }}-graphql
   labels:
-    {{- include "flyball.graphql.labels" . | nindent 4 }}
+    {{- include "flyball-planner.labels" . | nindent 4 }}
+    app.kubernetes.io/component: graphql
 spec:
   replicas: {{ .Values.graphql.replicaCount }}
   selector:
     matchLabels:
-      {{- include "flyball.graphql.labels" . | nindent 6 }}
+      {{- include "flyball-planner.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: graphql
   template:
     metadata:
       labels:
-        {{- include "flyball.graphql.labels" . | nindent 8 }}
+        {{- include "flyball-planner.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: graphql
     spec:
       initContainers:
         - name: wait-for-db
@@ -45,5 +48,5 @@ spec:
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "flyball.fullname" . }}-db-secret
+                  name: {{ .Values.graphql.secret.existingSecret | default (printf "%s-db-secret" (include "flyball-planner.fullname" .)) }}
                   key: password

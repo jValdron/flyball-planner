@@ -316,7 +316,7 @@ function getDogsAndSetIdsInSets(setIndices: number[], setsByIndex: Map<number, a
     const sets = setsByIndex.get(setIndex) || []
     sets.forEach(set => {
       setIds.push(set.id)
-      set.dogs?.forEach(setDog => {
+      set.dogs?.forEach((setDog: any) => {
         const dog = dogs.find(d => d.id === setDog.dogId)
         if (dog?.ownerId === handlerId) {
           dogIds.push(dog.id)

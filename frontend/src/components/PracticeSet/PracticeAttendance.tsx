@@ -9,7 +9,6 @@ import { AttendanceStatus, DogStatus } from '../../graphql/generated/graphql'
 import type { UpdateAttendancesMutation } from '../../graphql/generated/graphql'
 import { useTheme } from '../../contexts/ThemeContext'
 import { getFilteredAndSortedDogsByHandlers, getHandlerName } from '../../utils/dogsUtils'
-import type { HandlerWithDogs } from '../../utils/dogsUtils'
 
 const SAVE_DELAY = 25
 
@@ -21,7 +20,7 @@ interface PracticeAttendanceProps {
 export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAttendanceProps) {
   const { selectedClub, dogsByHandlersInSelectedClub } = useClub()
   const { isDark } = useTheme()
-  const { getAttendance, attendances } = usePractice()
+  const { getAttendance } = usePractice()
   const [pendingUpdates, setPendingUpdates] = useState<{ dogId: string, attending: AttendanceStatus }[]>([])
   const [optimisticAttendances, setOptimisticAttendances] = useState<Map<string, AttendanceStatus>>(new Map())
   const [searchQuery, setSearchQuery] = useState('')

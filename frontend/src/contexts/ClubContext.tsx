@@ -9,7 +9,6 @@ import {
   useDogChangedSubscription,
   useHandlerChangedSubscription,
   useLocationChangedSubscription,
-  useClubByIdSubscription,
 } from '../hooks/useSubscription'
 import type { HandlerWithDogs } from '../utils/dogsUtils'
 
@@ -80,7 +79,7 @@ export function ClubProvider({ children }: { children: ReactNode }) {
           ...dog,
           ownerId: handler.id
         }
-      }))
+      }) || [])
       setDogs(allDogs)
     }
   }, [handlersData])

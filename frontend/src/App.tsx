@@ -2,13 +2,7 @@ import { Container, Navbar, Nav } from 'react-bootstrap'
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useParams, useNavigate } from 'react-router-dom'
 import { ApolloProvider } from '@apollo/client'
 import { client } from './apollo/client'
-import HandlerDetails from './pages/HandlerDetails'
-import Dogs from './pages/Dogs'
-import DogDetails from './pages/DogDetails'
-import Practices from './pages/Practices'
-import PracticeDetails from './pages/PracticeDetails'
-import ClubDetails from './pages/ClubDetails'
-import { AccountDetails } from './pages/AccountDetails'
+import { Suspense, lazy } from 'react'
 import { ClubProvider } from './contexts/ClubContext'
 import { PracticeProvider } from './contexts/PracticeContext'
 import { ThemeProvider } from './contexts/ThemeContext'
@@ -16,11 +10,19 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ClubLoadingWrapper } from './components/ClubLoadingWrapper'
 import { WebSocketStatus } from './components/WebSocketStatus'
 import { UserDropdown } from './components/UserDropdown'
-
 import { LoginForm } from './components/LoginForm'
-import LocationDetails from './pages/LocationDetails'
-import PublicPracticeView from './pages/PublicPracticeView'
 import logo from './assets/logo-full-dark.svg'
+
+// Lazy load page components
+const HandlerDetails = lazy(() => import('./pages/HandlerDetails'))
+const Dogs = lazy(() => import('./pages/Dogs'))
+const DogDetails = lazy(() => import('./pages/DogDetails'))
+const Practices = lazy(() => import('./pages/Practices'))
+const PracticeDetails = lazy(() => import('./pages/PracticeDetails'))
+const ClubDetails = lazy(() => import('./pages/ClubDetails'))
+const AccountDetails = lazy(() => import('./pages/AccountDetails').then(module => ({ default: module.AccountDetails })))
+const LocationDetails = lazy(() => import('./pages/LocationDetails'))
+const PublicPracticeView = lazy(() => import('./pages/PublicPracticeView'))
 
 function Header() {
   const { user } = useAuth();
@@ -119,7 +121,9 @@ function AppWithTitle({ isAuthenticated }: { isAuthenticated: boolean }) {
             </PracticeProvider>
           </ClubProvider>
         ) : (
-          <PublicPracticeView />
+          <Suspense fallback={<div className="text-center p-4">Loading...</div>}>
+            <PublicPracticeView />
+          </Suspense>
         )
       } />
       <Route path="/*" element={
@@ -129,23 +133,25 @@ function AppWithTitle({ isAuthenticated }: { isAuthenticated: boolean }) {
               <Header />
               <ClubLoadingWrapper>
                 <Container>
-                  <Routes>
-                    <Route path="/" element={<Practices />} />
-                    <Route path="/account" element={<AccountDetails />} />
-                    <Route path="/dogs" element={<Dogs />} />
-                    <Route path="/dogs/new" element={<DogDetails />} />
-                    <Route path="/dogs/:dogId" element={<DogDetails />} />
-                    <Route path="/handlers/:handlerId" element={<HandlerDetails />} />
-                    <Route path="/club" element={<ClubDetails />} />
-                    <Route path="/locations/new" element={<LocationDetails />} />
-                    <Route path="/locations/:locationId" element={<LocationDetails />} />
-                    <Route path="/practices" element={<Practices />} />
-                    <Route path="/practices/new" element={<PracticeDetails />} />
-                    <Route path="/practices/:practiceId" element={<PracticeDetails />} />
-                    <Route path="/practices/:practiceId/attendance" element={<PracticeDetails />} />
-                    <Route path="/practices/:practiceId/sets" element={<PracticeDetails />} />
-                    <Route path="/practices/:practiceId/checks" element={<PracticeDetails />} />
-                  </Routes>
+                  <Suspense fallback={<div className="text-center p-4">Loading...</div>}>
+                    <Routes>
+                      <Route path="/" element={<Practices />} />
+                      <Route path="/account" element={<AccountDetails />} />
+                      <Route path="/dogs" element={<Dogs />} />
+                      <Route path="/dogs/new" element={<DogDetails />} />
+                      <Route path="/dogs/:dogId" element={<DogDetails />} />
+                      <Route path="/handlers/:handlerId" element={<HandlerDetails />} />
+                      <Route path="/club" element={<ClubDetails />} />
+                      <Route path="/locations/new" element={<LocationDetails />} />
+                      <Route path="/locations/:locationId" element={<LocationDetails />} />
+                      <Route path="/practices" element={<Practices />} />
+                      <Route path="/practices/new" element={<PracticeDetails />} />
+                      <Route path="/practices/:practiceId" element={<PracticeDetails />} />
+                      <Route path="/practices/:practiceId/attendance" element={<PracticeDetails />} />
+                      <Route path="/practices/:practiceId/sets" element={<PracticeDetails />} />
+                      <Route path="/practices/:practiceId/checks" element={<PracticeDetails />} />
+                    </Routes>
+                  </Suspense>
                 </Container>
               </ClubLoadingWrapper>
               <WebSocketStatus />

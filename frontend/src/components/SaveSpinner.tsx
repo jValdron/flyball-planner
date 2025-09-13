@@ -18,9 +18,9 @@ export function SaveSpinner({
   const [shouldRender, setShouldRender] = useState(false)
 
   useEffect(() => {
-    let hideTimeout: number | undefined
-    let removeTimeout: number | undefined
-    let showTimeout: number | undefined
+    let hideTimeout: NodeJS.Timeout | undefined
+    let removeTimeout: NodeJS.Timeout | undefined
+    let showTimeout: NodeJS.Timeout | undefined
 
     if (show) {
       if (hideTimeout) clearTimeout(hideTimeout)

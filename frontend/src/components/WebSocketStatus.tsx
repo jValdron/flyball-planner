@@ -9,13 +9,6 @@ export const WebSocketStatus: React.FC = () => {
   const { isDark } = useTheme();
 
   useEffect(() => {
-    const checkConnectionStatus = () => {
-      if (wsClient.socket && wsClient.socket.readyState !== WebSocket.CONNECTING) {
-        setHasAttemptedConnection(true);
-      }
-    };
-
-    checkConnectionStatus();
 
     const handleConnected = () => {
       setShowToast(false);

@@ -5,7 +5,6 @@ import { Badge } from 'react-bootstrap'
 import { CALENDAR_TYPES } from 'react-calendar/dist/shared/const.js'
 import { useClub } from '../../contexts/ClubContext'
 import { useEffect, useState } from 'react'
-import 'react-calendar/dist/Calendar.css'
 
 interface DatePickerComponentProps {
   isPastPractice: boolean,

@@ -1,0 +1,18 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "flyball-planner.fullname" . }}-graphql
+  labels:
+    {{- include "flyball-planner.labels" . | nindent 4 }}
+    app.kubernetes.io/component: graphql
+spec:
+  type: {{ .Values.graphql.service.type }}
+  ports:
+    - port: {{ .Values.graphql.service.port }}
+      targetPort: 4000
+      protocol: TCP
+      name: graphql
+  selector:
+    {{- include "flyball-planner.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: graphql

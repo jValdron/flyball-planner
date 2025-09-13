@@ -1,5 +1,5 @@
 import React from 'react'
-import { Container, Table, Button, Badge, Alert, Spinner, Form, InputGroup, Breadcrumb } from 'react-bootstrap'
+import { Container, Table, Button, Badge, Alert, Form, InputGroup, Breadcrumb } from 'react-bootstrap'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useState } from 'react'
 import { useMutation } from '@apollo/client'
@@ -26,7 +26,7 @@ const getStatusBadge = (status: DogStatus) => {
 function Dogs() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { selectedClub, dogsByHandlersInSelectedClub, loading, error: clubError } = useClub()
+  const { selectedClub, dogsByHandlersInSelectedClub, error: clubError } = useClub()
   const { isDark } = useTheme()
   const [error, setError] = useState<string | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)

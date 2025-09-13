@@ -1,33 +1,34 @@
 ---
-api:
+graphql:
   replicaCount: 2
   image:
-    repository: ghcr.io/jvaldron/flyball-practice-planner/api
+    repository: ghcr.io/jvaldron/flyball-planner/graphql
     tag: latest
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
-    port: 8080
+    port: 4000
   env:
     DB_USER: flyball_user
     DB_NAME: flyball_practice
-    DB_HOST: flyball-planner-postgresql
+    DB_HOST: postgresql
     DB_PORT: 5432
     DB_SSLMODE: disable
   secret:
     enabled: true
+    existingSecret: ""
 
 frontend:
   replicaCount: 1
   image:
-    repository: ghcr.io/jvaldron/flyball-practice-planner/frontend
+    repository: ghcr.io/jvaldron/flyball-planner/frontend
     tag: latest
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
     port: 80
   env:
-    API_BASE_URL: /api
+    VITE_GRAPHQL_BASE_URL: http://flyball-planner-graphql:4000
 
 ingress:
   enabled: false
@@ -44,8 +45,25 @@ httpRoute:
 
 postgresql:
   enabled: true
+  image:
+    repository: postgres
+    tag: "16-alpine"
+    pullPolicy: IfNotPresent
   auth:
     username: flyball_user
     database: flyball_practice
-    # TODO: Update existingSecret to pull in release name automatically.
-    existingSecret: flyball-planner-flyball-practice-planner-db-secret
+    existingSecret: "{{ include \"flyball-planner.fullname\" . }}-postgresql-secret"
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: ""
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  service:
+    type: ClusterIP
+    port: 5432

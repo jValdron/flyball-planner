@@ -17,7 +17,7 @@ const authLink = setContext((_, { headers }) => {
 });
 
 // Create error link to handle auth errors
-const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
+const errorLink = onError(({ graphQLErrors, networkError, operation }) => {
   if (graphQLErrors) {
     graphQLErrors.forEach(({ message, locations, path }) => {
       console.error(
@@ -39,13 +39,13 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
 });
 
 const httpLink = createHttpLink({
-  uri: 'http://localhost:4000/graphql',
+  uri: `${import.meta.env.VITE_GRAPHQL_BASE_URL || 'http://localhost:4000'}/graphql`,
 });
 
 // Create WebSocket client with authentication
 const createWsClient = () => {
   return createClient({
-    url: 'ws://localhost:4000/subscriptions',
+    url: `${import.meta.env.VITE_GRAPHQL_BASE_URL?.replace('http', 'ws') || 'ws://localhost:4000'}/subscriptions`,
     connectionParams: () => ({
       authorization: (localStorage.getItem('authToken') ? `Bearer ${localStorage.getItem('authToken')}` : ''),
     }),

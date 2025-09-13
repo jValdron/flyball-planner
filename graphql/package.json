@@ -1,5 +1,5 @@
 {
-  "name": "flyball-practice-planner-graphql",
+  "name": "flyball-planner-graphql",
   "private": true,
   "version": "1.0.0",
   "description": "GraphQL server for Flyball Planner",

@@ -1,0 +1,18 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "flyball-planner.fullname" . }}-frontend
+  labels:
+    {{- include "flyball-planner.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  type: {{ .Values.frontend.service.type }}
+  ports:
+    - port: {{ .Values.frontend.service.port }}
+      targetPort: 80
+      protocol: TCP
+      name: frontend
+  selector:
+    {{- include "flyball-planner.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend

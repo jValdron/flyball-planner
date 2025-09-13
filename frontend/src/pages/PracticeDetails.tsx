@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Container, Form, Button, Alert, Spinner, Breadcrumb, Tabs, Tab, Badge, OverlayTrigger, Tooltip, Modal, ListGroup } from 'react-bootstrap'
+import { Container, Form, Button, Alert, Spinner, Breadcrumb, Tabs, Tab, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useClub } from '../contexts/ClubContext'
 import { PracticeProvider, usePractice } from '../contexts/PracticeContext'
