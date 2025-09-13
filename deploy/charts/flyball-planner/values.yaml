@@ -30,7 +30,7 @@ frontend:
     type: ClusterIP
     port: 80
   env:
-    VITE_GRAPHQL_BASE_URL: http://flyball-planner-graphql:4000
+    VITE_GRAPHQL_BASE_URL: /graphql
 
 ingress:
   enabled: false
@@ -54,18 +54,11 @@ postgresql:
   auth:
     username: flyball_user
     database: flyball_practice
-    existingSecret: "{{ include \"flyball-planner.fullname\" . }}-postgresql-secret"
   persistence:
     enabled: true
-    size: 10Gi
+    size: 1Gi
     storageClass: ""
-  resources:
-    requests:
-      memory: "256Mi"
-      cpu: "250m"
-    limits:
-      memory: "512Mi"
-      cpu: "500m"
+  resources: {}
   service:
     type: ClusterIP
     port: 5432
