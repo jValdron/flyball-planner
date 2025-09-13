@@ -27,14 +27,24 @@ spec:
           image: {{ .Values.graphql.image.repository }}:{{ .Values.graphql.image.tag }}
           imagePullPolicy: {{ .Values.graphql.image.pullPolicy }}
           ports:
-            - containerPort: 8080
+            - containerPort: 4000
           livenessProbe:
             httpGet:
-              path: /api/health
-              port: 8080
-            initialDelaySeconds: 3
-            periodSeconds: 3
+              path: /health
+              port: 4000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4000
+            initialDelaySeconds: 5
+            periodSeconds: 5
           env:
+            - name: NODE_ENV
+              value: {{ .Values.graphql.env.NODE_ENV }}
+            - name: PORT
+              value: "4000"
             - name: DB_USER
               value: {{ .Values.graphql.env.DB_USER }}
             - name: DB_NAME
@@ -45,6 +55,8 @@ spec:
               value: "{{ .Values.graphql.env.DB_PORT }}"
             - name: DB_SSLMODE
               value: {{ .Values.graphql.env.DB_SSLMODE }}
+            - name: ALLOWED_ORIGINS
+              value: {{ .Values.graphql.env.ALLOWED_ORIGINS }}
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:

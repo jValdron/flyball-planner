@@ -107,6 +107,7 @@ async function startServer() {
 
     const server = new ApolloServer<AuthContext>({
       schema,
+      introspection: process.env.NODE_ENV === 'development',
       plugins: [
         ApolloServerPluginDrainHttpServer({ httpServer }),
         {
@@ -123,10 +124,14 @@ async function startServer() {
 
     await server.start();
 
+    app.get('/health', (req, res) => {
+      res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+    });
+
     app.use(
       '/graphql',
       cors<cors.CorsRequest>({
-        origin: process.env.NODE_ENV === 'development' ? '*' : false,
+        origin: process.env.NODE_ENV === 'development' ? '*' : process.env.ALLOWED_ORIGINS?.split(',') || false,
         credentials: true,
       }),
       express.json(),
