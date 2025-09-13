@@ -8,7 +8,7 @@ RUN npm run build
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force
 
 FROM gcr.io/distroless/nodejs22-debian12
 WORKDIR /app
