@@ -45,6 +45,9 @@ class SetUpdate {
   @Field({ nullable: true })
   notes?: string;
 
+  @Field({ nullable: true })
+  isWarmup?: boolean;
+
   @Field(() => [SetDogUpdate], { nullable: true })
   dogs?: SetDogUpdate[];
 }
@@ -173,6 +176,7 @@ export class PracticeSetResolver {
           if (update.type !== undefined) set.type = update.type;
           if (update.typeCustom !== undefined) set.typeCustom = update.typeCustom;
           if (update.notes !== undefined) set.notes = update.notes;
+          if (update.isWarmup !== undefined) set.isWarmup = update.isWarmup;
 
           // Track affected practice
           if (set.practiceId) {
@@ -185,7 +189,8 @@ export class PracticeSetResolver {
             index: update.index,
             type: update.type,
             typeCustom: update.typeCustom,
-            notes: update.notes
+            notes: update.notes,
+            isWarmup: update.isWarmup ?? false
           });
 
           // Track affected practice

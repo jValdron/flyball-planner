@@ -230,6 +230,7 @@ type Set {
   dogs: [SetDog!]!
   id: ID!
   index: Float!
+  isWarmup: Boolean!
   location: Location!
   locationId: ID!
   notes: String
@@ -275,6 +276,7 @@ input SetUpdate {
   dogs: [SetDogUpdate!]
   id: ID
   index: Float
+  isWarmup: Boolean
   locationId: ID
   notes: String
   practiceId: ID

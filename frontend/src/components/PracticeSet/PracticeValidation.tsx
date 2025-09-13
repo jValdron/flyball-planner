@@ -29,7 +29,7 @@ export function PracticeValidation({ validationErrors }: PracticeValidationProps
         <React.Fragment key={index}>
           <ListGroup.Item
             variant={error.severity === 'error' ? 'danger' : error.severity === 'warning' ? 'warning' : 'info'}
-            className="d-flex align-items-center"
+            className="d-flex align-items-center rounded-top-2"
           >
             {error.icon && React.cloneElement(error.icon as React.ReactElement<{ className?: string }>, { className: 'me-2' })}
             <div className="ms-2 me-auto">{error.message}</div>
@@ -38,11 +38,11 @@ export function PracticeValidation({ validationErrors }: PracticeValidationProps
           {error.code === 'UNCONFIRMED_ATTENDANCES' &&
             error.extra?.unconfirmedAttendances &&
             error.extra.unconfirmedAttendances.length <= 5 && (
-              <ListGroup>
+              <ListGroup className="mb-3 rounded-top-0">
                 {error.extra.unconfirmedAttendances.map((attendance: { dogId: string, attending: AttendanceStatus, dog?: Dog | null }, attendanceIndex: number) => (
                   <ListGroup.Item
                     key={`${index}-${attendanceIndex}`}
-                    className="d-flex align-items-center ps-5"
+                    className="d-flex align-items-center ps-5 rounded-top-0"
                   >
                     {attendance.dog?.name ?? attendance.dogId}
                   </ListGroup.Item>
@@ -52,11 +52,11 @@ export function PracticeValidation({ validationErrors }: PracticeValidationProps
           {error.code === 'UNCONFIRMED_SET_ATTENDANCES' &&
             error.extra?.unconfirmedSetAttendances &&
             error.extra.unconfirmedSetAttendances.length <= 5 && (
-              <ListGroup>
+              <ListGroup className="mb-3 rounded-top-0">
                 {error.extra.unconfirmedSetAttendances.map((attendance: { dogId: string, dog?: Dog | null, setIndex: number }, attendanceIndex: number) => (
                   <ListGroup.Item
                     key={`${index}-${attendanceIndex}`}
-                    className="d-flex align-items-center ps-5"
+                    className="d-flex align-items-center ps-5 rounded-top-0"
                   >
                     {attendance.dog?.name ?? attendance.dogId}
                     <span className="ms-2 text-muted">(Set {attendance.setIndex})</span>
@@ -66,11 +66,11 @@ export function PracticeValidation({ validationErrors }: PracticeValidationProps
             )}
           {error.code === 'SAME_HANDLER_IN_SET' &&
             error.extra?.conflicts && (
-              <ListGroup>
+              <ListGroup className="mb-3 rounded-top-0">
                 {error.extra.conflicts.map((conflict: { handlerName: string, setIndex: number, dogNames: string[], dogIds: string[] }, conflictIndex: number) => (
                   <ListGroup.Item
                     key={`${index}-${conflictIndex}`}
-                    className="d-flex align-items-center ps-5"
+                    className="d-flex align-items-center ps-5 rounded-top-0"
                   >
                     <div>
                       <strong>{conflict.handlerName}</strong>
@@ -85,11 +85,11 @@ export function PracticeValidation({ validationErrors }: PracticeValidationProps
             )}
           {error.code === 'BACK_TO_BACK_HANDLERS' &&
             error.extra?.backToBackHandlers && (
-              <ListGroup>
+              <ListGroup className="mb-3 rounded-top-0">
                 {error.extra.backToBackHandlers.map((handler: { handlerName: string, setIndices: number[], dogIds: string[] }, handlerIndex: number) => (
                   <ListGroup.Item
                     key={`${index}-${handlerIndex}`}
-                    className="d-flex align-items-center ps-5"
+                    className="d-flex align-items-center ps-5 rounded-top-0"
                   >
                     <div>
                       <strong>{handler.handlerName}</strong>
@@ -101,11 +101,11 @@ export function PracticeValidation({ validationErrors }: PracticeValidationProps
             )}
           {error.code === 'DOGS_NOT_IN_SETS' &&
             error.extra?.dogsNotInSets && (
-              <ListGroup>
+              <ListGroup className="mb-3 rounded-top-0">
                 {error.extra.dogsNotInSets.map((dogInfo: { dog: Dog }, dogIndex: number) => (
                   <ListGroup.Item
                     key={`${index}-${dogIndex}`}
-                    className="d-flex align-items-center ps-5"
+                    className="d-flex align-items-center ps-5 rounded-top-0"
                   >
                     <div>
                       <strong>{dogInfo.dog.name}</strong>
@@ -117,11 +117,11 @@ export function PracticeValidation({ validationErrors }: PracticeValidationProps
             )}
           {error.code === 'DOGS_IN_ONE_SET' &&
             error.extra?.dogsInOneSet && (
-              <ListGroup>
+              <ListGroup className="mb-3 rounded-top-0">
                 {error.extra.dogsInOneSet.map((dogInfo: { dog: Dog, setIds: string[] }, dogIndex: number) => (
                   <ListGroup.Item
                     key={`${index}-${dogIndex}`}
-                    className="d-flex align-items-center ps-5"
+                    className="d-flex align-items-center ps-5 rounded-top-0"
                   >
                     <div>
                       <strong>{dogInfo.dog.name}</strong>
@@ -133,15 +133,76 @@ export function PracticeValidation({ validationErrors }: PracticeValidationProps
             )}
           {error.code === 'DOGS_IN_MANY_SETS' &&
             error.extra?.dogsInManySets && (
-              <ListGroup>
+              <ListGroup className="mb-3 rounded-top-0">
                 {error.extra.dogsInManySets.map((dogInfo: { dog: Dog, setCount: number, setIds: string[] }, dogIndex: number) => (
+                  <ListGroup.Item
+                    key={`${index}-${dogIndex}`}
+                    className="d-flex align-items-center ps-5 rounded-top-0"
+                  >
+                    <div>
+                      <strong>{dogInfo.dog.name}</strong>
+                      <span className="ms-2 text-muted">({dogInfo.setCount} sets)</span>
+                    </div>
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+            )}
+          {error.code === 'INSUFFICIENT_DOG_REST' &&
+            error.extra?.insufficientRest && (
+              <ListGroup className="mb-3 rounded-top-0">
+                {error.extra.insufficientRest.map((dogInfo: { dog: Dog, setGaps: { from: number, to: number, gap: number }[] }, dogIndex: number) => (
+                  <ListGroup.Item
+                    key={`${index}-${dogIndex}`}
+                    className="d-flex align-items-center ps-5 rounded-top-0"
+                  >
+                    <div>
+                      <strong>{dogInfo.dog.name}</strong>
+                      <div className="text-muted small">
+                        {dogInfo.setGaps.map((gap, gapIndex) => (
+                          <span key={gapIndex}>
+                            Sets {gap.from} → {gap.to} ({gap.gap} sets apart)
+                            {gapIndex < dogInfo.setGaps.length - 1 && ', '}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+            )}
+          {error.code === 'SUBOPTIMAL_DOG_REST' &&
+            error.extra?.suboptimalRest && (
+              <ListGroup className="mb-3 rounded-top-0">
+                {error.extra.suboptimalRest.map((dogInfo: { dog: Dog, setGaps: { from: number, to: number, gap: number }[] }, dogIndex: number) => (
                   <ListGroup.Item
                     key={`${index}-${dogIndex}`}
                     className="d-flex align-items-center ps-5"
                   >
                     <div>
                       <strong>{dogInfo.dog.name}</strong>
-                      <span className="ms-2 text-muted">({dogInfo.setCount} sets)</span>
+                      <div className="text-muted small">
+                        {dogInfo.setGaps.map((gap, gapIndex) => (
+                          <span key={gapIndex}>
+                            Sets {gap.from} → {gap.to} ({gap.gap} sets apart)
+                            {gapIndex < dogInfo.setGaps.length - 1 && ', '}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+            )}
+          {error.code === 'EMPTY_SETS' &&
+            error.extra?.emptySets && (
+              <ListGroup className="mb-3 rounded-top-0">
+                {error.extra.emptySets.map((setInfo: { setId: string, setIndex: number }, setIndex: number) => (
+                  <ListGroup.Item
+                    key={`${index}-${setIndex}`}
+                    className="d-flex align-items-center ps-5"
+                  >
+                    <div>
+                      <strong>Set {setInfo.setIndex}</strong>
                     </div>
                   </ListGroup.Item>
                 ))}

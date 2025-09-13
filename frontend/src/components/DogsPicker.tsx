@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { Form, Badge, Overlay, Popover, Button, CloseButton, OverlayTrigger, Tooltip } from 'react-bootstrap'
-import { GripVertical, ExclamationTriangle } from 'react-bootstrap-icons'
+import { GripVertical, ExclamationTriangle, ClockHistory } from 'react-bootstrap-icons'
 import TrainingLevelBadge from './TrainingLevelBadge'
 import { getTrainingLevelInfo } from '../utils/trainingLevels'
 import { useTheme } from '../contexts/ThemeContext'
@@ -59,36 +59,118 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
       })
   }, [searchTerm, availableDogs, value])
 
-  // Helper function to get validation error message for a specific dog
-  const getValidationErrorForDog = useMemo(() => {
-    const dogErrorMap = new Map<string, string>()
+  // Helper function to get all validation errors for a specific dog
+  const getValidationErrorsForDog = useMemo(() => {
+    const dogErrorsMap = new Map<string, Set<string>>()
 
-    if (!validationErrors || !currentSetId) return dogErrorMap
+    if (!validationErrors || !currentSetId) return new Map<string, string[]>()
 
-    const setValidationErrors = getValidationErrorsForSet ? getValidationErrorsForSet(currentSetId) : validationErrors
+    const setValidationErrors = getValidationErrorsForSet ? getValidationErrorsForSet(currentSetId) : []
 
-    setValidationErrors.forEach(error => {
+    // Check both set-specific errors and practice-level errors
+    const allErrors = [...setValidationErrors, ...validationErrors]
+
+    allErrors.forEach(error => {
       if (error.code === 'SAME_HANDLER_IN_SET' && error.extra?.conflicts) {
         error.extra.conflicts.forEach((conflict: any) => {
           if (conflict.setId === currentSetId && conflict.dogIds) {
             conflict.dogIds.forEach((dogId: string) => {
-              dogErrorMap.set(dogId, `Multiple dogs from same handler (${conflict.handlerName})`)
+              if (!dogErrorsMap.has(dogId)) {
+                dogErrorsMap.set(dogId, new Set())
+              }
+              dogErrorsMap.get(dogId)!.add(`Multiple dogs from same handler (${conflict.handlerName})`)
             })
           }
         })
       }
       if (error.code === 'BACK_TO_BACK_HANDLERS' && error.extra?.backToBackHandlers) {
         error.extra.backToBackHandlers.forEach((handler: any) => {
-          if (handler.dogIds) {
-            handler.dogIds.forEach((dogId: string) => {
-              dogErrorMap.set(dogId, `${handler.handlerName} is back to back in sets ${handler.setIndices.join(' ↔ ')}`)
+          if (handler.dogIds && handler.setIndices && handler.setIds) {
+            if (currentSetId && handler.setIds.includes(currentSetId)) {
+              handler.dogIds.forEach((dogId: string) => {
+                if (!dogErrorsMap.has(dogId)) {
+                  dogErrorsMap.set(dogId, new Set())
+                }
+                dogErrorsMap.get(dogId)!.add(`${handler.handlerName} is back to back in sets ${handler.setIndices.join(' ↔ ')}`)
+              })
+            }
+          }
+        })
+      }
+      if (error.code === 'INSUFFICIENT_DOG_REST' && error.extra?.insufficientRest) {
+        error.extra.insufficientRest.forEach((dogInfo: any) => {
+          const gapDetails = dogInfo.setGaps.map((gap: any) => `sets ${gap.from}→${gap.to} (${gap.gap} sets apart)`).join(', ')
+          if (!dogErrorsMap.has(dogInfo.dog.id)) {
+            dogErrorsMap.set(dogInfo.dog.id, new Set())
+          }
+          dogErrorsMap.get(dogInfo.dog.id)!.add(`Insufficient rest: ${gapDetails}`)
+        })
+      }
+      if (error.code === 'SUBOPTIMAL_DOG_REST' && error.extra?.suboptimalRest) {
+        error.extra.suboptimalRest.forEach((dogInfo: any) => {
+          const gapDetails = dogInfo.setGaps.map((gap: any) => `sets ${gap.from}→${gap.to} (${gap.gap} sets apart)`).join(', ')
+          if (!dogErrorsMap.has(dogInfo.dog.id)) {
+            dogErrorsMap.set(dogInfo.dog.id, new Set())
+          }
+          dogErrorsMap.get(dogInfo.dog.id)!.add(`Suboptimal rest: ${gapDetails}`)
+        })
+      }
+    })
+
+    const result = new Map<string, string[]>()
+    dogErrorsMap.forEach((errorSet, dogId) => {
+      result.set(dogId, Array.from(errorSet))
+    })
+
+    return result
+  }, [validationErrors, currentSetId, getValidationErrorsForSet])
+
+  // Helper function to get validation severity for a specific dog
+  const getValidationSeverityForDog = useMemo(() => {
+    const dogSeverityMap = new Map<string, 'warning' | 'info'>()
+
+    if (!validationErrors || !currentSetId) return dogSeverityMap
+
+    const setValidationErrors = getValidationErrorsForSet ? getValidationErrorsForSet(currentSetId) : []
+    const allErrors = [...setValidationErrors, ...validationErrors]
+
+    allErrors.forEach(error => {
+      if (error.code === 'SAME_HANDLER_IN_SET' && error.extra?.conflicts) {
+        error.extra.conflicts.forEach((conflict: any) => {
+          if (conflict.setId === currentSetId && conflict.dogIds) {
+            conflict.dogIds.forEach((dogId: string) => {
+              dogSeverityMap.set(dogId, 'warning')
             })
+          }
+        })
+      }
+      if (error.code === 'BACK_TO_BACK_HANDLERS' && error.extra?.backToBackHandlers) {
+        error.extra.backToBackHandlers.forEach((handler: any) => {
+          if (handler.dogIds && handler.setIndices && handler.setIds) {
+            if (currentSetId && handler.setIds.includes(currentSetId)) {
+              handler.dogIds.forEach((dogId: string) => {
+                dogSeverityMap.set(dogId, 'warning')
+              })
+            }
+          }
+        })
+      }
+      if (error.code === 'INSUFFICIENT_DOG_REST' && error.extra?.insufficientRest) {
+        error.extra.insufficientRest.forEach((dogInfo: any) => {
+          dogSeverityMap.set(dogInfo.dog.id, 'warning')
+        })
+      }
+      if (error.code === 'SUBOPTIMAL_DOG_REST' && error.extra?.suboptimalRest) {
+        error.extra.suboptimalRest.forEach((dogInfo: any) => {
+          // Only set to info if there's no other validation issue for this dog
+          if (!dogSeverityMap.has(dogInfo.dog.id)) {
+            dogSeverityMap.set(dogInfo.dog.id, 'info')
           }
         })
       }
     })
 
-    return dogErrorMap
+    return dogSeverityMap
   }, [validationErrors, currentSetId, getValidationErrorsForSet])
 
   const handleSelect = (dog: DogWithSetCount) => {
@@ -236,55 +318,68 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
     </Popover>
   )
 
+  const renderDogBadge = (setDog: SetDog, idx: number) => {
+    const displayName = setDog.dog.name
+    const { variant, className } = getTrainingLevelInfo(setDog.dog.trainingLevel)
+    const hasValidationIssue = dogsWithValidationIssues?.has(setDog.dog.id)
+    const validationSeverity = getValidationSeverityForDog.get(setDog.dog.id)
+
+    return (
+      <div
+        key={`${setDog.id}-${idx}`}
+        className="mb-2 w-100"
+        draggable={!disabled}
+        onDragStart={() => handleDragStart(idx)}
+        onDragOver={e => handleDragOver(idx, e)}
+        onDragEnd={handleDragEnd}
+        style={{ opacity: draggedIndex === idx ? 0.5 : 1, cursor: disabled ? 'default' : 'move' }}
+      >
+        <Badge bg={variant} className={`d-flex align-items-center justify-content-between w-100 ${className}`} style={{ minHeight: 38 }}>
+          <span className={`me-2 d-inline-flex align-items-center ${isDark ? '' : 'text-dark'}`} style={{ cursor: disabled ? 'default' : 'grab' }}>
+            {!disabled && <GripVertical />}
+          </span>
+          <span className={`flex-grow-1 text-start d-flex align-items-center ${isDark ? '' : 'text-dark'}`}>
+            {hasValidationIssue && (
+              <OverlayTrigger
+                placement="top"
+                overlay={
+                  <Tooltip id={`validation-error-${setDog.dog.id}`}>
+                    <div>
+                      {getValidationErrorsForDog.get(setDog.dog.id)?.map((error, index) => (
+                        <div key={index} className="mb-1">
+                          • {error}
+                        </div>
+                      )) || 'This dog has validation issues'}
+                    </div>
+                  </Tooltip>
+                }
+              >
+                {validationSeverity === 'info' ? (
+                  <ClockHistory size={18} className="me-2 text-info" title="This dog has validation issues" />
+                ) : (
+                  <ExclamationTriangle size={18} className="me-2 text-warning" title="This dog has validation issues" />
+                )}
+              </OverlayTrigger>
+            )}
+            {displayName}
+          </span>
+          <span className="p-2 d-inline-flex align-items-center justify-content-center ms-auto" style={{ marginRight: '-8px', cursor: disabled ? 'default' : 'pointer' }} tabIndex={-1}>
+            <CloseButton
+              onClick={() => handleRemove(idx)}
+              className={isDark ? 'btn-close-white' : 'btn-close'}
+              aria-label={`Remove ${displayName}`}
+              disabled={disabled}
+            />
+          </span>
+        </Badge>
+      </div>
+    )
+  }
+
   return (
     <div>
       <div className="mb-2">
-        {value.sort((a, b) => a.index - b.index).map((setDog, idx) => {
-          const displayName = setDog.dog.name
-          const { variant, className } = getTrainingLevelInfo(setDog.dog.trainingLevel)
-          const hasValidationIssue = dogsWithValidationIssues?.has(setDog.dog.id)
-
-          return (
-            <div
-              key={`${setDog.id}-${idx}`}
-              className="mb-2"
-              draggable={!disabled}
-              onDragStart={() => handleDragStart(idx)}
-              onDragOver={e => handleDragOver(idx, e)}
-              onDragEnd={handleDragEnd}
-              style={{ opacity: draggedIndex === idx ? 0.5 : 1, cursor: disabled ? 'default' : 'move' }}
-            >
-              <Badge bg={variant} className={`d-flex align-items-center justify-content-between w-100 ${className}`} style={{ minHeight: 38 }}>
-                <span className={`me-2 d-inline-flex align-items-center ${isDark ? '' : 'text-dark'}`} style={{ cursor: disabled ? 'default' : 'grab' }}>
-                  {!disabled && <GripVertical />}
-                </span>
-                <span className={`flex-grow-1 text-start d-flex align-items-center ${isDark ? '' : 'text-dark'}`}>
-                  {hasValidationIssue && (
-                    <OverlayTrigger
-                      placement="top"
-                      overlay={
-                        <Tooltip id={`validation-error-${setDog.dog.id}`}>
-                          {getValidationErrorForDog.get(setDog.dog.id) || 'This dog has validation issues'}
-                        </Tooltip>
-                      }
-                    >
-                      <ExclamationTriangle size={18} className="me-2 text-warning" title="This dog has validation issues" />
-                    </OverlayTrigger>
-                  )}
-                  {displayName}
-                </span>
-                <span className="p-2 d-inline-flex align-items-center justify-content-center ms-auto" style={{ marginRight: '-8px', cursor: disabled ? 'default' : 'pointer' }} tabIndex={-1}>
-                  <CloseButton
-                    onClick={() => handleRemove(idx)}
-                    className={isDark ? 'btn-close-white' : 'btn-close'}
-                    aria-label={`Remove ${displayName}`}
-                    disabled={disabled}
-                  />
-                </span>
-              </Badge>
-            </div>
-          )
-        })}
+        {value.sort((a, b) => a.index - b.index).map((setDog, idx) => renderDogBadge(setDog, idx))}
       </div>
       {showInput ? (
         <div style={{ position: 'relative' }}>
@@ -334,7 +429,11 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
           </Overlay>
         </div>
       ) : (
-        <Button variant="outline-primary" onClick={() => setShowInput(true)} disabled={disabled}>
+        <Button
+          variant="outline-primary"
+          onClick={() => setShowInput(true)}
+          disabled={disabled}
+        >
           + Add Dog
         </Button>
       )}

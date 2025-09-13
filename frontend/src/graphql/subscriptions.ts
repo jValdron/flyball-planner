@@ -148,6 +148,7 @@ export const PRACTICE_SET_CHANGED_SUBSCRIPTION = graphql(`
         notes
         type
         typeCustom
+        isWarmup
         practiceId
         locationId
         createdAt

@@ -63,6 +63,13 @@ export class Set {
   })
   notes: string | null;
 
+  @Field(() => Boolean, { defaultValue: false })
+  @Column({
+    type: 'boolean',
+    default: false
+  })
+  isWarmup: boolean;
+
   @Field()
   @CreateDateColumn()
   createdAt: Date;

@@ -36,6 +36,7 @@ export const GetPractice = graphql(`
         notes
         type
         typeCustom
+        isWarmup
         createdAt
         updatedAt
         locationId

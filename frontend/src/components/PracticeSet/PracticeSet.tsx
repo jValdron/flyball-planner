@@ -160,7 +160,7 @@ function DogsSection({ set, availableDogs, onDogsChange, location, disabled, dog
   const lanes = location.isDoubleLane ? [Lane.Left, Lane.Right] : [null]
 
   return (
-    <div className="d-flex">
+    <div className="d-flex" style={{ gap: '8px' }}>
       {lanes.map(lane => {
         const dogsUsedInOtherLanes = new Set<string>()
         set.dogs.forEach(setDog => {
@@ -172,7 +172,7 @@ function DogsSection({ set, availableDogs, onDogsChange, location, disabled, dog
         const availableDogsForLane = availableDogs.filter(dog => !dogsUsedInOtherLanes.has(dog.id))
 
         return (
-          <div key={lane ?? 'single'} className="flex-grow-1 me-2">
+          <div key={lane ?? 'single'} className="flex-fill">
             <DogsPicker
               value={getDogsForLane(lane).map(sd => {
                 const dog = availableDogs.find(d => d.id === sd.dogId)
@@ -205,6 +205,7 @@ interface SortableGroupProps {
   onSetTypeChange: (id: string, type: SetType | null, typeCustom: string | null) => void
   onSetDogsChange?: (setId: string, dogs: Partial<SetDog>[]) => void
   onSetNotesChange?: (setId: string, notes: string) => void
+  onWarmupChange?: (index: number, isWarmup: boolean) => void
   onLocationAdd?: (locationId: string, index: number) => void
   availableDogs: DogWithSetCount[]
   otherLocations: Location[]
@@ -226,6 +227,7 @@ function SortableGroup({
   availableDogs,
   onSetDogsChange,
   onSetNotesChange,
+  onWarmupChange,
   onLocationAdd,
   otherLocations,
   defaultLocation,
@@ -315,7 +317,18 @@ function SortableGroup({
             })}
           </Card.Body>
           <Card.Footer className="d-flex rounded-start-0">
-            <div className="d-flex gap-2 ms-auto">
+            <div className="d-flex align-items-center me-auto">
+              <Form.Check
+                type="checkbox"
+                id={`warmup-${group.index}`}
+                label="Warmup"
+                checked={group.sets.some(set => (set as any).isWarmup)}
+                onChange={(e) => onWarmupChange?.(group.index, e.target.checked)}
+                disabled={disabled}
+                className="me-3"
+              />
+            </div>
+            <div className="d-flex gap-2">
               {availableLocationsForThisSet.length > 0 && (
                 <LocationSelector
                   availableLocations={availableLocationsForThisSet}
@@ -375,6 +388,28 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
           return false
         })
       }
+      if (error.code === 'INSUFFICIENT_DOG_REST' && error.extra?.insufficientRest) {
+        const set = sets.find(s => s.id === setId)
+        if (set) {
+          return error.extra.insufficientRest.some((dogInfo: any) => {
+            return dogInfo.setGaps.some((gap: any) => {
+              const setIndex = set.index
+              return gap.from === setIndex || gap.to === setIndex
+            })
+          })
+        }
+      }
+      if (error.code === 'SUBOPTIMAL_DOG_REST' && error.extra?.suboptimalRest) {
+        const set = sets.find(s => s.id === setId)
+        if (set) {
+          return error.extra.suboptimalRest.some((dogInfo: any) => {
+            return dogInfo.setGaps.some((gap: any) => {
+              const setIndex = set.index
+              return gap.from === setIndex || gap.to === setIndex
+            })
+          })
+        }
+      }
       return false
     })
   }
@@ -394,16 +429,29 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
       }
       if (error.code === 'BACK_TO_BACK_HANDLERS' && error.extra?.backToBackHandlers) {
         error.extra.backToBackHandlers.forEach((handler: any) => {
-          if (handler.dogIds) {
-            const set = sets.find(s => s.id === setId)
-            if (set) {
-              set.dogs.forEach(setDog => {
-                if (handler.dogIds.includes(setDog.dogId)) {
-                  dogIdsWithIssues.add(setDog.dogId)
-                }
-              })
+          if (handler.dogIds && handler.setIds) {
+            // Only add dogs to validation issues if the current set is part of the consecutive sequence
+            if (handler.setIds.includes(setId)) {
+              const set = sets.find(s => s.id === setId)
+              if (set) {
+                set.dogs.forEach(setDog => {
+                  if (handler.dogIds.includes(setDog.dogId)) {
+                    dogIdsWithIssues.add(setDog.dogId)
+                  }
+                })
+              }
             }
           }
+        })
+      }
+      if (error.code === 'INSUFFICIENT_DOG_REST' && error.extra?.insufficientRest) {
+        error.extra.insufficientRest.forEach((dogInfo: any) => {
+          dogIdsWithIssues.add(dogInfo.dog.id)
+        })
+      }
+      if (error.code === 'SUBOPTIMAL_DOG_REST' && error.extra?.suboptimalRest) {
+        error.extra.suboptimalRest.forEach((dogInfo: any) => {
+          dogIdsWithIssues.add(dogInfo.dog.id)
         })
       }
     })
@@ -414,6 +462,8 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
   const availableDogs = useMemo(() => {
     const dogSetCounts = new Map<string, number>()
     sets.forEach(set => {
+      if (set.isWarmup) return
+
       set.dogs.forEach(setDog => {
         const currentCount = dogSetCounts.get(setDog.dogId) || 0
         dogSetCounts.set(setDog.dogId, currentCount + 1)
@@ -482,7 +532,7 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
     }
   }
 
-  const handleSetUpdate = async (setId: string, updates: Partial<{ index: number; type: SetType | null; typeCustom: string | null; notes: string | null; dogs: Partial<SetDog>[] }>) => {
+  const handleSetUpdate = async (setId: string, updates: Partial<{ index: number; type: SetType | null; typeCustom: string | null; notes: string | null; isWarmup: boolean; dogs: Partial<SetDog>[] }>) => {
     try {
       setIsSaving(true)
       await updateSets({
@@ -571,6 +621,13 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
 
   const handleSetNotesChange = async (setId: string, notes: string) => {
     await handleSetUpdate(setId, { notes })
+  }
+
+  const handleWarmupChange = async (index: number, isWarmup: boolean) => {
+    const setsToUpdate = sets.filter(set => set.index === index)
+    for (const set of setsToUpdate) {
+      await handleSetUpdate(set.id, { isWarmup })
+    }
   }
 
   const handleLocationAdd = async (locationId: string, index: number) => {
@@ -690,6 +747,7 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
               onSetTypeChange={handleSetTypeChange}
               onSetDogsChange={handleDogsChange}
               onSetNotesChange={handleSetNotesChange}
+              onWarmupChange={handleWarmupChange}
               onLocationAdd={handleLocationAdd}
               availableDogs={availableDogs}
               otherLocations={otherLocations}

@@ -8,6 +8,7 @@ export const GetSets = graphql(`
       type
       typeCustom
       notes
+      isWarmup
       locationId
       dogs {
         dogId
@@ -32,6 +33,7 @@ export const UpdateSets = graphql(`
       type
       typeCustom
       notes
+      isWarmup
       locationId
       dogs {
         dogId

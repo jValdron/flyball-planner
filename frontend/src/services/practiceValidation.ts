@@ -210,88 +210,86 @@ export const backToBackHandlerRule: ValidationRule<Partial<Practice>> = (practic
   if (!context?.dogs || !context?.handlers) return null
 
   const sets = practice.sets || []
-  const backToBackHandlers: { handlerId: string, handlerName: string, setIndices: number[], dogIds: string[] }[] = []
+  const backToBackHandlers: { handlerId: string, handlerName: string, setIndices: number[], dogIds: string[], setIds: string[] }[] = []
 
+  // Group sets by index and sort them (excluding warmup sets)
   const setsByIndex = new Map<number, typeof sets>()
   sets.forEach(set => {
+    if (set.isWarmup) return // Skip warmup sets
     if (!setsByIndex.has(set.index)) {
       setsByIndex.set(set.index, [])
     }
     setsByIndex.get(set.index)!.push(set)
   })
 
-  const handlerSetMap = new Map<string, { handlerName: string, setIndices: number[], dogIds: string[] }>()
-
   const sortedIndices = Array.from(setsByIndex.keys()).sort((a, b) => a - b)
 
+  // For each handler, find their consecutive set sequences
+  const handlerSetMap = new Map<string, number[]>()
+
+  // First, collect all sets each handler appears in
   sortedIndices.forEach(setIndex => {
     const currentSets = setsByIndex.get(setIndex) || []
-    const currentHandlerIds = new Set<string>()
-
     currentSets.forEach(set => {
       set.dogs?.forEach(setDog => {
         const dog = context.dogs.find(d => d.id === setDog.dogId)
         if (dog?.ownerId) {
-          currentHandlerIds.add(dog.ownerId)
+          if (!handlerSetMap.has(dog.ownerId)) {
+            handlerSetMap.set(dog.ownerId, [])
+          }
+          handlerSetMap.get(dog.ownerId)!.push(setIndex)
         }
       })
     })
-
-    currentHandlerIds.forEach(handlerId => {
-      const handler = context.handlers.find(h => h.id === handlerId)
-      const handlerName = handler ?
-        `${handler.givenName} ${handler.surname}` :
-        'Unknown Handler'
-
-      if (handlerSetMap.has(handlerId)) {
-        const existing = handlerSetMap.get(handlerId)!
-        const lastSetIndex = existing.setIndices[existing.setIndices.length - 1]
-        if (setIndex === lastSetIndex + 1) {
-          existing.setIndices.push(setIndex)
-        } else {
-          // Get all dog IDs for this handler
-          const handlerDogIds: string[] = []
-          sets.forEach(set => {
-            set.dogs?.forEach(setDog => {
-              const dog = context.dogs.find(d => d.id === setDog.dogId)
-              if (dog?.ownerId === handlerId) {
-                handlerDogIds.push(dog.id)
-              }
-            })
-          })
-          handlerSetMap.set(handlerId, {
-            handlerName,
-            setIndices: [setIndex],
-            dogIds: handlerDogIds
-          })
-        }
-      } else {
-        // Get all dog IDs for this handler
-        const handlerDogIds: string[] = []
-        sets.forEach(set => {
-          set.dogs?.forEach(setDog => {
-            const dog = context.dogs.find(d => d.id === setDog.dogId)
-            if (dog?.ownerId === handlerId) {
-              handlerDogIds.push(dog.id)
-            }
-          })
-        })
-        handlerSetMap.set(handlerId, {
-          handlerName,
-          setIndices: [setIndex],
-          dogIds: handlerDogIds
-        })
-      }
-    })
   })
 
-  handlerSetMap.forEach((handlerInfo, handlerId) => {
-    if (handlerInfo.setIndices.length > 1) {
+  // Find consecutive sequences for each handler
+  handlerSetMap.forEach((setIndices, handlerId) => {
+    const handler = context.handlers.find(h => h.id === handlerId)
+    const handlerName = handler ?
+      `${handler.givenName} ${handler.surname}` :
+      'Unknown Handler'
+
+    // Sort the set indices for this handler
+    const sortedHandlerSets = [...setIndices].sort((a, b) => a - b)
+
+    // Find consecutive sequences
+    let currentSequence: number[] = []
+
+    for (let i = 0; i < sortedHandlerSets.length; i++) {
+      const currentSet = sortedHandlerSets[i]
+
+      if (currentSequence.length === 0) {
+        currentSequence = [currentSet]
+      } else {
+        const lastSetInSequence = currentSequence[currentSequence.length - 1]
+        if (currentSet === lastSetInSequence + 1) {
+          currentSequence.push(currentSet)
+        } else {
+          if (currentSequence.length > 1) {
+            const { dogIds, setIds } = getDogsAndSetIdsInSets(currentSequence, setsByIndex, handlerId, context.dogs)
+            backToBackHandlers.push({
+              handlerId,
+              handlerName,
+              setIndices: [...currentSequence],
+              dogIds,
+              setIds
+            })
+          }
+          currentSequence = [currentSet]
+        }
+      }
+    }
+
+    // Handle the final sequence
+    if (currentSequence.length > 1) {
+      const { dogIds, setIds } = getDogsAndSetIdsInSets(currentSequence, setsByIndex, handlerId, context.dogs)
       backToBackHandlers.push({
         handlerId,
-        handlerName: handlerInfo.handlerName,
-        setIndices: handlerInfo.setIndices,
-        dogIds: handlerInfo.dogIds
+        handlerName,
+        setIndices: [...currentSequence],
+        dogIds,
+        setIds
       })
     }
   })
@@ -307,6 +305,27 @@ export const backToBackHandlerRule: ValidationRule<Partial<Practice>> = (practic
     }
   }
   return null
+}
+
+// Helper function to get dogs and set IDs from specific sets for a specific handler
+function getDogsAndSetIdsInSets(setIndices: number[], setsByIndex: Map<number, any[]>, handlerId: string, dogs: any[]): { dogIds: string[], setIds: string[] } {
+  const dogIds: string[] = []
+  const setIds: string[] = []
+
+  setIndices.forEach(setIndex => {
+    const sets = setsByIndex.get(setIndex) || []
+    sets.forEach(set => {
+      setIds.push(set.id)
+      set.dogs?.forEach(setDog => {
+        const dog = dogs.find(d => d.id === setDog.dogId)
+        if (dog?.ownerId === handlerId) {
+          dogIds.push(dog.id)
+        }
+      })
+    })
+  })
+
+  return { dogIds, setIds }
 }
 
 export const dogsNotInSetsRule: ValidationRule<Partial<Practice>> = (practice, context) => {
@@ -389,10 +408,12 @@ export const dogsInOneSetRule: ValidationRule<Partial<Practice>> = (practice, co
       })
   )
 
-  // Count how many sets each dog is in
+  // Count how many sets each dog is in (excluding warmup sets)
   const dogSetCounts = new Map<string, { dog: Dog, setCount: number, setIds: string[] }>()
 
   sets.forEach(set => {
+    if (set.isWarmup) return
+
     set.dogs?.forEach(setDog => {
       if (confirmedDogIds.has(setDog.dogId)) {
         const dog = context?.dogs?.find(d => d.id === setDog.dogId)
@@ -454,10 +475,12 @@ export const dogsInManySetsRule: ValidationRule<Partial<Practice>> = (practice, 
       })
   )
 
-  // Count how many sets each dog is in
+  // Count how many sets each dog is in (excluding warmup sets)
   const dogSetCounts = new Map<string, { dog: Dog, setCount: number, setIds: string[] }>()
 
   sets.forEach(set => {
+    if (set.isWarmup) return
+
     set.dogs?.forEach(setDog => {
       if (confirmedDogIds.has(setDog.dogId)) {
         const dog = context?.dogs?.find(d => d.id === setDog.dogId)
@@ -508,6 +531,162 @@ export const dogsInManySetsRule: ValidationRule<Partial<Practice>> = (practice, 
   return null
 }
 
+// Helper function to get dog set appearances (excluding warmup sets)
+const getDogSetAppearances = (practice: Partial<Practice>, context?: ValidationContext) => {
+  if (!context?.dogs) return new Map<string, number[]>()
+
+  const sets = practice.sets || []
+  if (sets.length < 2) return new Map<string, number[]>()
+
+  // Group sets by index and sort them
+  const setsByIndex = new Map<number, typeof sets>()
+  sets.forEach(set => {
+    if (!setsByIndex.has(set.index)) {
+      setsByIndex.set(set.index, [])
+    }
+    setsByIndex.get(set.index)!.push(set)
+  })
+
+  const sortedIndices = Array.from(setsByIndex.keys()).sort((a, b) => a - b)
+
+  // Track each dog's set appearances
+  const dogSetAppearances = new Map<string, number[]>()
+
+  sortedIndices.forEach(setIndex => {
+    const currentSets = setsByIndex.get(setIndex) || []
+    currentSets.forEach(set => {
+      if (set.isWarmup) return
+
+      set.dogs?.forEach(setDog => {
+        const dog = context.dogs.find(d => d.id === setDog.dogId)
+        if (dog && dog.status === DogStatus.Active) {
+          if (!dogSetAppearances.has(setDog.dogId)) {
+            dogSetAppearances.set(setDog.dogId, [])
+          }
+          dogSetAppearances.get(setDog.dogId)!.push(setIndex)
+        }
+      })
+    })
+  })
+
+  return dogSetAppearances
+}
+
+export const insufficientDogRestRule: ValidationRule<Partial<Practice>> = (practice, context) => {
+  if (!context?.dogs) return null
+
+  const dogSetAppearances = getDogSetAppearances(practice, context)
+  const insufficientRest: { dog: Dog, setGaps: { from: number, to: number, gap: number }[] }[] = []
+
+  dogSetAppearances.forEach((setIndices, dogId) => {
+    if (setIndices.length < 2) return // Need at least 2 sets to check gaps
+
+    const dog = context.dogs.find(d => d.id === dogId)
+    if (!dog) return
+
+    const gaps: { from: number, to: number, gap: number }[] = []
+
+    // Check gaps between consecutive set appearances
+    for (let i = 0; i < setIndices.length - 1; i++) {
+      const currentSet = setIndices[i]
+      const nextSet = setIndices[i + 1]
+      const gap = nextSet - currentSet - 1 // Gap is sets in between, not including the sets themselves
+
+      gaps.push({ from: currentSet, to: nextSet, gap })
+    }
+
+    const insufficientGaps = gaps.filter(gap => gap.gap < 3)
+
+    if (insufficientGaps.length > 0) {
+      insufficientRest.push({ dog, setGaps: insufficientGaps })
+    }
+  })
+
+  if (insufficientRest.length > 0) {
+    return {
+      code: 'INSUFFICIENT_DOG_REST',
+      message: 'Dogs with insufficient rest between sets (less than 3 sets apart)',
+      severity: 'warning',
+      count: insufficientRest.length,
+      icon: React.createElement(ExclamationTriangle),
+      extra: { insufficientRest },
+    }
+  }
+
+  return null
+}
+
+export const suboptimalDogRestRule: ValidationRule<Partial<Practice>> = (practice, context) => {
+  if (!context?.dogs) return null
+
+  const dogSetAppearances = getDogSetAppearances(practice, context)
+  const suboptimalRest: { dog: Dog, setGaps: { from: number, to: number, gap: number }[] }[] = []
+
+  dogSetAppearances.forEach((setIndices, dogId) => {
+    if (setIndices.length < 2) return // Need at least 2 sets to check gaps
+
+    const dog = context.dogs.find(d => d.id === dogId)
+    if (!dog) return
+
+    const gaps: { from: number, to: number, gap: number }[] = []
+
+    // Check gaps between consecutive set appearances
+    for (let i = 0; i < setIndices.length - 1; i++) {
+      const currentSet = setIndices[i]
+      const nextSet = setIndices[i + 1]
+      const gap = nextSet - currentSet - 1 // Gap is sets in between, not including the sets themselves
+
+      gaps.push({ from: currentSet, to: nextSet, gap })
+    }
+
+    const suboptimalGaps = gaps.filter(gap => gap.gap >= 3 && gap.gap < 5)
+
+    if (suboptimalGaps.length > 0) {
+      suboptimalRest.push({ dog, setGaps: suboptimalGaps })
+    }
+  })
+
+  if (suboptimalRest.length > 0) {
+    return {
+      code: 'SUBOPTIMAL_DOG_REST',
+      message: 'Dogs with suboptimal rest between sets (ideally 5 sets apart)',
+      severity: 'info',
+      count: suboptimalRest.length,
+      icon: React.createElement(Clock),
+      extra: { suboptimalRest },
+    }
+  }
+
+  return null
+}
+
+export const emptySetRule: ValidationRule<Partial<Practice>> = (practice) => {
+  const sets = practice.sets || []
+  const emptySets: { setId: string, setIndex: number }[] = []
+
+  sets.forEach(set => {
+    if (!set.dogs || set.dogs.length === 0) {
+      emptySets.push({
+        setId: set.id,
+        setIndex: set.index
+      })
+    }
+  })
+
+  if (emptySets.length > 0) {
+    return {
+      code: 'EMPTY_SETS',
+      message: 'Sets with no dogs assigned',
+      severity: 'error',
+      count: emptySets.length,
+      icon: React.createElement(ExclamationTriangle),
+      extra: { emptySets },
+    }
+  }
+
+  return null
+}
+
 // --- Service ---
 
 export class PracticeValidationService {
@@ -521,6 +700,9 @@ export class PracticeValidationService {
     dogsNotInSetsRule,
     dogsInOneSetRule,
     dogsInManySetsRule,
+    insufficientDogRestRule,
+    suboptimalDogRestRule,
+    emptySetRule,
   ])
 
   static validatePractice(practice: Partial<Practice>, context?: ValidationContext): ValidationResult {
