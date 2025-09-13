@@ -91,14 +91,24 @@ jobs:
       - name: Publish Helm chart to GitHub Pages
         if: steps.should-publish.outputs.publish == 'true'
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+
           git clone https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git gh-pages
           cd gh-pages
-          git checkout gh-pages || git checkout --orphan gh-pages
+
+          if git show-ref --verify --quiet refs/remotes/origin/gh-pages; then
+            git checkout gh-pages
+          else
+            git checkout --orphan gh-pages
+            git rm -rf . || true
+          fi
+
           mkdir -p charts
           cp ../charts/*.tgz charts/
+
           helm repo index charts --url https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+
           git add charts/
           git commit -m "Add Helm chart ${{ env.CHART_VERSION }}" || exit 0
           git push origin gh-pages
