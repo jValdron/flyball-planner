@@ -3,12 +3,12 @@ entries:
   flyball-planner:
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2025-09-13T21:54:58.333979284Z"
+    created: "2025-09-13T21:57:02.055274033Z"
     description: Flyball Planner - A web application for managing flyball practices
-    digest: fd79c18e9e52ef047b8b3cd44e0d59f3efc90d81d529ee3ca9f554345b1273dc
+    digest: 502e3343a6fdc3566dc77872231cc06918b8d6e22f766097a8b0c87e2870e440
     name: flyball-planner
     type: application
     urls:
     - https://jValdron.github.io/flyball-planner/flyball-planner-1.0.0.tgz
     version: 1.0.0
-generated: "2025-09-13T21:54:58.326531872Z"
+generated: "2025-09-13T21:57:02.051436715Z"
