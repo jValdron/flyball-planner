@@ -1,12 +1,13 @@
 {{- if .Values.postgresql.enabled }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "flyball-planner.fullname" . }}-postgresql
   labels:
     {{- include "flyball-planner.labels" . | nindent 4 }}
     app.kubernetes.io/component: postgresql
 spec:
+  serviceName: {{ include "flyball-planner.fullname" . }}-postgresql
   replicas: 1
   selector:
     matchLabels:
@@ -65,12 +66,21 @@ spec:
             failureThreshold: 6
           resources:
             {{- toYaml .Values.postgresql.resources | nindent 12 }}
-      volumes:
-        - name: postgresql-data
-          {{- if .Values.postgresql.persistence.enabled }}
-          persistentVolumeClaim:
-            claimName: {{ include "flyball-planner.fullname" . }}-postgresql
-          {{- else }}
-          emptyDir: {}
-          {{- end }}
+  {{- if .Values.postgresql.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: postgresql-data
+        labels:
+          {{- include "flyball-planner.labels" . | nindent 10 }}
+          app.kubernetes.io/component: postgresql
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.postgresql.persistence.size }}
+        {{- if .Values.postgresql.persistence.storageClass }}
+        storageClassName: {{ .Values.postgresql.persistence.storageClass }}
+        {{- end }}
+  {{- end }}
 {{- end }}
