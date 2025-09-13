@@ -1,0 +1,105 @@
+name: Publish Helm Chart
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  publish-chart:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: '3.12.0'
+
+      - name: Check for chart changes
+        id: chart-changes
+        run: |
+          # Check if there are changes in chart files since the last commit
+          if git diff --quiet HEAD~1 HEAD -- deploy/charts/ 2>/dev/null; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No changes detected in Helm chart"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Changes detected in Helm chart"
+            git diff --name-only HEAD~1 HEAD -- deploy/charts/ || echo "First commit or no previous commit"
+          fi
+
+      - name: Determine if chart should be published
+        id: should-publish
+        run: |
+          if [ "${{ steps.chart-changes.outputs.changed }}" == "true" ] || [ "${{ startsWith(github.ref, 'refs/tags/') }}" == "true" ]; then
+            echo "publish=true" >> $GITHUB_OUTPUT
+            echo "Chart should be published (changes detected or tag push)"
+          else
+            echo "publish=false" >> $GITHUB_OUTPUT
+            echo "No chart publishing needed"
+          fi
+
+      - name: Update app version for tags
+        if: startsWith(github.ref, 'refs/tags/') && steps.should-publish.outputs.publish == 'true'
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/}
+          TAG_VERSION=${TAG_VERSION#v}
+          sed -i "s/^appVersion: .*/appVersion: \"$TAG_VERSION\"/" deploy/charts/flyball-planner/Chart.yaml
+          echo "Updated app version to $TAG_VERSION"
+
+      - name: Check if chart version already exists
+        if: steps.should-publish.outputs.publish == 'true'
+        run: |
+          CHART_VERSION=$(helm show chart deploy/charts/flyball-planner | grep '^version:' | awk '{print $2}')
+          echo "CHART_VERSION=$CHART_VERSION" >> $GITHUB_ENV
+
+          # For tags, we allow overriding the same chart version (to update appVersion)
+          # For regular pushes with chart changes, we check for conflicts
+          if [ "${{ startsWith(github.ref, 'refs/tags/') }}" == "true" ]; then
+            echo "✅ Tag push - will update chart with new appVersion"
+          else
+            # Check if this chart version already exists in the repo
+            if curl -s "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/index.yaml" | grep -q "version: $CHART_VERSION"; then
+              echo "❌ Chart version $CHART_VERSION already exists in the repository!"
+              echo "Please bump the chart version in Chart.yaml before pushing."
+              exit 1
+            else
+              echo "✅ Chart version $CHART_VERSION is available for publishing"
+            fi
+          fi
+
+      - name: Package Helm chart
+        if: steps.should-publish.outputs.publish == 'true'
+        run: |
+          helm package deploy/charts/flyball-planner --destination ./charts
+          echo "Packaged chart version ${{ env.CHART_VERSION }}"
+
+      - name: Upload Helm chart
+        if: steps.should-publish.outputs.publish == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-chart-${{ env.CHART_VERSION }}
+          path: ./charts/*.tgz
+
+      - name: Publish Helm chart to GitHub Pages
+        if: steps.should-publish.outputs.publish == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git clone https://github.com/${{ github.repository }}.git gh-pages
+          cd gh-pages
+          git checkout gh-pages || git checkout --orphan gh-pages
+          mkdir -p charts
+          cp ../charts/*.tgz charts/
+          helm repo index charts --url https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+          git add charts/
+          git commit -m "Add Helm chart ${{ env.CHART_VERSION }}" || exit 0
+          git push origin gh-pages
+          echo "✅ Published Helm chart version ${{ env.CHART_VERSION }}"

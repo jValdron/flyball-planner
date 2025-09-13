@@ -3,7 +3,7 @@ graphql:
   replicaCount: 2
   image:
     repository: ghcr.io/jvaldron/flyball-planner/graphql
-    tag: latest
+    tag: ""
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
@@ -24,7 +24,7 @@ frontend:
   replicaCount: 1
   image:
     repository: ghcr.io/jvaldron/flyball-planner/frontend
-    tag: latest
+    tag: ""
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
