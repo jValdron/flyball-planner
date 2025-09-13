@@ -20,6 +20,7 @@ import { UserDropdown } from './components/UserDropdown'
 import { LoginForm } from './components/LoginForm'
 import LocationDetails from './pages/LocationDetails'
 import PublicPracticeView from './pages/PublicPracticeView'
+import logo from './assets/logo-full-dark.svg'
 
 function Header() {
   const { user } = useAuth();
@@ -27,7 +28,9 @@ function Header() {
   return (
     <Navbar bg="black" variant="dark" expand="md" className="mb-4 custom-navbar">
       <Container>
-        <Navbar.Brand as={Link} to="/">Flyball Planner</Navbar.Brand>
+        <Navbar.Brand as={Link} to="/">
+          <img src={logo} alt="Flyball Planner" height="40" />
+        </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
@@ -56,7 +59,9 @@ function PublicHeaderContent() {
   return (
     <Navbar bg="black" variant="dark" expand="md" className="mb-4 custom-navbar">
       <Container>
-        <Navbar.Brand as={Link} to="/">Flyball Planner</Navbar.Brand>
+        <Navbar.Brand as={Link} to="/">
+          <img src={logo} alt="Flyball Planner" height="40" />
+        </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">

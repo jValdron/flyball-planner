@@ -1,14 +1,18 @@
 import { useState } from 'react';
 import { Form, Button, Alert, Container, Card } from 'react-bootstrap';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import logoLight from '../assets/logo-full-light.svg';
+import logoDark from '../assets/logo-full-dark.svg';
 
 export function LoginForm() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login, isLoading, error, clearError } = useAuth();
+  const { isDark } = useTheme();
   const navigate = useNavigate();
 
   useDocumentTitle('Login');
@@ -48,9 +52,14 @@ export function LoginForm() {
     <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh' }}>
       <Card style={{ width: '400px' }}>
         <Card.Body className="p-4">
-          <Card.Title className="mb-4">
-            <h3>Sign in to your account</h3>
-          </Card.Title>
+          <div className="text-center mb-4">
+            <img
+              src={isDark ? logoDark : logoLight}
+              alt="Flyball Planner"
+              height="60"
+              className="mb-3"
+            />
+          </div>
 
           {error && (
             <Alert variant="danger" className="mb-3">
