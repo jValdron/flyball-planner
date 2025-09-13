@@ -1,5 +1,5 @@
 import { Container, Navbar, Nav } from 'react-bootstrap'
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Link, Navigate, useParams, useNavigate } from 'react-router-dom'
 import { ApolloProvider } from '@apollo/client'
 import { client } from './apollo/client'
 import HandlerDetails from './pages/HandlerDetails'
@@ -19,6 +19,7 @@ import { UserDropdown } from './components/UserDropdown'
 
 import { LoginForm } from './components/LoginForm'
 import LocationDetails from './pages/LocationDetails'
+import PublicPracticeView from './pages/PublicPracticeView'
 
 function Header() {
   const { user } = useAuth();
@@ -41,6 +42,39 @@ function Header() {
       </Container>
     </Navbar>
   )
+}
+
+function PublicHeaderContent() {
+  const { user } = useAuth();
+  const { practiceId } = useParams();
+  const navigate = useNavigate();
+
+  const handleBackToPractice = () => {
+    navigate(`/practices/${practiceId}/sets`);
+  };
+
+  return (
+    <Navbar bg="black" variant="dark" expand="md" className="mb-4 custom-navbar">
+      <Container>
+        <Navbar.Brand as={Link} to="/">Flyball Planner</Navbar.Brand>
+        <Navbar.Toggle aria-controls="basic-navbar-nav" />
+        <Navbar.Collapse id="basic-navbar-nav">
+          <Nav className="me-auto">
+            <Nav.Link onClick={handleBackToPractice} style={{ cursor: 'pointer' }}>
+              ← Back to Practice
+            </Nav.Link>
+          </Nav>
+          <div className="d-flex align-items-center gap-2">
+            {user && <UserDropdown />}
+          </div>
+        </Navbar.Collapse>
+      </Container>
+    </Navbar>
+  )
+}
+
+function PublicHeader() {
+  return <PublicHeaderContent />;
 }
 
 function AppContent() {
@@ -67,6 +101,21 @@ function AppWithTitle({ isAuthenticated }: { isAuthenticated: boolean }) {
     <Routes>
       <Route path="/login" element={
         isAuthenticated ? <Navigate to="/practices" replace /> : <LoginForm />
+      } />
+      <Route path="/practices/:practiceId/view" element={
+        isAuthenticated ? (
+          <ClubProvider>
+            <PracticeProvider>
+              <PublicHeader />
+              <Container>
+                <PublicPracticeView />
+              </Container>
+              <WebSocketStatus />
+            </PracticeProvider>
+          </ClubProvider>
+        ) : (
+          <PublicPracticeView />
+        )
       } />
       <Route path="/*" element={
         isAuthenticated ? (

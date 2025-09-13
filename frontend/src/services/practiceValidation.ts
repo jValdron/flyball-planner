@@ -687,6 +687,96 @@ export const emptySetRule: ValidationRule<Partial<Practice>> = (practice) => {
   return null
 }
 
+export const practiceStatusRule: ValidationRule<Partial<Practice>> = (practice) => {
+  // Only validate if practice has a status field
+  if (!practice.status) return null
+
+  // If practice is in Draft status, check if it's ready to be marked as Ready
+  if (practice.status === 'Draft') {
+    const attendances = practice.attendances as ExtendedAttendanceData[] || []
+    const sets = practice.sets || []
+
+    // Check if there are any confirmed attendances
+    const confirmedAttendances = attendances.filter(
+      attendance => attendance.attending === AttendanceStatus.Attending
+    )
+
+    // Check if there are any sets configured
+    const hasSets = sets && sets.length > 0
+
+    // Check if there are any unconfirmed attendances
+    const unconfirmedAttendances = attendances.filter(
+      attendance => attendance.attending === AttendanceStatus.Unknown
+    )
+
+    // If practice is in Draft but has confirmed dogs and sets, suggest it could be ready
+    if (confirmedAttendances.length >= 4 && hasSets && unconfirmedAttendances.length === 0) {
+      return {
+        code: 'PRACTICE_READY_FOR_READY_STATUS',
+        message: 'Practice should be marked as ready',
+        severity: 'warning',
+        icon: React.createElement(ExclamationTriangle),
+      }
+    }
+
+    // If practice is in Draft but missing key requirements
+    if (confirmedAttendances.length < 4) {
+      return {
+        code: 'PRACTICE_NOT_READY_INSUFFICIENT_DOGS',
+        message: `Practice needs at least 4 confirmed dogs to be marked as "Ready" (currently ${confirmedAttendances.length})`,
+        severity: 'warning',
+        count: confirmedAttendances.length,
+        icon: React.createElement(ExclamationTriangle),
+      }
+    }
+
+    if (!hasSets) {
+      return {
+        code: 'PRACTICE_NOT_READY_NO_SETS',
+        message: 'Practice needs sets configured to be marked as "Ready"',
+        severity: 'warning',
+        icon: React.createElement(ExclamationTriangle),
+      }
+    }
+
+    if (unconfirmedAttendances.length > 0) {
+      return {
+        code: 'PRACTICE_NOT_READY_UNCONFIRMED_ATTENDANCES',
+        message: `Practice has ${unconfirmedAttendances.length} unconfirmed attendance(s) - consider confirming all before marking as "Ready"`,
+        severity: 'info',
+        count: unconfirmedAttendances.length,
+        icon: React.createElement(QuestionLg),
+      }
+    }
+  }
+
+  // If practice is in Ready status, check if it should be reverted to Draft
+  if (practice.status === 'Ready') {
+    const attendances = practice.attendances as ExtendedAttendanceData[] || []
+    const sets = practice.sets || []
+
+    // Check if there are any confirmed attendances
+    const confirmedAttendances = attendances.filter(
+      attendance => attendance.attending === AttendanceStatus.Attending
+    )
+
+    // Check if there are any sets configured
+    const hasSets = sets && sets.length > 0
+
+    // If practice is marked as Ready but missing key requirements, suggest reverting to Draft
+    if (confirmedAttendances.length < 4 || !hasSets) {
+      return {
+        code: 'PRACTICE_READY_STATUS_INVALID',
+        message: 'Practice marked as "Ready" but missing required elements - consider reverting to "Draft"',
+        severity: 'error',
+        icon: React.createElement(ExclamationTriangle),
+      }
+    }
+  }
+
+  return null
+}
+
 // --- Service ---
 
 export class PracticeValidationService {
@@ -703,6 +793,7 @@ export class PracticeValidationService {
     insufficientDogRestRule,
     suboptimalDogRestRule,
     emptySetRule,
+    practiceStatusRule,
   ])
 
   static validatePractice(practice: Partial<Practice>, context?: ValidationContext): ValidationResult {

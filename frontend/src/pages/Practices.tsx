@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import { CalendarCheck, CalendarX, CheckLg, Pencil, PlusLg, Trash, FileText, XLg, QuestionLg } from 'react-bootstrap-icons'
 import { formatRelativeTime, isPastDay } from '../utils/dateUtils'
+import { getPracticeCompletionStatus, getNextIncompleteStepUrl } from '../utils/practiceCompletion'
 import { useQuery, useMutation } from '@apollo/client'
 import { GetPracticesByClub, DeletePractice} from '../graphql/practice'
 import { compareDesc, isAfter, isBefore } from 'date-fns'
@@ -204,7 +205,11 @@ function Practices() {
                   )}
                   <div key={practice.id} className="col-md-4 mb-4">
                     <Card
-                      onClick={() => navigate(`/practices/${practice.id}`)}
+                      onClick={() => {
+                        const completionStatus = getPracticeCompletionStatus(practice)
+                        const nextStepUrl = getNextIncompleteStepUrl(practice.id, completionStatus.nextIncompleteStep)
+                        navigate(nextStepUrl)
+                      }}
                       style={{ cursor: 'pointer' }}
                     >
                       <Card.Body className={practiceIsPast ? 'bg-past' : practice.status === 'Draft' ? 'bg-warning-subtle' : 'bg-primary-subtle'}>
@@ -230,7 +235,9 @@ function Practices() {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/practices/${practice.id}`);
+                              const completionStatus = getPracticeCompletionStatus(practice)
+                              const nextStepUrl = getNextIncompleteStepUrl(practice.id, completionStatus.nextIncompleteStep)
+                              navigate(nextStepUrl);
                             }}
                           >
                             <Pencil className="me-1" />

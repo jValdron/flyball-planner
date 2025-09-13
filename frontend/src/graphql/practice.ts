@@ -21,6 +21,7 @@ export const GetPractice = graphql(`
       scheduledAt
       status
       clubId
+      shareCode
       createdAt
       updatedAt
       attendances {
@@ -45,6 +46,80 @@ export const GetPractice = graphql(`
           index
           lane
           dogId
+        }
+      }
+    }
+  }
+`);
+
+export const GetPublicPractice = graphql(`
+  query GetPublicPractice($id: String!, $code: String!) {
+    publicPractice(id: $id, code: $code) {
+      id
+      scheduledAt
+      status
+      clubId
+      createdAt
+      updatedAt
+      club {
+        id
+        name
+        nafaClubNumber
+        locations {
+          id
+          name
+          isDefault
+          isDoubleLane
+        }
+      }
+      attendances {
+        id
+        attending
+        dogId
+        dog {
+          id
+          name
+          crn
+          trainingLevel
+          owner {
+            id
+            givenName
+            surname
+          }
+        }
+        createdAt
+        updatedAt
+      }
+      sets {
+        id
+        index
+        notes
+        type
+        typeCustom
+        isWarmup
+        createdAt
+        updatedAt
+        location {
+          id
+          name
+          isDoubleLane
+        }
+        dogs {
+          id
+          index
+          lane
+          dogId
+          dog {
+            id
+            name
+            crn
+            trainingLevel
+            owner {
+              id
+              givenName
+              surname
+            }
+          }
         }
       }
     }

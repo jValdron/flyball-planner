@@ -42,6 +42,10 @@ export class Practice {
   })
   status: PracticeStatus;
 
+  @Field({ nullable: true })
+  @Column({ type: 'varchar', length: 32, unique: true, nullable: true })
+  shareCode?: string;
+
   @Field()
   @CreateDateColumn()
   createdAt: Date;

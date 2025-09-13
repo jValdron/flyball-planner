@@ -5,10 +5,15 @@ import { PubSubService, SubscriptionEvents } from '../services/PubSubService';
 import { PracticeSummaryService } from '../services/PracticeSummaryService';
 import { PracticeSummary } from '../types/SubscriptionTypes';
 import { AuthContext, isAuth, hasClubAccess, createClubFilter } from '../middleware/auth';
+import { randomBytes } from 'crypto';
 
 @Resolver(Practice)
 export class PracticeResolver {
   private practiceRepository = AppDataSource.getRepository(Practice);
+
+  private generateShareCode(): string {
+    return randomBytes(16).toString('hex');
+  }
 
   @Query(() => [PracticeSummary])
   @UseMiddleware(isAuth, hasClubAccess)
@@ -26,7 +31,7 @@ export class PracticeResolver {
     const clubFilter = createClubFilter(user);
     if (!clubFilter) return null;
 
-    return await this.practiceRepository.findOne({
+    const practice = await this.practiceRepository.findOne({
       where: {
         id,
         ...clubFilter
@@ -35,6 +40,34 @@ export class PracticeResolver {
         'attendances',
         'sets',
         'sets.dogs'
+      ]
+    });
+
+    // Generate shareCode if it doesn't exist (for existing practices)
+    if (practice && !practice.shareCode) {
+      practice.shareCode = this.generateShareCode();
+      await this.practiceRepository.save(practice);
+    }
+
+    return practice;
+  }
+
+  @Query(() => Practice, { nullable: true })
+  async publicPractice(@Arg('id') id: string, @Arg('code') code: string): Promise<Practice | null> {
+    return await this.practiceRepository.findOne({
+      where: {
+        id,
+        shareCode: code
+      },
+      relations: [
+        'attendances',
+        'attendances.dog',
+        'sets',
+        'sets.dogs',
+        'sets.dogs.dog',
+        'sets.location',
+        'club',
+        'club.locations'
       ]
     });
   }
@@ -55,7 +88,8 @@ export class PracticeResolver {
       clubId,
       scheduledAt,
       status,
-      plannedById: user.id
+      plannedById: user.id,
+      shareCode: this.generateShareCode()
     });
     const savedPractice = await this.practiceRepository.save(practice);
 

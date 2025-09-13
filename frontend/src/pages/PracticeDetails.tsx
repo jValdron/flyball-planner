@@ -4,7 +4,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useClub } from '../contexts/ClubContext'
 import { PracticeProvider, usePractice } from '../contexts/PracticeContext'
 import { SaveSpinner } from '../components/SaveSpinner'
-import { ChevronLeft, ChevronRight, Trash, CheckLg } from 'react-bootstrap-icons'
+import { ChevronLeft, ChevronRight, Trash, CheckLg, Share } from 'react-bootstrap-icons'
 import { formatRelativeTime, isPastDay } from '../utils/dateUtils'
 import { PracticeAttendance } from '../components/PracticeSet/PracticeAttendance'
 import { useMutation } from '@apollo/client'
@@ -181,6 +181,12 @@ function PracticeDetailsContent() {
     }
   }
 
+  const handleShare = () => {
+    if (!practiceId || !practice?.shareCode) return
+
+    navigate(`/practices/${practiceId}/view?code=${practice.shareCode}`)
+  }
+
   if (isPracticeLoading) {
     return (
       <Container className="text-center mt-5">
@@ -216,14 +222,24 @@ function PracticeDetailsContent() {
         </h1>
         <div className="d-flex flex-column align-items-end gap-2">
           {practiceId && (
-            <Button
-              variant="outline-danger"
-              size="sm"
-              onClick={() => setShowDeleteModal(true)}
-              disabled={isDeleting}
-            >
-              <Trash className="me-2" /> {isPastPractice ? 'Delete' : 'Cancel'}
-            </Button>
+            <div className="d-flex gap-2">
+              <Button
+                variant="outline-primary"
+                size="sm"
+                onClick={handleShare}
+                disabled={!practice?.shareCode}
+              >
+                <Share className="me-2" /> Share
+              </Button>
+              <Button
+                variant="outline-danger"
+                size="sm"
+                onClick={() => setShowDeleteModal(true)}
+                disabled={isDeleting}
+              >
+                <Trash className="me-2" /> {isPastPractice ? 'Delete' : 'Cancel'}
+              </Button>
+            </div>
           )}
           {!isPastPractice && practice && (
             <Form.Check
@@ -372,12 +388,19 @@ function PracticeDetailsContent() {
           disabled={!practiceId}
         >
           <PracticeValidation validationErrors={validationErrors} />
-          <div className="d-flex justify-content-start mb-3">
+          <div className="d-flex justify-content-between mb-3">
             <Button
               variant="outline-secondary"
               onClick={() => handleTabChange('sets')}
             >
               <ChevronLeft className="me-1" /> Sets
+            </Button>
+            <Button
+              variant="outline-primary"
+              onClick={handleShare}
+              disabled={!practice?.shareCode}
+            >
+              <Share className="me-2" /> Share / Print
             </Button>
           </div>
         </Tab>

@@ -150,6 +150,7 @@ type Practice {
   plannedById: ID!
   scheduledAt: DateTimeISO!
   sets: [Set!]!
+  shareCode: String
   status: PracticeStatus!
   updatedAt: DateTimeISO!
 }
@@ -219,6 +220,7 @@ type Query {
   practice(id: String!): Practice
   practiceAttendances(practiceId: String!): [PracticeAttendance!]!
   practiceSummariesByClub(clubId: String!): [PracticeSummary!]!
+  publicPractice(code: String!, id: String!): Practice
   set(id: String!): Set
   sets(practiceId: String!): [Set!]!
   user(id: String!): User

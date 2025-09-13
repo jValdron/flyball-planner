@@ -208,6 +208,51 @@ export function PracticeValidation({ validationErrors }: PracticeValidationProps
                 ))}
               </ListGroup>
             )}
+          {error.code === 'PRACTICE_READY_FOR_READY_STATUS' && (
+            <ListGroup className="mb-3 rounded-top-0">
+              <ListGroup.Item className="d-flex align-items-center ps-5 rounded-top-0">
+                <div className="text-muted small">
+                  Practice still marked as draft
+                </div>
+              </ListGroup.Item>
+            </ListGroup>
+          )}
+          {error.code === 'PRACTICE_NOT_READY_INSUFFICIENT_DOGS' && (
+            <ListGroup className="mb-3 rounded-top-0">
+              <ListGroup.Item className="d-flex align-items-center ps-5 rounded-top-0">
+                <div className="text-muted small">
+                  Need more confirmed dogs
+                </div>
+              </ListGroup.Item>
+            </ListGroup>
+          )}
+          {error.code === 'PRACTICE_NOT_READY_NO_SETS' && (
+            <ListGroup className="mb-3 rounded-top-0">
+              <ListGroup.Item className="d-flex align-items-center ps-5 rounded-top-0">
+                <div className="text-muted small">
+                  No sets configured
+                </div>
+              </ListGroup.Item>
+            </ListGroup>
+          )}
+          {error.code === 'PRACTICE_NOT_READY_UNCONFIRMED_ATTENDANCES' && (
+            <ListGroup className="mb-3 rounded-top-0">
+              <ListGroup.Item className="d-flex align-items-center ps-5 rounded-top-0">
+                <div className="text-muted small">
+                    Consider confirming all attendances before marking as Ready
+                </div>
+              </ListGroup.Item>
+            </ListGroup>
+          )}
+          {error.code === 'PRACTICE_READY_STATUS_INVALID' && (
+            <ListGroup className="mb-3 rounded-top-0">
+              <ListGroup.Item className="d-flex align-items-center ps-5 rounded-top-0">
+                <div className="text-muted small">
+                  Practice marked as Ready but missing required elements
+                </div>
+              </ListGroup.Item>
+            </ListGroup>
+          )}
         </React.Fragment>
       ))}
     </ListGroup>

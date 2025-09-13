@@ -16,9 +16,10 @@ export const formatRelativeTime = (dateTime: string | null): string => {
   }
 }
 
-export const formatFullDateTime = (dateTime: string | null): string => {
+export const formatFullDateTime = (dateTime: string | null, excludeSeconds: boolean = false): string => {
   if (!dateTime) return 'Not scheduled'
-  return format(new Date(dateTime), 'PPpp')
+  const formatString = excludeSeconds ? 'PPPp' : 'PPpp'
+  return format(new Date(dateTime), formatString)
 }
 
 export const isPastDay = (dateTime: string | null): boolean => {
