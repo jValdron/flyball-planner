@@ -1,5 +1,4 @@
 {
-    # Global options
     auto_https off
     log {
         output stdout
@@ -8,45 +7,33 @@
 }
 
 :80 {
-    # Serve static files from the dist directory
     root * /srv
 
-    # Enable gzip compression
     encode gzip
 
-    # Set proper MIME types for static assets
     header *.js "Content-Type: application/javascript"
     header *.css "Content-Type: text/css"
     header *.svg "Content-Type: image/svg+xml"
     header *.png "Content-Type: image/png"
     header *.ico "Content-Type: image/x-icon"
 
-    # Cache static assets
     header *.js Cache-Control "public, max-age=31536000, immutable"
     header *.css Cache-Control "public, max-age=31536000, immutable"
     header *.svg Cache-Control "public, max-age=31536000, immutable"
     header *.png Cache-Control "public, max-age=31536000, immutable"
     header *.ico Cache-Control "public, max-age=31536000, immutable"
 
-    # Security headers
     header {
-        # Prevent clickjacking
         X-Frame-Options "SAMEORIGIN"
-        # Prevent MIME type sniffing
         X-Content-Type-Options "nosniff"
-        # Enable XSS protection
         X-XSS-Protection "1; mode=block"
-        # Referrer policy
         Referrer-Policy "strict-origin-when-cross-origin"
     }
 
-    # Handle static assets first
     @static {
         path *.js *.css *.svg *.png *.ico *.woff *.woff2 *.ttf *.eot
     }
     file_server @static
 
-    # Handle client-side routing for SPA
-    # Serve index.html for all other routes (let the SPA handle routing)
     try_files {path} {path}/ /index.html
 }
