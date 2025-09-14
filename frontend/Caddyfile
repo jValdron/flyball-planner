@@ -33,7 +33,13 @@
     @static {
         path *.js *.css *.svg *.png *.ico *.woff *.woff2 *.ttf *.eot
     }
+
     file_server @static
 
-    try_files {path} {path}/ /index.html
+    @spa {
+        not path *.js *.css *.svg *.png *.ico *.woff *.woff2 *.ttf *.eot
+    }
+
+    rewrite @spa /index.html
+    file_server
 }
