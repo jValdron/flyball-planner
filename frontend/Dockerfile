@@ -5,16 +5,9 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-FROM node:22-alpine AS deps
-WORKDIR /app
-COPY package*.json ./
-RUN npm install --production && npm cache clean --force
-
-FROM gcr.io/distroless/nodejs22-debian12
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/server.js ./
-COPY --from=builder /app/package.json ./
+FROM caddy:2-alpine
+# Copy the built static files to Caddy's serving directory
+COPY --from=builder /app/dist /srv
+# Copy the Caddyfile configuration
+COPY Caddyfile /etc/caddy/Caddyfile
 EXPOSE 80
-CMD ["server.js"]
