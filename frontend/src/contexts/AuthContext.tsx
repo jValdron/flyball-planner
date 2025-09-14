@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localStorage.removeItem('authToken');
             setToken(null);
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('Failed to get current user:', error);
           localStorage.removeItem('authToken');
           setToken(null);
@@ -102,7 +102,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error.graphQLErrors && error.graphQLErrors.length > 0) {
         errorMessage = error.graphQLErrors[0].message;
       } else if (error.networkError) {
-        errorMessage = error.networkError.message;
+        if (error.networkError.message?.includes('NetworkError when attempting to fetch resource') ||
+            error.networkError.message?.includes('Failed to fetch') ||
+            error.networkError.message?.includes('ERR_CONNECTION_REFUSED') ||
+            error.networkError.message?.includes('ERR_NETWORK')) {
+          errorMessage = 'Something went wrong, please try later.';
+        } else {
+          errorMessage = error.networkError.message;
+        }
       } else if (error.message) {
         errorMessage = error.message;
       }
