@@ -19,6 +19,11 @@ graphql:
   secret:
     enabled: true
     existingSecret: ""
+  jwtSecret:
+    enabled: true
+    # If existingSecret is not provided, a secret will be auto-generated
+    # with the name: {release-name}-jwt-secret
+    existingSecret: ""
 
 frontend:
   replicaCount: 1

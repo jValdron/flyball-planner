@@ -62,3 +62,10 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.graphql.secret.existingSecret | default (printf "%s-postgresql-secret" (include "flyball-planner.fullname" .)) }}
                   key: password
+            {{- if .Values.graphql.jwtSecret.enabled }}
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.graphql.jwtSecret.existingSecret | default (printf "%s-jwt-secret" (include "flyball-planner.fullname" .)) }}
+                  key: jwt-secret
+            {{- end }}
