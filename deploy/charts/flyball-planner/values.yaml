@@ -30,7 +30,7 @@ frontend:
     type: ClusterIP
     port: 80
   env:
-    VITE_GRAPHQL_BASE_URL: /graphql
+    GRAPHQL_BASE_URL: /graphql
 
 ingress:
   enabled: false

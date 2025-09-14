@@ -6,8 +6,9 @@ COPY . .
 RUN npm run build
 
 FROM caddy:2-alpine
-# Copy the built static files to Caddy's serving directory
 COPY --from=builder /app/dist /srv
-# Copy the Caddyfile configuration
 COPY Caddyfile /etc/caddy/Caddyfile
+COPY init.sh /init.sh
+RUN chmod +x /init.sh
 EXPOSE 80
+CMD ["/init.sh"]
