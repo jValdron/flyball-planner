@@ -40,7 +40,13 @@
         Referrer-Policy "strict-origin-when-cross-origin"
     }
 
+    # Handle static assets first
+    @static {
+        path *.js *.css *.svg *.png *.ico *.woff *.woff2 *.ttf *.eot
+    }
+    file_server @static
+
     # Handle client-side routing for SPA
-    # Serve index.html for all routes (let the SPA handle routing)
-    try_files {path} /index.html
+    # Serve index.html for all other routes (let the SPA handle routing)
+    try_files {path} {path}/ /index.html
 }
