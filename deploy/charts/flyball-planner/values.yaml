@@ -12,11 +12,11 @@ graphql:
     NODE_ENV: production
     DB_USER: flyball_user
     DB_NAME: flyball_practice
-    DB_HOST: postgresql
+    DB_HOST: ""
     DB_PORT: 5432
     DB_SSLMODE: disable
     ALLOWED_ORIGINS: "http://flyball.local"
-  secret:
+  databasePassword:
     enabled: true
     existingSecret: ""
   jwtSecret:
@@ -59,6 +59,9 @@ postgresql:
   auth:
     username: flyball_user
     database: flyball_practice
+    # If existingSecret is not provided, a secret will be auto-generated
+    # with the name: {release-name}-postgresql-secret
+    existingSecret: ""
   persistence:
     enabled: true
     size: 1Gi

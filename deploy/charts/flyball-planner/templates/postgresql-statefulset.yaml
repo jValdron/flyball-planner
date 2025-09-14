@@ -4,7 +4,7 @@ kind: StatefulSet
 metadata:
   name: {{ include "flyball-planner.fullname" . }}-postgresql
   labels:
-    {{- include "flyball-planner.labels" . | nindent 4 }}
+    {{- include "flyball-planner.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: postgresql
 spec:
   serviceName: {{ include "flyball-planner.fullname" . }}-postgresql
@@ -35,7 +35,7 @@ spec:
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.postgresql.auth.existingSecret | default (printf "%s-postgresql-secret" (include "flyball-planner.fullname" .)) }}
+                  name: {{ if .Values.postgresql.auth.existingSecret }}{{ .Values.postgresql.auth.existingSecret }}{{ else }}{{ include "flyball-planner.fullname" . }}-postgresql-secret{{ end }}
                   key: password
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata

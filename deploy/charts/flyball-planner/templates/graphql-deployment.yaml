@@ -52,7 +52,7 @@ spec:
             - name: DB_NAME
               value: {{ .Values.graphql.env.DB_NAME }}
             - name: DB_HOST
-              value: {{ .Values.graphql.env.DB_HOST }}
+              value: {{ .Values.graphql.env.DB_HOST | default (printf "%s-postgresql" (include "flyball-planner.fullname" .)) }}
             - name: DB_PORT
               value: "{{ .Values.graphql.env.DB_PORT }}"
             - name: DB_SSLMODE
@@ -60,7 +60,7 @@ spec:
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.graphql.secret.existingSecret | default (printf "%s-postgresql-secret" (include "flyball-planner.fullname" .)) }}
+                  name: {{ .Values.graphql.databasePassword.existingSecret | default (printf "%s-postgresql-secret" (include "flyball-planner.fullname" .)) }}
                   key: password
             {{- if .Values.graphql.jwtSecret.enabled }}
             - name: JWT_SECRET
