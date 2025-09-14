@@ -21,7 +21,7 @@ spec:
       initContainers:
         - name: wait-for-db
           image: busybox
-          command: ["sh", "-c", "until nc -z {{ .Values.graphql.env.DB_HOST }} {{ .Values.graphql.env.DB_PORT }}; do echo waiting for database; sleep 2; done;"]
+          command: ["sh", "-c", "until nc -z {{ .Values.graphql.env.DB_HOST | default (printf "%s-postgresql" (include "flyball-planner.fullname" .)) }} {{ .Values.graphql.env.DB_PORT }}; do echo waiting for database; sleep 2; done;"]
       containers:
         - name: graphql
           image: {{ .Values.graphql.image.repository }}:{{ .Values.graphql.image.tag | default .Chart.AppVersion }}
