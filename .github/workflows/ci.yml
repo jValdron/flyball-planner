@@ -9,8 +9,47 @@ on:
   workflow_dispatch:
 
 jobs:
+  version-check:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract tag version
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/}
+          # Remove 'v' prefix if present
+          TAG_VERSION=${TAG_VERSION#v}
+          echo "TAG_VERSION=$TAG_VERSION" >> $GITHUB_ENV
+          echo "Extracted tag version: $TAG_VERSION"
+
+      - name: Check frontend package.json version
+        run: |
+          FRONTEND_VERSION=$(jq -r '.version' frontend/package.json)
+          echo "Frontend version: $FRONTEND_VERSION"
+          echo "Tag version: $TAG_VERSION"
+          if [ "$FRONTEND_VERSION" != "$TAG_VERSION" ]; then
+            echo "❌ Frontend package.json version ($FRONTEND_VERSION) does not match tag version ($TAG_VERSION)"
+            exit 1
+          fi
+          echo "✅ Frontend version matches tag"
+
+      - name: Check graphql package.json version
+        run: |
+          GRAPHQL_VERSION=$(jq -r '.version' graphql/package.json)
+          echo "GraphQL version: $GRAPHQL_VERSION"
+          echo "Tag version: $TAG_VERSION"
+          if [ "$GRAPHQL_VERSION" != "$TAG_VERSION" ]; then
+            echo "❌ GraphQL package.json version ($GRAPHQL_VERSION) does not match tag version ($TAG_VERSION)"
+            exit 1
+          fi
+          echo "✅ GraphQL version matches tag"
+
   build-and-push:
     runs-on: ubuntu-latest
+    needs: version-check
+    if: always() && (needs.version-check.result == 'success' || !startsWith(github.ref, 'refs/tags/'))
     permissions:
       contents: read
       packages: write

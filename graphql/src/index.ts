@@ -8,6 +8,7 @@ import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/lib/use/ws';
 import express from 'express';
 import cors from 'cors';
+import packageJson from '../package.json';
 import { AppDataSource } from './db';
 import { DogResolver } from './resolvers/DogResolver';
 import { HandlerResolver } from './resolvers/HandlerResolver';
@@ -125,7 +126,11 @@ async function startServer() {
     await server.start();
 
     app.get('/health', (req, res) => {
-      res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+      res.status(200).json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        version: packageJson.version
+      });
     });
 
     app.use(
