@@ -64,12 +64,12 @@ jobs:
           sed -i "s/^appVersion: .*/appVersion: \"$TAG_VERSION\"/" deploy/charts/flyball-planner/Chart.yaml
           echo "Updated app version to $TAG_VERSION"
 
-          # Commit the appVersion change
+          # Commit the appVersion change to the current branch
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
           git add deploy/charts/flyball-planner/Chart.yaml
           git commit -m "Update appVersion to $TAG_VERSION for chart version ${{ env.CHART_VERSION }}"
-          git push origin ${{ github.ref_name }}
+          git push origin HEAD
           echo "✅ Committed appVersion update to $TAG_VERSION"
 
       - name: Package Helm chart
