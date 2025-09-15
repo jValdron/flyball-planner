@@ -12,13 +12,20 @@ spec:
     - http:
         host: {{ .Values.ingress.host }}
         paths:
-          - path: /api
+          - path: /graphql
             pathType: Prefix
             backend:
               service:
-                name: {{ include "flyball.fullname" . }}-api
+                name: {{ include "flyball.fullname" . }}-graphql
                 port:
-                  number: 8080
+                  number: 4000
+          - path: /subscriptions
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "flyball.fullname" . }}-graphql
+                port:
+                  number: 4000
           - path: /
             pathType: Prefix
             backend:

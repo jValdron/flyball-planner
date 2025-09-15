@@ -15,6 +15,9 @@ spec:
         - path:
             type: PathPrefix
             value: /graphql
+        - path:
+            type: PathPrefix
+            value: /subscriptions
       backendRefs:
         - name: {{ include "flyball-planner.fullname" . }}-graphql
           port: 4000
