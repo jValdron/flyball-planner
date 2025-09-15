@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'assets/**'
+      - 'frontend/**'
+      - 'graphql/**'
     tags:
       - "v*"
   workflow_dispatch:
