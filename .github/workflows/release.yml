@@ -104,7 +104,8 @@ jobs:
             ## Helm Chart
             - Chart version updated with appVersion v${{ github.event.inputs.version }}
 
-            ${{ github.event.inputs.message != 'Release version' && format('## Release Notes\n\n{0}', github.event.inputs.message) || '' }}
+            ## Release Notes
+            ${{ github.event.inputs.message }}
           draft: false
           prerelease: false
         env:
