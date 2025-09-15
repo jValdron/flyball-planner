@@ -27,7 +27,11 @@ jobs:
         run: |
           # Check if there are changes in chart files since the last commit
           # Handle cases where there's no previous commit (first commit or shallow clone)
-          if git rev-list --count HEAD > 1 2>/dev/null; then
+
+          # First, check if we can safely compare with previous commit
+          COMMIT_COUNT=$(git rev-list --count HEAD 2>/dev/null || echo "0")
+
+          if [ "$COMMIT_COUNT" -gt 1 ]; then
             # Multiple commits exist, compare with previous commit
             if git diff --quiet HEAD~1 HEAD -- deploy/charts/ 2>/dev/null; then
               echo "changed=false" >> $GITHUB_OUTPUT
