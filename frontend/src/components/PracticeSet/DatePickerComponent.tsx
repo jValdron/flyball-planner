@@ -9,9 +9,10 @@ import { useEffect, useState } from 'react'
 interface DatePickerComponentProps {
   initialScheduledAt: Date | null
   onChange: (scheduledAt: Date) => void
+  disabled?: boolean
 }
 
-export function DatePickerComponent({ initialScheduledAt, onChange }: DatePickerComponentProps) {
+export function DatePickerComponent({ initialScheduledAt, onChange, disabled = false }: DatePickerComponentProps) {
   const { selectedClub } = useClub()
 
   const [scheduledAt, setScheduledAt] = useState<Date | null>(initialScheduledAt)
@@ -73,11 +74,12 @@ export function DatePickerComponent({ initialScheduledAt, onChange }: DatePicker
               return null
             }}
             onChange={(value) => {
-              if (value instanceof Date) {
+              if (!disabled && value instanceof Date) {
                 handleDateChange(value)
               }
             }}
             value={scheduledDate}
+            tileDisabled={() => disabled}
           />
           <div className="mt-2">
             <Badge bg="success" className="d-inline-block me-2"><CalendarIcon /> Today</Badge>
@@ -93,6 +95,7 @@ export function DatePickerComponent({ initialScheduledAt, onChange }: DatePicker
             type="time"
             value={scheduledTime}
             onChange={(e) => handleTimeChange(e.target.value)}
+            disabled={disabled}
           />
         </Form.Group>
       </div>

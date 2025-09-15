@@ -14,9 +14,10 @@ const SAVE_DELAY = 25
 
 interface PracticeAttendanceProps {
   practiceId: string
+  disabled?: boolean
 }
 
-export function PracticeAttendance({ practiceId }: PracticeAttendanceProps) {
+export function PracticeAttendance({ practiceId, disabled = false }: PracticeAttendanceProps) {
   const { selectedClub, dogsByHandlersInSelectedClub } = useClub()
   const { isDark } = useTheme()
   const { getAttendance } = usePractice()
@@ -123,6 +124,8 @@ export function PracticeAttendance({ practiceId }: PracticeAttendanceProps) {
   }, [pendingUpdates, selectedClub, practiceId, updateAttendances])
 
   const handleAttendanceChange = (dogId: string, status: AttendanceStatus) => {
+    if (disabled) return
+
     setOptimisticAttendances(prev => new Map(prev).set(dogId, status))
 
     setPendingUpdates(prev => {
@@ -135,6 +138,8 @@ export function PracticeAttendance({ practiceId }: PracticeAttendanceProps) {
   }
 
   const handleOwnerAttendanceChange = (ownerId: string, status: AttendanceStatus) => {
+    if (disabled) return
+
     const ownerDogs = dogsByHandlersInSelectedClub.find(o => o.id === ownerId)?.dogs || []
 
     setOptimisticAttendances(prev => {
@@ -219,10 +224,12 @@ export function PracticeAttendance({ practiceId }: PracticeAttendanceProps) {
                     className={`${isDark ? 'table-dark' : 'table-secondary'}`}
                     style={{ cursor: 'pointer' }}
                     onClick={() => {
-                      const newStatus = ownerStatus === AttendanceStatus.Attending ?
-                        AttendanceStatus.NotAttending :
-                        AttendanceStatus.Attending
-                      handleOwnerAttendanceChange(owner.id, newStatus)
+                      if (!disabled) {
+                        const newStatus = ownerStatus === AttendanceStatus.Attending ?
+                          AttendanceStatus.NotAttending :
+                          AttendanceStatus.Attending
+                        handleOwnerAttendanceChange(owner.id, newStatus)
+                      }
                     }}
                   >
                     <td className="w-100 text-nowrap text-truncate"><strong>{ownerName}</strong></td>
@@ -236,6 +243,7 @@ export function PracticeAttendance({ practiceId }: PracticeAttendanceProps) {
                             handleOwnerAttendanceChange(owner.id, AttendanceStatus.Attending)
                           }}
                           title="All Attending"
+                          disabled={disabled}
                         >
                           <CheckLg />
                         </Button>
@@ -247,6 +255,7 @@ export function PracticeAttendance({ practiceId }: PracticeAttendanceProps) {
                             handleOwnerAttendanceChange(owner.id, AttendanceStatus.NotAttending)
                           }}
                           title="All Not Attending"
+                          disabled={disabled}
                         >
                           <XLg />
                         </Button>
@@ -266,10 +275,12 @@ export function PracticeAttendance({ practiceId }: PracticeAttendanceProps) {
                           backgroundColor: isOptimistic ? '#f8f9fa' : undefined
                         }}
                         onClick={() => {
-                          const newStatus = dogAttendance === AttendanceStatus.Attending ?
-                            AttendanceStatus.NotAttending :
-                            AttendanceStatus.Attending
-                          handleAttendanceChange(dog.id, newStatus)
+                          if (!disabled) {
+                            const newStatus = dogAttendance === AttendanceStatus.Attending ?
+                              AttendanceStatus.NotAttending :
+                              AttendanceStatus.Attending
+                            handleAttendanceChange(dog.id, newStatus)
+                          }
                         }}
                       >
                         <td className="ps-4">
@@ -285,6 +296,7 @@ export function PracticeAttendance({ practiceId }: PracticeAttendanceProps) {
                                 handleAttendanceChange(dog.id, AttendanceStatus.Attending)
                               }}
                               title="Attending"
+                              disabled={disabled}
                             >
                               <CheckLg />
                             </Button>
@@ -296,6 +308,7 @@ export function PracticeAttendance({ practiceId }: PracticeAttendanceProps) {
                                 handleAttendanceChange(dog.id, AttendanceStatus.NotAttending)
                               }}
                               title="Not Attending"
+                              disabled={disabled}
                             >
                               <XLg />
                             </Button>

@@ -35,6 +35,7 @@ function PracticeDetailsContent() {
   const [error, setError] = useState<string | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([])
+  const [isLocked, setIsLocked] = useState(true) // Start locked for past practices
 
   const title = practiceId
     ? (practice?.scheduledAt ? formatRelativeTime(practice.scheduledAt) : 'Practice Details')
@@ -69,6 +70,15 @@ function PracticeDetailsContent() {
 
   const isPastPractice = practiceId ? isPastDay(practice?.scheduledAt ?? null) : false
   const isSaving = isCreating || isUpdating
+
+  // Set initial lock state based on whether it's a past practice
+  useEffect(() => {
+    if (practiceId) {
+      setIsLocked(isPastPractice)
+    } else {
+      setIsLocked(false) // New practices are not locked
+    }
+  }, [practiceId, isPastPractice])
 
   const getCurrentTab = () => {
     if (!practiceId) return 'date'
@@ -241,16 +251,28 @@ function PracticeDetailsContent() {
               </Button>
             </div>
           )}
-          {!isPastPractice && practice && (() => {
+          {practice && (() => {
             const hasValidationErrors = validationErrors.some(error => error.severity === 'error')
             const isCurrentlyDraft = practice.status === PracticeStatus.Draft
             const shouldDisable = hasValidationErrors && isCurrentlyDraft
+
+            if (isPastPractice) {
+              return (
+                <Form.Check
+                  type="switch"
+                  id="unlock-toggle"
+                  label="Unlock for editing"
+                  checked={!isLocked}
+                  onChange={(e) => setIsLocked(!e.target.checked)}
+                />
+              )
+            }
+
             const formCheck = (
               <Form.Check
                 type="switch"
                 id="status-toggle"
                 label="Mark as Ready"
-                className="fs-5"
                 checked={practice.status === PracticeStatus.Ready}
                 onChange={(e) => handleStatusChange(e.target.checked ? PracticeStatus.Ready : PracticeStatus.Draft)}
                 disabled={shouldDisable}
@@ -299,7 +321,11 @@ function PracticeDetailsContent() {
           </span>
         }>
           <Form>
-            <DatePickerComponent initialScheduledAt={practice?.scheduledAt} onChange={handleScheduledAtChange} />
+            <DatePickerComponent
+              initialScheduledAt={practice?.scheduledAt}
+              onChange={handleScheduledAtChange}
+              disabled={isLocked}
+            />
             <div className="d-flex justify-content-end">
               {!practiceId ? (
                 <OverlayTrigger overlay={<Tooltip>Practice must be scheduled first.</Tooltip>} placement="left">
@@ -341,6 +367,7 @@ function PracticeDetailsContent() {
           {practiceId && (
             <PracticeAttendance
               practiceId={practiceId}
+              disabled={isLocked}
             />
           )}
           <div className="d-flex justify-content-between mb-3">
@@ -370,7 +397,7 @@ function PracticeDetailsContent() {
           {practiceId && (
             <PracticeSet
               practiceId={practiceId}
-              disabled={false}
+              disabled={isLocked}
               validationErrors={validationErrors}
             />
           )}
