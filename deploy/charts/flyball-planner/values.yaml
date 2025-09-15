@@ -36,6 +36,7 @@ frontend:
     port: 80
   env:
     GRAPHQL_BASE_URL: /graphql
+    WS_BASE_URL: /subscriptions
 
 ingress:
   enabled: false

@@ -23,8 +23,10 @@ spec:
           image: {{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag | default .Chart.AppVersion }}
           imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
           env:
-            - name: VITE_GRAPHQL_BASE_URL
-              value: {{ .Values.frontend.env.VITE_GRAPHQL_BASE_URL }}
+            - name: GRAPHQL_BASE_URL
+              value: {{ .Values.frontend.env.GRAPHQL_BASE_URL | default "/graphql" }}
+            - name: WS_BASE_URL
+              value: {{ .Values.frontend.env.WS_BASE_URL | default "/subscriptions" }}
           ports:
             - containerPort: 80
           livenessProbe:
