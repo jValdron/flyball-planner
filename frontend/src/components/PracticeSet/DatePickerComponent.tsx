@@ -7,12 +7,11 @@ import { useClub } from '../../contexts/ClubContext'
 import { useEffect, useState } from 'react'
 
 interface DatePickerComponentProps {
-  isPastPractice: boolean,
   initialScheduledAt: Date | null
   onChange: (scheduledAt: Date) => void
 }
 
-export function DatePickerComponent({ isPastPractice, initialScheduledAt, onChange }: DatePickerComponentProps) {
+export function DatePickerComponent({ initialScheduledAt, onChange }: DatePickerComponentProps) {
   const { selectedClub } = useClub()
 
   const [scheduledAt, setScheduledAt] = useState<Date | null>(initialScheduledAt)
@@ -61,8 +60,6 @@ export function DatePickerComponent({ isPastPractice, initialScheduledAt, onChan
           <Calendar
             calendarType={CALENDAR_TYPES.GREGORY}
             className="w-100"
-            minDate={isPastPractice ? undefined : new Date()}
-            showNavigation={!isPastPractice}
             prevLabel={<ChevronLeft />}
             nextLabel={<ChevronRight />}
             tileClassName={({ date }) => {
@@ -75,9 +72,8 @@ export function DatePickerComponent({ isPastPractice, initialScheduledAt, onChan
               }
               return null
             }}
-            tileDisabled={({date}) => isPastPractice && scheduledDate?.toDateString() !== date.toDateString()}
             onChange={(value) => {
-              if (!isPastPractice && value instanceof Date) {
+              if (value instanceof Date) {
                 handleDateChange(value)
               }
             }}
@@ -97,7 +93,6 @@ export function DatePickerComponent({ isPastPractice, initialScheduledAt, onChan
             type="time"
             value={scheduledTime}
             onChange={(e) => handleTimeChange(e.target.value)}
-            disabled={isPastPractice}
           />
         </Form.Group>
       </div>

@@ -14,10 +14,9 @@ const SAVE_DELAY = 25
 
 interface PracticeAttendanceProps {
   practiceId: string
-  isPastPractice: boolean
 }
 
-export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAttendanceProps) {
+export function PracticeAttendance({ practiceId }: PracticeAttendanceProps) {
   const { selectedClub, dogsByHandlersInSelectedClub } = useClub()
   const { isDark } = useTheme()
   const { getAttendance } = usePractice()
@@ -220,12 +219,10 @@ export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAtten
                     className={`${isDark ? 'table-dark' : 'table-secondary'}`}
                     style={{ cursor: 'pointer' }}
                     onClick={() => {
-                      if (!isPastPractice) {
-                        const newStatus = ownerStatus === AttendanceStatus.Attending ?
-                          AttendanceStatus.NotAttending :
-                          AttendanceStatus.Attending
-                        handleOwnerAttendanceChange(owner.id, newStatus)
-                      }
+                      const newStatus = ownerStatus === AttendanceStatus.Attending ?
+                        AttendanceStatus.NotAttending :
+                        AttendanceStatus.Attending
+                      handleOwnerAttendanceChange(owner.id, newStatus)
                     }}
                   >
                     <td className="w-100 text-nowrap text-truncate"><strong>{ownerName}</strong></td>
@@ -239,7 +236,6 @@ export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAtten
                             handleOwnerAttendanceChange(owner.id, AttendanceStatus.Attending)
                           }}
                           title="All Attending"
-                          disabled={isPastPractice}
                         >
                           <CheckLg />
                         </Button>
@@ -251,7 +247,6 @@ export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAtten
                             handleOwnerAttendanceChange(owner.id, AttendanceStatus.NotAttending)
                           }}
                           title="All Not Attending"
-                          disabled={isPastPractice}
                         >
                           <XLg />
                         </Button>
@@ -271,12 +266,10 @@ export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAtten
                           backgroundColor: isOptimistic ? '#f8f9fa' : undefined
                         }}
                         onClick={() => {
-                          if (!isPastPractice) {
-                            const newStatus = dogAttendance === AttendanceStatus.Attending ?
-                              AttendanceStatus.NotAttending :
-                              AttendanceStatus.Attending
-                            handleAttendanceChange(dog.id, newStatus)
-                          }
+                          const newStatus = dogAttendance === AttendanceStatus.Attending ?
+                            AttendanceStatus.NotAttending :
+                            AttendanceStatus.Attending
+                          handleAttendanceChange(dog.id, newStatus)
                         }}
                       >
                         <td className="ps-4">
@@ -292,7 +285,6 @@ export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAtten
                                 handleAttendanceChange(dog.id, AttendanceStatus.Attending)
                               }}
                               title="Attending"
-                              disabled={isPastPractice}
                             >
                               <CheckLg />
                             </Button>
@@ -304,7 +296,6 @@ export function PracticeAttendance({ practiceId, isPastPractice }: PracticeAtten
                                 handleAttendanceChange(dog.id, AttendanceStatus.NotAttending)
                               }}
                               title="Not Attending"
-                              disabled={isPastPractice}
                             >
                               <XLg />
                             </Button>

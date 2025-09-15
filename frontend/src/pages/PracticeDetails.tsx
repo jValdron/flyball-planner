@@ -299,7 +299,7 @@ function PracticeDetailsContent() {
           </span>
         }>
           <Form>
-            <DatePickerComponent isPastPractice={isPastPractice} initialScheduledAt={practice?.scheduledAt} onChange={handleScheduledAtChange} />
+            <DatePickerComponent initialScheduledAt={practice?.scheduledAt} onChange={handleScheduledAtChange} />
             <div className="d-flex justify-content-end">
               {!practiceId ? (
                 <OverlayTrigger overlay={<Tooltip>Practice must be scheduled first.</Tooltip>} placement="left">
@@ -341,7 +341,6 @@ function PracticeDetailsContent() {
           {practiceId && (
             <PracticeAttendance
               practiceId={practiceId}
-              isPastPractice={isPastPractice}
             />
           )}
           <div className="d-flex justify-content-between mb-3">
@@ -371,7 +370,6 @@ function PracticeDetailsContent() {
           {practiceId && (
             <PracticeSet
               practiceId={practiceId}
-              disabled={isPastPractice}
               validationErrors={validationErrors}
             />
           )}

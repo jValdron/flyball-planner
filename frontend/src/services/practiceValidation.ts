@@ -74,14 +74,6 @@ export const unconfirmedAttendanceRule: ValidationRule<Partial<Practice>> = (pra
 export const timingRule: ValidationRule<Partial<Practice>> = (practice) => {
   if (!practice.scheduledAt) return null
   const practiceDate = new Date(practice.scheduledAt)
-  const now = new Date()
-  if (practiceDate < now) {
-    return {
-      code: 'PAST_PRACTICE',
-      message: 'Practice has already happened, you cannot edit it anymore',
-      severity: 'error',
-    }
-  }
   const threeMonthsFromNow = new Date()
   threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3)
   if (practiceDate > threeMonthsFromNow) {
