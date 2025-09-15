@@ -87,6 +87,29 @@ jobs:
           git push origin "v$VERSION"
           echo "✅ Pushed tag v$VERSION to remote"
 
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          release_name: Release v${{ github.event.inputs.version }}
+          body: |
+            ## What's Changed
+            - Updated frontend to version ${{ github.event.inputs.version }}
+            - Updated graphql to version ${{ github.event.inputs.version }}
+
+            ## Docker Images
+            - `ghcr.io/${{ github.repository_owner }}/frontend:v${{ github.event.inputs.version }}`
+            - `ghcr.io/${{ github.repository_owner }}/graphql:v${{ github.event.inputs.version }}`
+
+            ## Helm Chart
+            - Chart version updated with appVersion v${{ github.event.inputs.version }}
+
+            ${{ github.event.inputs.message != 'Release version' && format('## Release Notes\n\n{0}', github.event.inputs.message) || '' }}
+          draft: false
+          prerelease: false
+
       - name: Release Summary
         run: |
           echo "🎉 Release v${{ github.event.inputs.version }} has been created!"
