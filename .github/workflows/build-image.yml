@@ -45,7 +45,7 @@ jobs:
           fi
 
   version-check:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'repository_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -53,9 +53,17 @@ jobs:
 
       - name: Extract tag version
         run: |
-          TAG_VERSION=${GITHUB_REF#refs/tags/}
-          # Remove 'v' prefix if present
-          TAG_VERSION=${TAG_VERSION#v}
+          if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
+            # Extract version from client payload
+            TAG_VERSION=${{ github.event.client_payload.ref }}
+            # Remove 'v' prefix if present
+            TAG_VERSION=${TAG_VERSION#v}
+          else
+            # Extract from git ref
+            TAG_VERSION=${GITHUB_REF#refs/tags/}
+            # Remove 'v' prefix if present
+            TAG_VERSION=${TAG_VERSION#v}
+          fi
           echo "TAG_VERSION=$TAG_VERSION" >> $GITHUB_ENV
           echo "Extracted tag version: $TAG_VERSION"
 
@@ -87,7 +95,8 @@ jobs:
     if: |
       always() && (
         (startsWith(github.ref, 'refs/tags/') && needs.version-check.result == 'success') ||
-        (startsWith(github.ref, 'refs/heads/') && needs.check-changes.outputs.should-build == 'true') ||
+        (startsWith(github.ref, 'refs/heads/') && needs.check-changes.result == 'success' && needs.check-changes.outputs.should-build == 'true') ||
+        (github.event_name == 'repository_dispatch' && needs.version-check.result == 'success') ||
         github.event_name == 'workflow_dispatch'
       )
     permissions:

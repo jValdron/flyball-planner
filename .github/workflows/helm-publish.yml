@@ -15,6 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      IS_TAG_OR_DISPATCH: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'repository_dispatch' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -46,10 +48,10 @@ jobs:
       - name: Determine if chart should be published
         id: should-publish
         run: |
-          if [ "${{ startsWith(github.ref, 'refs/tags/') }}" == "true" ]; then
-            # Tag pushes: always publish (will update appVersion and overwrite)
+          if [ "${{ env.IS_TAG_OR_DISPATCH }}" == "true" ]; then
+            # Tag pushes or repository dispatch: always publish (will update appVersion and overwrite)
             echo "publish=true" >> $GITHUB_OUTPUT
-            echo "Chart should be published (tag push - will update appVersion)"
+            echo "Chart should be published (tag push or repository dispatch - will update appVersion)"
           elif [ "${{ steps.check-existing-version.outputs.exists }}" == "false" ]; then
             # Regular pushes: only publish if version doesn't exist
             echo "publish=true" >> $GITHUB_OUTPUT
@@ -60,9 +62,20 @@ jobs:
           fi
 
       - name: Update app version for tags
-        if: startsWith(github.ref, 'refs/tags/') && steps.should-publish.outputs.publish == 'true'
+        if: env.IS_TAG_OR_DISPATCH == 'true' && steps.should-publish.outputs.publish == 'true'
         run: |
-          TAG_VERSION=${GITHUB_REF#refs/tags/}
+          if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
+            # Extract version from client payload
+            TAG_VERSION=${{ github.event.client_payload.ref }}
+            # Remove 'v' prefix if present
+            TAG_VERSION=${TAG_VERSION#v}
+          else
+            # Extract from git ref
+            TAG_VERSION=${GITHUB_REF#refs/tags/}
+            # Remove 'v' prefix if present
+            TAG_VERSION=${TAG_VERSION#v}
+          fi
+
           sed -i "s/^appVersion: .*/appVersion: \"$TAG_VERSION\"/" deploy/charts/flyball-planner/Chart.yaml
           echo "Updated app version to $TAG_VERSION"
 
@@ -107,10 +120,14 @@ jobs:
           mkdir -p charts
           cp ../charts/*.tgz charts/
 
-          # For tag pushes, allow overwriting existing chart versions
-          if [ "${{ startsWith(github.ref, 'refs/tags/') }}" == "true" ]; then
+          # For tag pushes or repository dispatch, allow overwriting existing chart versions
+          if [ "${{ env.IS_TAG_OR_DISPATCH }}" == "true" ]; then
             helm repo index charts --url https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/charts/ --merge index.yaml
-            COMMIT_MSG="Update Helm chart ${{ env.CHART_VERSION }} with appVersion ${{ github.ref_name }}"
+            if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
+              COMMIT_MSG="Update Helm chart ${{ env.CHART_VERSION }} with appVersion ${{ github.event.client_payload.ref }}"
+            else
+              COMMIT_MSG="Update Helm chart ${{ env.CHART_VERSION }} with appVersion ${{ github.ref_name }}"
+            fi
           else
             helm repo index charts --url https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/charts/
             COMMIT_MSG="Add Helm chart ${{ env.CHART_VERSION }}"
