@@ -91,15 +91,15 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ github.event.inputs.version }}
-          name: Release v${{ github.event.inputs.version }}
+          name: v${{ github.event.inputs.version }}
           body: |
             ## What's Changed
             - Updated frontend to version ${{ github.event.inputs.version }}
             - Updated graphql to version ${{ github.event.inputs.version }}
 
             ## Docker Images
-            - `ghcr.io/${{ github.repository_owner }}/frontend:v${{ github.event.inputs.version }}`
-            - `ghcr.io/${{ github.repository_owner }}/graphql:v${{ github.event.inputs.version }}`
+            - `ghcr.io/${{ github.repository }}/frontend:v${{ github.event.inputs.version }}`
+            - `ghcr.io/${{ github.repository }}/graphql:v${{ github.event.inputs.version }}`
 
             ## Helm Chart
             - Chart version updated with appVersion v${{ github.event.inputs.version }}
