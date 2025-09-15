@@ -4,16 +4,44 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'assets/**'
-      - 'frontend/**'
-      - 'graphql/**'
-  push:
     tags:
       - "v*"
   workflow_dispatch:
 
 jobs:
+  check-changes:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/')
+    runs-on: ubuntu-latest
+    outputs:
+      should-build: ${{ steps.changes.outputs.should-build }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check for relevant changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+            graphql:
+              - 'graphql/**'
+            assets:
+              - 'assets/**'
+
+      - name: Set build flag
+        run: |
+          if [ "${{ steps.changes.outputs.frontend }}" == "true" ] || [ "${{ steps.changes.outputs.graphql }}" == "true" ] || [ "${{ steps.changes.outputs.assets }}" == "true" ]; then
+            echo "should-build=true" >> $GITHUB_OUTPUT
+            echo "✅ Relevant files changed, will build"
+          else
+            echo "should-build=false" >> $GITHUB_OUTPUT
+            echo "⏭️ No relevant files changed, skipping build"
+          fi
+
   version-check:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
@@ -53,8 +81,13 @@ jobs:
 
   build-and-push:
     runs-on: ubuntu-latest
-    needs: version-check
-    if: always() && (needs.version-check.result == 'success' || !startsWith(github.ref, 'refs/tags/'))
+    needs: [version-check, check-changes]
+    if: |
+      always() && (
+        (startsWith(github.ref, 'refs/tags/') && needs.version-check.result == 'success') ||
+        (startsWith(github.ref, 'refs/heads/') && needs.check-changes.outputs.should-build == 'true') ||
+        github.event_name == 'workflow_dispatch'
+      )
     permissions:
       contents: read
       packages: write
