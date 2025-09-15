@@ -126,9 +126,17 @@ export class PracticeResolver {
     });
     if (!practice) return null;
 
+    // Check if trying to mark a past practice as Draft
+    const newScheduledAt = scheduledAt ?? practice.scheduledAt;
+    const newStatus = status ?? practice.status;
+    
+    if (newStatus === PracticeStatus.Draft && newScheduledAt < new Date()) {
+      throw new Error('Cannot mark a past practice as Draft. Past practices must remain in Ready status.');
+    }
+
     Object.assign(practice, {
-      scheduledAt: scheduledAt ?? practice.scheduledAt,
-      status: status ?? practice.status
+      scheduledAt: newScheduledAt,
+      status: newStatus
     });
 
     const updatedPractice = await this.practiceRepository.save(practice);

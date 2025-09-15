@@ -414,21 +414,23 @@ function PracticeDetailsContent() {
               <ChevronLeft className="me-1" /> Sets
             </Button>
             <div className="d-flex gap-2">
-              <Button
-                variant={practice?.status === PracticeStatus.Ready ? "outline-warning" : "success"}
-                onClick={() => handleStatusChange(practice?.status === PracticeStatus.Ready ? PracticeStatus.Draft : PracticeStatus.Ready)}
-                disabled={validationErrors.some(error => error.severity === 'error') && practice?.status === PracticeStatus.Draft}
-              >
-                {practice?.status === PracticeStatus.Ready ? (
-                  <>
-                    <Pencil className="me-2" /> Mark as Draft
-                  </>
-                ) : (
-                  <>
-                    <CheckLg className="me-2" /> Mark as Ready
-                  </>
-                )}
-              </Button>
+              {!isPastPractice && (
+                <Button
+                  variant={practice?.status === PracticeStatus.Ready ? "outline-warning" : "success"}
+                  onClick={() => handleStatusChange(practice?.status === PracticeStatus.Ready ? PracticeStatus.Draft : PracticeStatus.Ready)}
+                  disabled={validationErrors.some(error => error.severity === 'error') && practice?.status === PracticeStatus.Draft}
+                >
+                  {practice?.status === PracticeStatus.Ready ? (
+                    <>
+                      <Pencil className="me-2" /> Mark as Draft
+                    </>
+                  ) : (
+                    <>
+                      <CheckLg className="me-2" /> Mark as Ready
+                    </>
+                  )}
+                </Button>
+              )}
               <Button
                 variant={practice?.status === PracticeStatus.Ready ? "primary" : "outline-primary"}
                 onClick={handleShare}
