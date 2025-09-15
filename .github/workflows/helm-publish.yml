@@ -66,6 +66,7 @@ jobs:
 
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
+          git fetch origin main
           git checkout main
           git add deploy/charts/flyball-planner/Chart.yaml
           git commit -m "Update appVersion to $TAG_VERSION for chart version ${{ env.CHART_VERSION }}"
