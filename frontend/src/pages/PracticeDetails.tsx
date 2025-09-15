@@ -370,6 +370,7 @@ function PracticeDetailsContent() {
           {practiceId && (
             <PracticeSet
               practiceId={practiceId}
+              disabled={false}
               validationErrors={validationErrors}
             />
           )}

@@ -54,7 +54,6 @@ function SortableSet({
   availableDogs,
   onSetDogsChange,
   onSetNotesChange,
-  onInsertAbove,
   otherLocations,
   defaultLocation,
   disabled = false,
