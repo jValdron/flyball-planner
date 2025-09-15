@@ -33,7 +33,7 @@ jobs:
         id: check-existing-version
         run: |
           # Check if this chart version already exists in the gh-pages branch
-          if curl -s "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/index.yaml" | grep -q "version: ${{ env.CHART_VERSION }}"; then
+          if curl -s "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/charts/index.yaml" | grep -q "version: ${{ env.CHART_VERSION }}"; then
             echo "exists=true" >> $GITHUB_OUTPUT
             echo "Chart version ${{ env.CHART_VERSION }} already exists in gh-pages"
           else
