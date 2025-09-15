@@ -65,15 +65,11 @@ jobs:
         if: env.IS_TAG_OR_DISPATCH == 'true' && steps.should-publish.outputs.publish == 'true'
         run: |
           if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
-            # Extract version from client payload
+            # Extract version from client payload (keep the 'v' prefix)
             TAG_VERSION=${{ github.event.client_payload.ref }}
-            # Remove 'v' prefix if present
-            TAG_VERSION=${TAG_VERSION#v}
           else
-            # Extract from git ref
+            # Extract from git ref (keep the 'v' prefix)
             TAG_VERSION=${GITHUB_REF#refs/tags/}
-            # Remove 'v' prefix if present
-            TAG_VERSION=${TAG_VERSION#v}
           fi
 
           sed -i "s/^appVersion: .*/appVersion: \"$TAG_VERSION\"/" deploy/charts/flyball-planner/Chart.yaml
