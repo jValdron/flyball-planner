@@ -88,12 +88,10 @@ jobs:
           echo "✅ Pushed tag v$VERSION to remote"
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ github.event.inputs.version }}
-          release_name: Release v${{ github.event.inputs.version }}
+          name: Release v${{ github.event.inputs.version }}
           body: |
             ## What's Changed
             - Updated frontend to version ${{ github.event.inputs.version }}
@@ -109,6 +107,8 @@ jobs:
             ${{ github.event.inputs.message != 'Release version' && format('## Release Notes\n\n{0}', github.event.inputs.message) || '' }}
           draft: false
           prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Release Summary
         run: |
