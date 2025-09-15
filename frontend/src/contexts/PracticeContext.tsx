@@ -72,7 +72,8 @@ function setsReducer(state: SetData[], action: SetAction): SetData[] {
         state.map(s => s.id === action.setId ? { ...s, ...action.updates, updatedAt: new Date().toISOString() } : s)
       )
     case 'REMOVE_SET':
-      return sortSetsByIndex(state.filter(s => s.id !== action.setId))
+      const filtered = state.filter(s => s.id !== action.setId)
+      return sortSetsByIndex(filtered)
     default:
       return state
   }
@@ -82,6 +83,7 @@ export function PracticeProvider({ children, practiceId }: PracticeProviderProps
   const [practice, setPractice] = useState<PracticeData | null>(null)
   const [isPracticeLoading, setIsPracticeLoading] = useState(false)
   const [practiceError, setPracticeError] = useState<string | null>(null)
+
   const [sets, dispatchSets] = useReducer(setsReducer, [])
   const { dogs } = useClub()
 
@@ -116,9 +118,11 @@ export function PracticeProvider({ children, practiceId }: PracticeProviderProps
         sets: sortSetsByIndex(practiceData.practice.sets)
       }
       setPractice(practiceWithSortedSets)
-      dispatchSets({ type: 'SET_SETS', sets: practiceData.practice.sets })
+      if (sets.length === 0) {
+        dispatchSets({ type: 'SET_SETS', sets: practiceData.practice.sets })
+      }
     }
-  }, [practiceData])
+  }, [practiceData, sets.length])
 
   // Merge attendance data with active dogs
   const mergedAttendances = useMemo(() => {
@@ -209,6 +213,7 @@ export function PracticeProvider({ children, practiceId }: PracticeProviderProps
     onData: ({ data }) => {
       if (data?.data?.practiceSetChanged) {
         const { set: updatedSet, eventType } = data.data.practiceSetChanged
+
         if (updatedSet.practiceId === practiceId) {
           switch (eventType) {
             case 'UPDATED':

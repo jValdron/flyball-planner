@@ -13,12 +13,29 @@ export function LocationSelector({ availableLocations, onSelect, disabled = fals
 
   if (availableLocations.length === 0) return null
 
+  // If only one location, show just the button without dropdown
+  if (availableLocations.length === 1) {
+    return (
+      <Button
+        variant="outline-secondary"
+        size="sm"
+        onClick={() => onSelect(nextLocation.id)}
+        className="text-nowrap d-flex align-items-center"
+        disabled={disabled}
+      >
+        <PlusLg className="me-2" />
+        {nextLocation.name}
+      </Button>
+    )
+  }
+
+  // Multiple locations - show button with dropdown
   return (
     <InputGroup size="sm">
       <Button
         variant="outline-secondary"
         onClick={() => onSelect(nextLocation.id)}
-        className="text-start"
+        className="text-nowrap d-flex align-items-center"
         disabled={disabled}
       >
         <PlusLg className="me-2" />

@@ -4,7 +4,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useClub } from '../contexts/ClubContext'
 import { PracticeProvider, usePractice } from '../contexts/PracticeContext'
 import { SaveSpinner } from '../components/SaveSpinner'
-import { ChevronLeft, ChevronRight, Trash, CheckLg, Share } from 'react-bootstrap-icons'
+import { ChevronLeft, ChevronRight, Trash, CheckLg, Share, Pencil } from 'react-bootstrap-icons'
 import { formatRelativeTime, isPastDay } from '../utils/dateUtils'
 import { PracticeAttendance } from '../components/PracticeSet/PracticeAttendance'
 import { useMutation } from '@apollo/client'
@@ -241,17 +241,35 @@ function PracticeDetailsContent() {
               </Button>
             </div>
           )}
-          {!isPastPractice && practice && (
-            <Form.Check
-              type="switch"
-              id="status-toggle"
-              label="Mark as Ready"
-              className="fs-5"
-              checked={practice.status === PracticeStatus.Ready}
-              onChange={(e) => handleStatusChange(e.target.checked ? PracticeStatus.Ready : PracticeStatus.Draft)}
-              disabled={validationErrors.some(error => error.severity === 'error')}
-            />
-          )}
+          {!isPastPractice && practice && (() => {
+            const hasValidationErrors = validationErrors.some(error => error.severity === 'error')
+            const isCurrentlyDraft = practice.status === PracticeStatus.Draft
+            const shouldDisable = hasValidationErrors && isCurrentlyDraft
+            const formCheck = (
+              <Form.Check
+                type="switch"
+                id="status-toggle"
+                label="Mark as Ready"
+                className="fs-5"
+                checked={practice.status === PracticeStatus.Ready}
+                onChange={(e) => handleStatusChange(e.target.checked ? PracticeStatus.Ready : PracticeStatus.Draft)}
+                disabled={shouldDisable}
+              />
+            )
+
+            return shouldDisable ? (
+              <OverlayTrigger
+                placement="top"
+                overlay={
+                  <Tooltip>
+                    You must fix validation <strong>errors</strong> in the <em>Checks</em> tab before marking as ready
+                  </Tooltip>
+                }
+              >
+                <div>{formCheck}</div>
+              </OverlayTrigger>
+            ) : formCheck
+          })()}
         </div>
       </div>
 
@@ -395,13 +413,30 @@ function PracticeDetailsContent() {
             >
               <ChevronLeft className="me-1" /> Sets
             </Button>
-            <Button
-              variant="outline-primary"
-              onClick={handleShare}
-              disabled={!practice?.shareCode}
-            >
-              <Share className="me-2" /> Share / Print
-            </Button>
+            <div className="d-flex gap-2">
+              <Button
+                variant={practice?.status === PracticeStatus.Ready ? "outline-warning" : "success"}
+                onClick={() => handleStatusChange(practice?.status === PracticeStatus.Ready ? PracticeStatus.Draft : PracticeStatus.Ready)}
+                disabled={validationErrors.some(error => error.severity === 'error') && practice?.status === PracticeStatus.Draft}
+              >
+                {practice?.status === PracticeStatus.Ready ? (
+                  <>
+                    <Pencil className="me-2" /> Mark as Draft
+                  </>
+                ) : (
+                  <>
+                    <CheckLg className="me-2" /> Mark as Ready
+                  </>
+                )}
+              </Button>
+              <Button
+                variant={practice?.status === PracticeStatus.Ready ? "primary" : "outline-primary"}
+                onClick={handleShare}
+                disabled={!practice?.shareCode}
+              >
+                <Share className="me-2" /> Share / Print
+              </Button>
+            </div>
           </div>
         </Tab>
       </Tabs>

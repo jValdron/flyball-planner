@@ -1,15 +1,17 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { Form, Badge, Overlay, Popover, Button, CloseButton, OverlayTrigger, Tooltip } from 'react-bootstrap'
-import { GripVertical, ExclamationTriangle, ClockHistory } from 'react-bootstrap-icons'
+import { GripVertical, ExclamationTriangle, ClockHistory, QuestionCircle } from 'react-bootstrap-icons'
 import TrainingLevelBadge from './TrainingLevelBadge'
 import { getTrainingLevelInfo } from '../utils/trainingLevels'
 import { useTheme } from '../contexts/ThemeContext'
 import { useClub } from '../contexts/ClubContext'
 import type { Dog, SetDog } from '../graphql/generated/graphql'
+import { AttendanceStatus } from '../graphql/generated/graphql'
 import type { ValidationError } from '../services/practiceValidation'
 
 interface DogWithSetCount extends Dog {
   setCount: number
+  attendanceStatus?: AttendanceStatus
 }
 
 interface DogsPickerProps {
@@ -52,9 +54,20 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
         )
       })
       .sort((a, b) => {
+        // First, sort by attendance status - confirmed dogs first, unconfirmed last
+        const aIsUnconfirmed = a.attendanceStatus === AttendanceStatus.Unknown
+        const bIsUnconfirmed = b.attendanceStatus === AttendanceStatus.Unknown
+
+        if (aIsUnconfirmed !== bIsUnconfirmed) {
+          return aIsUnconfirmed ? 1 : -1
+        }
+
+        // Then by set count
         if (a.setCount !== b.setCount) {
           return a.setCount - b.setCount
         }
+
+        // Finally by name
         return a.name.localeCompare(b.name)
       })
   }, [searchTerm, availableDogs, value])
@@ -280,7 +293,12 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
         <div className="d-flex flex-column" style={{ maxHeight: '220px', overflowY: 'auto' }}>
           {filteredDogs.length === 0 ? (
             <div className="text-muted p-2">
-              {availableDogs.length === 0 ? 'No dogs available' : 'All dogs have been added'}
+              {availableDogs.length === 0
+                ? 'No dogs available'
+                : searchTerm.trim() === ''
+                  ? 'All dogs have been added'
+                  : 'No dogs match your search'
+              }
             </div>
           ) : (
             filteredDogs.map((dog, idx) => {
@@ -295,9 +313,18 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
                   tabIndex={0}
                 >
                   <div className="d-flex justify-content-between align-items-center">
-                    <div>
-                      <strong>{displayName}</strong>
-                      <span className={`ms-2 small ${idx === highlightedIndex ? `bg-primary ${isDark ? 'text-white' : ''}` : 'text-muted'}`}>{ownerName}</span>
+                    <div className="d-flex align-items-center">
+                      {dog.attendanceStatus === AttendanceStatus.Unknown && (
+                        <QuestionCircle
+                          size={16}
+                          className={`me-2 ${idx === highlightedIndex ? (isDark ? 'text-white' : 'text-primary') : 'text-warning'}`}
+                          title="Attendance not confirmed"
+                        />
+                      )}
+                      <div>
+                        <strong>{displayName}</strong>
+                        <span className={`ms-2 small ${idx === highlightedIndex ? `bg-primary ${isDark ? 'text-white' : ''}` : 'text-muted'}`}>{ownerName}</span>
+                      </div>
                     </div>
                     <div className="d-flex align-items-center">
                       <TrainingLevelBadge level={dog.trainingLevel} />

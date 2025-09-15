@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Button, Form, Card } from 'react-bootstrap'
+import { Button, Form, Card, Spinner, InputGroup } from 'react-bootstrap'
 import { DndContext } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
@@ -7,7 +7,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { useMutation } from '@apollo/client'
 import { UpdateSets, DeleteSets } from '../../graphql/sets'
 import { SetType, AttendanceStatus, Lane, DogStatus } from '../../graphql/generated/graphql'
-import { GripVertical, PlusLg, Trash, Journal } from 'react-bootstrap-icons'
+import { GripVertical, PlusLg, Trash, Journal, Arrow90degLeft } from 'react-bootstrap-icons'
 import { SaveSpinner } from '../SaveSpinner'
 import { useClub } from '../../contexts/ClubContext'
 import { usePractice } from '../../contexts/PracticeContext'
@@ -34,6 +34,7 @@ interface SortableSetProps {
   onSetTypeChange: (id: string, type: SetType | null, typeCustom: string | null) => void
   onSetDogsChange?: (setId: string, dogs: Partial<SetDog>[]) => void
   onSetNotesChange?: (setId: string, notes: string) => void
+  onInsertAbove?: (setId: string) => void
   availableDogs: DogWithSetCount[]
   otherLocations: Location[]
   defaultLocation?: Location | null
@@ -43,6 +44,7 @@ interface SortableSetProps {
   inputRef?: React.RefObject<HTMLInputElement | null>
   getValidationErrorsForSet?: (setId: string) => ValidationError[]
   showNotes?: boolean
+  isDeleting?: boolean
 }
 
 function SortableSet({
@@ -52,6 +54,7 @@ function SortableSet({
   availableDogs,
   onSetDogsChange,
   onSetNotesChange,
+  onInsertAbove,
   otherLocations,
   defaultLocation,
   disabled = false,
@@ -59,7 +62,8 @@ function SortableSet({
   validationErrors,
   inputRef,
   getValidationErrorsForSet,
-  showNotes = false
+  showNotes = false,
+  isDeleting = false
 }: SortableSetProps) {
   const [notesValue, setNotesValue] = useState<string>(set.notes ?? '')
 
@@ -94,8 +98,8 @@ function SortableSet({
       {customLocation && (
         <div className="d-flex align-items-center justify-content-between mb-3">
           <h6 className="mb-0">{customLocation.name}</h6>
-          <Button variant="outline-danger" size="sm" onClick={handleLocationRemove} disabled={disabled}>
-            <Trash />
+          <Button variant="outline-danger" size="sm" onClick={handleLocationRemove} disabled={disabled || isDeleting}>
+            {isDeleting ? <Spinner size="sm" /> : <Trash />}
           </Button>
         </div>
       )}
@@ -205,6 +209,7 @@ interface SortableGroupProps {
   onSetTypeChange: (id: string, type: SetType | null, typeCustom: string | null) => void
   onSetDogsChange?: (setId: string, dogs: Partial<SetDog>[]) => void
   onSetNotesChange?: (setId: string, notes: string) => void
+  onInsertAbove?: (setId: string) => void
   onWarmupChange?: (index: number, isWarmup: boolean) => void
   onLocationAdd?: (locationId: string, index: number) => void
   availableDogs: DogWithSetCount[]
@@ -217,6 +222,8 @@ interface SortableGroupProps {
   getValidationErrorsForSet: (setId: string) => ValidationError[]
   isGroupNotesOpen: boolean
   onShowGroupNotes: (groupIndex: number) => void
+  isDeletingGroup?: boolean
+  deletingSetIds: Set<string>
 }
 
 function SortableGroup({
@@ -227,6 +234,7 @@ function SortableGroup({
   availableDogs,
   onSetDogsChange,
   onSetNotesChange,
+  onInsertAbove,
   onWarmupChange,
   onLocationAdd,
   otherLocations,
@@ -237,7 +245,9 @@ function SortableGroup({
   getDogsWithValidationIssuesForSet,
   getValidationErrorsForSet,
   isGroupNotesOpen,
-  onShowGroupNotes
+  onShowGroupNotes,
+  isDeletingGroup = false,
+  deletingSetIds
 }: SortableGroupProps) {
   const { isDark } = useTheme()
   const {
@@ -302,6 +312,7 @@ function SortableGroup({
                     onSetTypeChange={onSetTypeChange}
                     onSetDogsChange={onSetDogsChange}
                     onSetNotesChange={onSetNotesChange}
+                    onInsertAbove={onInsertAbove}
                     availableDogs={availableDogsForThisSet}
                     otherLocations={otherLocations}
                     defaultLocation={defaultLocation}
@@ -311,6 +322,7 @@ function SortableGroup({
                     inputRef={getSetTypeRef(set.id)}
                     getValidationErrorsForSet={getValidationErrorsForSet}
                     showNotes={isGroupNotesOpen || (set.notes && set.notes.trim().length > 0) || false}
+                    isDeleting={deletingSetIds.has(set.id)}
                   />
                 </div>
               )
@@ -344,11 +356,23 @@ function SortableGroup({
                   onClick={() => onShowGroupNotes(group.index)}
                   disabled={disabled}
                 >
-                  <Journal className="me-1" /> Add Notes
+                  <Journal className="me-1" /> Notes
                 </Button>
               )}
-              <Button variant="outline-danger" size="sm" className="text-nowrap d-flex align-items-center" onClick={() => onDeleteGroup(group.index)} disabled={disabled}>
-                <Trash className="me-1" /> Remove Set
+              {group.sets.length > 0 && (
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  className="d-flex align-items-center"
+                  onClick={() => onInsertAbove?.(group.sets[0].id)}
+                  disabled={disabled}
+                  title="Insert set above"
+                >
+                  <Arrow90degLeft />
+                </Button>
+              )}
+              <Button variant="outline-danger" size="sm" className="text-nowrap d-flex align-items-center" onClick={() => onDeleteGroup(group.index)} disabled={disabled || isDeletingGroup}>
+                {isDeletingGroup ? <Spinner size="sm" className="me-1" /> : <Trash className="me-1" />} Remove
               </Button>
             </div>
           </Card.Footer>
@@ -362,7 +386,10 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
   const { dogs, locations } = useClub()
   const { attendances, sets } = usePractice()
   const [isSaving, setIsSaving] = useState(false)
+  const [isAddingSet, setIsAddingSet] = useState(false)
   const [newlyCreatedSetIds, setNewlyCreatedSetIds] = useState<Set<string>>(new Set())
+  const [deletingSetIds, setDeletingSetIds] = useState<Set<string>>(new Set())
+  const [deletingGroupIndices, setDeletingGroupIndices] = useState<Set<number>>(new Set())
   const setTypeRefs = useRef<Map<string, React.RefObject<HTMLInputElement | null>>>(new Map())
   const [openNotesGroupIndices, setOpenNotesGroupIndices] = useState<Set<number>>(new Set())
 
@@ -476,10 +503,14 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
         const attendance = attendances.find(a => a.dogId === dog.id)
         return attendance && attendance.attending !== AttendanceStatus.NotAttending && dog.status === DogStatus.Active
       })
-      .map(dog => ({
-        ...dog,
-        setCount: dogSetCounts.get(dog.id) || 0
-      }))
+      .map(dog => {
+        const attendance = attendances.find(a => a.dogId === dog.id)
+        return {
+          ...dog,
+          setCount: dogSetCounts.get(dog.id) || 0,
+          attendanceStatus: attendance?.attending
+        }
+      })
   }, [attendances, sets, dogs])
 
   const handleSetReorder = async (event: DragEndEvent) => {
@@ -556,7 +587,7 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
     const newIndex = maxIndex + 1
 
     try {
-      setIsSaving(true)
+      setIsAddingSet(true)
       const result = await updateSets({
         variables: {
           updates: [{
@@ -577,21 +608,25 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
       }
     } catch (err) {
       console.error('Error creating set:', err)
-    } finally {
-      setIsSaving(false)
+      setIsAddingSet(false) // Reset on error
     }
+    // Note: Don't reset isAddingSet here - let the subscription handle it
   }
 
   const handleDeleteSet = async (setId: string) => {
     try {
-      setIsSaving(true)
+      setDeletingSetIds(prev => new Set([...prev, setId]))
       await deleteSets({
         variables: { ids: [setId] }
       })
     } catch (err) {
       console.error('Error deleting set:', err)
     } finally {
-      setIsSaving(false)
+      setDeletingSetIds(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(setId)
+        return newSet
+      })
     }
   }
 
@@ -600,14 +635,18 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
     const setIds = setsToDelete.map(set => set.id)
 
     try {
-      setIsSaving(true)
+      setDeletingGroupIndices(prev => new Set([...prev, index]))
       await deleteSets({
         variables: { ids: setIds }
       })
     } catch (err) {
       console.error('Error deleting set group:', err)
     } finally {
-      setIsSaving(false)
+      setDeletingGroupIndices(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(index)
+        return newSet
+      })
     }
   }
 
@@ -645,6 +684,53 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
       })
     } catch (err) {
       console.error('Error creating set with location:', err)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleInsertAbove = async (setId: string) => {
+    const currentSet = sets.find(set => set.id === setId)
+    if (!currentSet) return
+
+    const newIndex = currentSet.index
+    const updates: Array<{ id: string; index: number }> = []
+
+    try {
+      setIsSaving(true)
+
+      // Reorder existing sets - increment all sets with index >= currentSet.index
+      sets.forEach(set => {
+        if (set.index >= currentSet.index) {
+          updates.push({ id: set.id, index: set.index + 1 })
+        }
+      })
+
+      // Add the new set at the current set's index (it will take that position)
+      updates.push({
+        practiceId,
+        locationId: currentSet.locationId,
+        index: newIndex,
+        dogs: []
+      } as any)
+
+      if (updates.length > 0) {
+        const result = await updateSets({
+          variables: {
+            updates: updates
+          }
+        })
+
+        // Track the newly created set for focusing
+        if (result.data?.updateSets) {
+          const newSetId = result.data.updateSets[result.data.updateSets.length - 1]?.id
+          if (newSetId) {
+            setNewlyCreatedSetIds(prev => new Set([...prev, newSetId]))
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error inserting set above:', err)
     } finally {
       setIsSaving(false)
     }
@@ -729,6 +815,26 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
     })
   }, [newlyCreatedSetIds, sets])
 
+  // Clear adding state when we get any set subscription event
+  useEffect(() => {
+    if (isAddingSet) {
+      // Simple timeout to clear the adding state after a reasonable delay
+      // This will be cleared by the subscription event, but provides a fallback
+      const timeout = setTimeout(() => {
+        setIsAddingSet(false)
+      }, 5000) // 5 second fallback
+
+      return () => clearTimeout(timeout)
+    }
+  }, [isAddingSet])
+
+  // Clear adding state when sets array changes (subscription event)
+  useEffect(() => {
+    if (isAddingSet) {
+      setIsAddingSet(false)
+    }
+  }, [sets])
+
   return (
     <div>
       <DndContext
@@ -747,6 +853,7 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
               onSetTypeChange={handleSetTypeChange}
               onSetDogsChange={handleDogsChange}
               onSetNotesChange={handleSetNotesChange}
+              onInsertAbove={handleInsertAbove}
               onWarmupChange={handleWarmupChange}
               onLocationAdd={handleLocationAdd}
               availableDogs={availableDogs}
@@ -759,13 +866,20 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
               getValidationErrorsForSet={getValidationErrorsForSet}
               isGroupNotesOpen={openNotesGroupIndices.has(group.index)}
               onShowGroupNotes={(groupIndex) => setOpenNotesGroupIndices(prev => new Set([...prev, groupIndex]))}
+              isDeletingGroup={deletingGroupIndices.has(group.index)}
+              deletingSetIds={deletingSetIds}
             />
           ))}
         </SortableContext>
       </DndContext>
       <div className="d-flex justify-content-end mb-4">
-        <Button variant="primary" onClick={handleAddSet} disabled={disabled}>
-          <PlusLg className="me-2" />
+        <Button
+          variant="primary"
+          className="text-nowrap d-flex align-items-center"
+          onClick={handleAddSet}
+          disabled={disabled || isAddingSet}
+        >
+          {isAddingSet ? <Spinner size="sm" className="me-2" /> : <PlusLg className="me-2" />}
           Add Set
         </Button>
       </div>

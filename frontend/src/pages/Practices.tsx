@@ -168,22 +168,25 @@ function Practices() {
         </Button>
       </div>
 
+      <Form.Check
+        type="switch"
+        id="draft-toggle"
+        label="Show Drafts Only"
+        className="mb-4 fs-5"
+        checked={showDraftsOnly}
+        onChange={(e) => setShowDraftsOnly(e.target.checked)}
+      />
+
       {filteredPractices.length === 0 ? (
         <Alert variant="info">
-          No practices have been scheduled yet. <Link to="/practices/new">Schedule your first practice now</Link>.
+          {showDraftsOnly
+            ? <>No draft practices found. <Link to="/practices/new">Schedule a new practice now</Link>.</>
+            : <>No practices have been scheduled yet. <Link to="/practices/new">Schedule your first practice now</Link>.</>
+          }
         </Alert>
       ) : (
         <React.Fragment>
-          <Form.Check
-            type="switch"
-            id="draft-toggle"
-            label="Show Drafts Only"
-            className="mb-4 fs-5"
-            checked={showDraftsOnly}
-            onChange={(e) => setShowDraftsOnly(e.target.checked)}
-          />
-
-          {!hasPlannedPractices && (
+          {!hasPlannedPractices && !showDraftsOnly && (
             <Alert variant="info" className="mb-4">
               No planned practices scheduled. <Link to="/practices/new">Schedule a new practice now</Link>.
             </Alert>

@@ -101,3 +101,8 @@
 .set-type-autocomplete .form-control:focus {
   box-shadow: none;
 }
+
+/* Practice validation border utilities */
+.border-top-width-1 {
+  border-top-width: 1px !important;
+}
