@@ -64,6 +64,11 @@ jobs:
           git commit -m "Bump version to ${{ github.event.inputs.version }}"
           echo "✅ Committed version updates"
 
+      - name: Push version updates first
+        run: |
+          git push origin main
+          echo "✅ Pushed version updates to main branch"
+
       - name: Create and push tag
         run: |
           VERSION="${{ github.event.inputs.version }}"
@@ -81,11 +86,6 @@ jobs:
 
           git push origin "v$VERSION"
           echo "✅ Pushed tag v$VERSION to remote"
-
-      - name: Push version updates
-        run: |
-          git push origin main
-          echo "✅ Pushed version updates to main branch"
 
       - name: Release Summary
         run: |
