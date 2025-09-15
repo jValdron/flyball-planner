@@ -87,6 +87,22 @@ jobs:
           git push origin "v$VERSION"
           echo "✅ Pushed tag v$VERSION to remote"
 
+      - name: Trigger build workflow
+        uses: peter-evans/workflow-dispatch@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          workflow: build-image.yml
+          ref: v${{ github.event.inputs.version }}
+
+      - name: Trigger helm publish workflow
+        uses: peter-evans/workflow-dispatch@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          workflow: helm-publish.yml
+          ref: v${{ github.event.inputs.version }}
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
