@@ -102,6 +102,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      TAG_NAME: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.ref || github.ref_name }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -135,7 +137,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ env.REPO_NAME }}/graphql:latest
-            ghcr.io/${{ env.REPO_NAME }}/graphql:${{ github.ref_name }}
+            ghcr.io/${{ env.REPO_NAME }}/graphql:${{ env.TAG_NAME }}
 
       - name: Build and push Frontend image
         uses: docker/build-push-action@v5
@@ -145,4 +147,4 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ env.REPO_NAME }}/frontend:latest
-            ghcr.io/${{ env.REPO_NAME }}/frontend:${{ github.ref_name }}
+            ghcr.io/${{ env.REPO_NAME }}/frontend:${{ env.TAG_NAME }}
