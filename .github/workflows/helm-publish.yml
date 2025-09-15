@@ -26,13 +26,27 @@ jobs:
         id: chart-changes
         run: |
           # Check if there are changes in chart files since the last commit
-          if git diff --quiet HEAD~1 HEAD -- deploy/charts/ 2>/dev/null; then
-            echo "changed=false" >> $GITHUB_OUTPUT
-            echo "No changes detected in Helm chart"
+          # Handle cases where there's no previous commit (first commit or shallow clone)
+          if git rev-list --count HEAD > 1 2>/dev/null; then
+            # Multiple commits exist, compare with previous commit
+            if git diff --quiet HEAD~1 HEAD -- deploy/charts/ 2>/dev/null; then
+              echo "changed=false" >> $GITHUB_OUTPUT
+              echo "No changes detected in Helm chart"
+            else
+              echo "changed=true" >> $GITHUB_OUTPUT
+              echo "Changes detected in Helm chart"
+              git diff --name-only HEAD~1 HEAD -- deploy/charts/
+            fi
           else
-            echo "changed=true" >> $GITHUB_OUTPUT
-            echo "Changes detected in Helm chart"
-            git diff --name-only HEAD~1 HEAD -- deploy/charts/ || echo "First commit or no previous commit"
+            # First commit or shallow clone - check if chart files exist
+            if [ -d "deploy/charts/" ] && [ "$(find deploy/charts/ -type f | wc -l)" -gt 0 ]; then
+              echo "changed=true" >> $GITHUB_OUTPUT
+              echo "Changes detected in Helm chart (first commit with chart files)"
+              find deploy/charts/ -type f
+            else
+              echo "changed=false" >> $GITHUB_OUTPUT
+              echo "No chart files found"
+            fi
           fi
 
       - name: Determine if chart should be published
