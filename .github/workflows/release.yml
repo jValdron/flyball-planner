@@ -61,13 +61,24 @@ jobs:
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
           git add frontend/package.json graphql/package.json
-          git commit -m "Bump version to ${{ github.event.inputs.version }}"
-          echo "✅ Committed version updates"
+
+          # Check if there are any changes to commit
+          if git diff --staged --quiet; then
+            echo "⏭️ No changes to commit - versions already match"
+          else
+            git commit -m "Bump version to ${{ github.event.inputs.version }}"
+            echo "✅ Committed version updates"
+          fi
 
       - name: Push version updates first
         run: |
-          git push origin main
-          echo "✅ Pushed version updates to main branch"
+          # Check if there are any commits to push
+          if git diff HEAD origin/main --quiet; then
+            echo "⏭️ No commits to push - main branch is up to date"
+          else
+            git push origin main
+            echo "✅ Pushed version updates to main branch"
+          fi
 
       - name: Create and push tag
         run: |
