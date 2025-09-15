@@ -1,0 +1,95 @@
+name: Release New Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.2.3)'
+        required: true
+        type: string
+      message:
+        description: 'Optional release message for annotated tag'
+        required: false
+        type: string
+        default: 'Release version'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate version format
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Invalid version format. Please use semantic versioning (e.g., 1.2.3)"
+            exit 1
+          fi
+          echo "✅ Version format is valid: $VERSION"
+
+      - name: Check if version already exists
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if git tag -l | grep -q "^v$VERSION$"; then
+            echo "❌ Tag v$VERSION already exists!"
+            exit 1
+          fi
+          echo "✅ Version v$VERSION is available"
+
+      - name: Update frontend package.json
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          jq --arg version "$VERSION" '.version = $version' frontend/package.json > frontend/package.json.tmp
+          mv frontend/package.json.tmp frontend/package.json
+          echo "✅ Updated frontend package.json to version $VERSION"
+
+      - name: Update graphql package.json
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          jq --arg version "$VERSION" '.version = $version' graphql/package.json > graphql/package.json.tmp
+          mv graphql/package.json.tmp graphql/package.json
+          echo "✅ Updated graphql package.json to version $VERSION"
+
+      - name: Commit version updates
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          git add frontend/package.json graphql/package.json
+          git commit -m "Bump version to ${{ github.event.inputs.version }}"
+          echo "✅ Committed version updates"
+
+      - name: Create and push tag
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          MESSAGE="${{ github.event.inputs.message }}"
+
+          if [ -n "$MESSAGE" ] && [ "$MESSAGE" != "Release version" ]; then
+            # Create annotated tag with custom message
+            git tag -a "v$VERSION" -m "$MESSAGE"
+            echo "✅ Created annotated tag v$VERSION with message: $MESSAGE"
+          else
+            # Create lightweight tag
+            git tag "v$VERSION"
+            echo "✅ Created lightweight tag v$VERSION"
+          fi
+
+          git push origin "v$VERSION"
+          echo "✅ Pushed tag v$VERSION to remote"
+
+      - name: Push version updates
+        run: |
+          git push origin main
+          echo "✅ Pushed version updates to main branch"
+
+      - name: Release Summary
+        run: |
+          echo "🎉 Release v${{ github.event.inputs.version }} has been created!"
+          echo "📦 Package versions updated in both frontend and graphql"
+          echo "🏷️  Git tag v${{ github.event.inputs.version }} created and pushed"
+          echo "🚀 This will trigger automated builds and chart publishing"
