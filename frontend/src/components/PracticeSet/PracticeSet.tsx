@@ -1,9 +1,10 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Button, Form, Card, Spinner } from 'react-bootstrap'
-import { DndContext } from '@dnd-kit/core'
-import type { DragEndEvent } from '@dnd-kit/core'
+import { Button, Form, Card, Spinner, Badge } from 'react-bootstrap'
+import { DndContext, DragOverlay } from '@dnd-kit/core'
+import type { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { DragProvider, useDrag } from '../../contexts/DragContext'
 import { useMutation } from '@apollo/client'
 import { UpdateSets, DeleteSets } from '../../graphql/sets'
 import { SetType, AttendanceStatus, Lane, DogStatus } from '../../graphql/generated/graphql'
@@ -47,6 +48,73 @@ interface SortableSetProps {
   getValidationErrorsForSet?: (setId: string) => ValidationError[]
   showNotes?: boolean
   isDeleting?: boolean
+}
+
+// Component that uses drag context for cross-picker operations
+function DogsPickerWithDrag({
+  lane,
+  set,
+  availableDogs,
+  disabled,
+  isLocked,
+  dogsWithValidationIssues,
+  validationErrors,
+  getValidationErrorsForSet,
+  onDogsChange
+}: {
+  lane: Lane | null
+  set: NonNullable<ReturnType<typeof usePractice>['sets'][0]>
+  availableDogs: DogWithSetCount[]
+  disabled: boolean
+  isLocked?: boolean
+  dogsWithValidationIssues?: Set<string>
+  validationErrors?: ValidationError[]
+  getValidationErrorsForSet?: (setId: string) => ValidationError[]
+  onDogsChange: (lane: Lane | null, dogs: Partial<SetDog>[]) => void
+}) {
+  const { dragOverPicker } = useDrag()
+
+  const getDogsForLane = (lane: Lane | null) => {
+    return set.dogs.filter(dog => dog.lane === lane)
+  }
+
+  const availableDogsForLane = useMemo(() => {
+    const dogsUsedInOtherLanes = new Set<string>()
+    set.dogs.forEach(dog => {
+      if (dog.lane !== lane) {
+        dogsUsedInOtherLanes.add(dog.dogId)
+      }
+    })
+    return availableDogs.filter(dog => !dogsUsedInOtherLanes.has(dog.id))
+  }, [set.dogs, lane, availableDogs])
+
+  const pickerId = `${set.id}-${lane || 'single'}`
+
+  return (
+    <div key={lane ?? 'single'} className="col-6">
+      <DogsPicker
+        value={getDogsForLane(lane).map(sd => {
+          const dog = availableDogs.find(d => d.id === sd.dogId)
+          if (!dog) return null
+          return {
+            ...sd,
+            dog
+          }
+        }).filter(Boolean) as unknown as Array<SetDog>}
+        onChange={setDogs => onDogsChange(lane, setDogs)}
+        availableDogs={availableDogsForLane}
+        placeholder={lane ? `Add dog to ${lane} lane` : 'Add dog'}
+        disabled={disabled}
+        isLocked={isLocked}
+        dogsWithValidationIssues={dogsWithValidationIssues}
+        validationErrors={validationErrors}
+        getValidationErrorsForSet={getValidationErrorsForSet}
+        currentSetId={set.id}
+        pickerId={pickerId}
+        isDragOver={dragOverPicker === pickerId}
+      />
+    </div>
+  )
 }
 
 function SortableSet({
@@ -156,55 +224,32 @@ interface DogsSectionProps {
   availableDogs: DogWithSetCount[]
   onDogsChange: (lane: Lane | null, setDogs: Partial<SetDog>[]) => void
   location: { id: string; name: string; isDefault: boolean; isDoubleLane: boolean }
-  disabled?: boolean
-  isLocked?: boolean
+  disabled: boolean
+  isLocked: boolean
   dogsWithValidationIssues?: Set<string>
   validationErrors?: ValidationError[]
   getValidationErrorsForSet?: (setId: string) => ValidationError[]
 }
 
-function DogsSection({ set, availableDogs, onDogsChange, location, disabled, isLocked = false, dogsWithValidationIssues, validationErrors, getValidationErrorsForSet }: DogsSectionProps) {
-  const getDogsForLane = (lane: Lane | null) => set.dogs.filter(d => d.lane === lane)
-
-  // Determine lanes based on location
+function DogsSection({ set, availableDogs, onDogsChange, location, disabled, isLocked, dogsWithValidationIssues, validationErrors, getValidationErrorsForSet }: DogsSectionProps) {
   const lanes = location.isDoubleLane ? [Lane.Left, Lane.Right] : [null]
 
   return (
     <div className="row g-2">
-      {lanes.map(lane => {
-        const dogsUsedInOtherLanes = new Set<string>()
-        set.dogs.forEach(setDog => {
-          if (setDog.lane !== lane) {
-            dogsUsedInOtherLanes.add(setDog.dogId)
-          }
-        })
-
-        const availableDogsForLane = availableDogs.filter(dog => !dogsUsedInOtherLanes.has(dog.id))
-
-        return (
-          <div key={lane ?? 'single'} className="col-6">
-            <DogsPicker
-              value={getDogsForLane(lane).map(sd => {
-                const dog = availableDogs.find(d => d.id === sd.dogId)
-                if (!dog) return null
-                return {
-                  ...sd,
-                  dog
-                }
-              }).filter(Boolean) as unknown as Array<SetDog>}
-              onChange={setDogs => onDogsChange(lane, setDogs)}
-              availableDogs={availableDogsForLane}
-              placeholder={lane ? `Add dog to ${lane} lane` : 'Add dog'}
-              disabled={disabled}
-              isLocked={isLocked}
-              dogsWithValidationIssues={dogsWithValidationIssues}
-              validationErrors={validationErrors}
-              getValidationErrorsForSet={getValidationErrorsForSet}
-              currentSetId={set.id}
-            />
-          </div>
-        )
-      })}
+      {lanes.map(lane => (
+        <DogsPickerWithDrag
+          key={lane ?? 'single'}
+          lane={lane}
+          set={set}
+          availableDogs={availableDogs}
+          disabled={disabled}
+          isLocked={isLocked}
+          dogsWithValidationIssues={dogsWithValidationIssues}
+          validationErrors={validationErrors}
+          getValidationErrorsForSet={getValidationErrorsForSet}
+          onDogsChange={onDogsChange}
+        />
+      ))}
     </div>
   )
 }
@@ -404,11 +449,11 @@ export function PracticeSet({ practiceId, disabled, isLocked = false, validation
   const [deletingGroupIndices, setDeletingGroupIndices] = useState<Set<number>>(new Set())
   const setTypeRefs = useRef<Map<string, React.RefObject<HTMLInputElement | null>>>(new Map())
   const [openNotesGroupIndices, setOpenNotesGroupIndices] = useState<Set<number>>(new Set())
+  const [activeDragItem, setActiveDragItem] = useState<{ setDog: SetDog; pickerId: string; targetPickerId?: string } | null>(null)
 
   const [updateSets] = useMutation<UpdateSetsMutation>(UpdateSets)
   const [deleteSets] = useMutation<DeleteSetsMutation>(DeleteSets)
 
-  // Helper function to get validation errors for a specific set
   const getValidationErrorsForSet = (setId: string) => {
     if (!validationErrors) return []
 
@@ -469,7 +514,6 @@ export function PracticeSet({ practiceId, disabled, isLocked = false, validation
       if (error.code === 'BACK_TO_BACK_HANDLERS' && error.extra?.backToBackHandlers) {
         error.extra.backToBackHandlers.forEach((handler: any) => {
           if (handler.dogIds && handler.setIds) {
-            // Only add dogs to validation issues if the current set is part of the consecutive sequence
             if (handler.setIds.includes(setId)) {
               const set = sets.find(s => s.id === setId)
               if (set) {
@@ -509,7 +553,6 @@ export function PracticeSet({ practiceId, disabled, isLocked = false, validation
       })
     })
 
-    // Get dogs from club context and filter by attendance and status
     return dogs
       .filter(dog => {
         const attendance = attendances.find(a => a.dogId === dog.id)
@@ -578,11 +621,22 @@ export function PracticeSet({ practiceId, disabled, isLocked = false, validation
   const handleSetUpdate = async (setId: string, updates: Partial<{ index: number; type: SetType | null; typeCustom: string | null; notes: string | null; isWarmup: boolean; dogs: Partial<SetDog>[] }>) => {
     try {
       setIsSaving(true)
+
+      // Transform dogs array to only include fields expected by SetDogUpdate
+      const transformedUpdates = { ...updates }
+      if (updates.dogs) {
+        transformedUpdates.dogs = updates.dogs.map(dog => ({
+          dogId: dog.dogId,
+          lane: dog.lane,
+          index: dog.index
+        }))
+      }
+
       await updateSets({
         variables: {
           updates: [{
             id: setId,
-            ...updates
+            ...transformedUpdates
           }]
         }
       })
@@ -611,7 +665,6 @@ export function PracticeSet({ practiceId, disabled, isLocked = false, validation
         }
       })
 
-      // Track the newly created set for focusing
       if (result.data?.updateSets) {
         const newSetId = result.data.updateSets[0]?.id
         if (newSetId) {
@@ -620,9 +673,8 @@ export function PracticeSet({ practiceId, disabled, isLocked = false, validation
       }
     } catch (err) {
       console.error('Error creating set:', err)
-      setIsAddingSet(false) // Reset on error
+      setIsAddingSet(false)
     }
-    // Note: Don't reset isAddingSet here - let the subscription handle it
   }
 
   const handleDeleteSet = async (setId: string) => {
@@ -847,11 +899,156 @@ export function PracticeSet({ practiceId, disabled, isLocked = false, validation
     }
   }, [sets])
 
+  const handleDogMove = async (dog: SetDog, fromPicker: string, toPicker: string) => {
+    const fromParts = fromPicker.split('-')
+    const toParts = toPicker.split('-')
+
+    const fromSetId = fromParts.slice(0, -1).join('-')
+    const toSetId = toParts.slice(0, -1).join('-')
+    const toLane = toParts[toParts.length - 1]
+
+    if (fromSetId === toSetId) {
+      const set = sets.find(s => s.id === fromSetId)
+      if (!set) return
+
+      const updatedDogs = set.dogs.map(d =>
+        d.id === dog.id
+          ? { ...d, lane: toLane === 'single' ? null : toLane as Lane }
+          : d
+      )
+
+      const leftLaneDogs = updatedDogs.filter(d => d.lane === 'Left').map((d, index) => ({ ...d, index: index + 1 }))
+      const rightLaneDogs = updatedDogs.filter(d => d.lane === 'Right').map((d, index) => ({ ...d, index: index + 1 }))
+      const singleLaneDogs = updatedDogs.filter(d => d.lane === null).map((d, index) => ({ ...d, index: index + 1 }))
+
+      const finalDogs = [...leftLaneDogs, ...rightLaneDogs, ...singleLaneDogs]
+
+      try {
+        await handleDogsChange(fromSetId, finalDogs)
+      } catch (error) {
+        console.error('Failed to move dog to different lane:', error)
+      }
+      return
+    }
+
+    const fromSet = sets.find(s => s.id === fromSetId)
+    const toSet = sets.find(s => s.id === toSetId)
+
+    if (!fromSet || !toSet) return
+
+    const updatedFromSetDogs = fromSet.dogs.filter(d => d.id !== dog.id)
+
+    const newDog = {
+      ...dog,
+      lane: toLane === 'single' ? null : toLane as Lane,
+      index: toSet.dogs.length + 1
+    }
+    const updatedToSetDogs = [...toSet.dogs, newDog]
+
+    const updates = [
+      { id: fromSetId, dogs: updatedFromSetDogs },
+      { id: toSetId, dogs: updatedToSetDogs }
+    ]
+
+    try {
+      await updateSets({
+        variables: {
+          updates: updates.map(update => ({
+            id: update.id,
+            dogs: update.dogs.map(d => ({
+              dogId: d.dogId,
+              lane: d.lane,
+              index: d.index
+            }))
+          }))
+        }
+      })
+    } catch (error) {
+      console.error('Failed to move dog between sets:', error)
+    }
+  }
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event
+
+    if (typeof active.id === 'string' && active.id.includes('-') && active.data.current?.type === 'dog') {
+      const activeData = active.data.current
+      if (activeData?.setDog && activeData?.pickerId) {
+        setActiveDragItem({ setDog: activeData.setDog, pickerId: activeData.pickerId })
+      }
+    }
+  }
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event
+
+    if (typeof active.id === 'string' && active.id.includes('-') && active.data.current?.type === 'dog') {
+      const activeData = active.data.current
+      const overData = over?.data.current
+
+      if (activeData?.pickerId && overData?.pickerId && activeData.pickerId !== overData.pickerId) {
+        setActiveDragItem(prev => prev ? { ...prev, targetPickerId: overData.pickerId } : null)
+      } else {
+        setActiveDragItem(prev => prev ? { ...prev, targetPickerId: undefined } : null)
+      }
+    }
+  }
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    setActiveDragItem(null)
+
+    if (!over) return
+
+    if (typeof active.id === 'string' && !isNaN(parseInt(active.id)) && typeof over.id === 'string' && !isNaN(parseInt(over.id))) {
+      handleSetReorder(event)
+      return
+    }
+
+    if (typeof active.id === 'string' && active.id.includes('-') && active.data.current?.type === 'dog') {
+      const activeData = active.data.current
+      const overData = over.data.current
+
+      if (activeData?.pickerId) {
+        if (overData?.pickerId && overData.pickerId !== activeData.pickerId) {
+          // Cross-picker dog movement - handled by handleDogMove
+          handleDogMove(activeData.setDog, activeData.pickerId, overData.pickerId)
+        } else if (overData?.pickerId && overData.pickerId === activeData.pickerId) {
+          const pickerId = activeData.pickerId
+          const [setId] = pickerId.split('-')
+          const set = sets.find(s => s.id === setId)
+
+          if (set) {
+            const oldIndex = set.dogs.findIndex((_, index) => `${set.dogs[index].id}-${index}` === active.id)
+            const newIndex = set.dogs.findIndex((_, index) => `${set.dogs[index].id}-${index}` === over.id)
+
+            if (oldIndex !== -1 && newIndex !== -1) {
+              const newDogs = [...set.dogs]
+              const [removed] = newDogs.splice(oldIndex, 1)
+              newDogs.splice(newIndex, 0, removed)
+
+              const updatedDogs = newDogs.map((dog, index) => ({
+                ...dog,
+                index: index + 1
+              }))
+
+              handleDogsChange(setId, updatedDogs)
+            }
+          }
+        }
+      }
+    }
+  }
+
   return (
-    <div>
-      <DndContext
-        onDragEnd={handleSetReorder}
-      >
+    <DragProvider onDogMove={handleDogMove}>
+      <div>
+        <DndContext
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
         <SortableContext
           items={groupedSets.map(group => group.index.toString())}
           strategy={verticalListSortingStrategy}
@@ -884,6 +1081,38 @@ export function PracticeSet({ practiceId, disabled, isLocked = false, validation
             />
           ))}
         </SortableContext>
+        <DragOverlay>
+          {activeDragItem && activeDragItem.targetPickerId ? (
+            <Badge
+              bg="primary"
+              className="fs-6 px-3 py-2 drag-overlay-badge"
+            >
+              Move {activeDragItem.setDog.dog.name} to {(() => {
+                const targetParts = activeDragItem.targetPickerId.split('-')
+                const targetSetId = targetParts.slice(0, -1).join('-')
+                const lane = targetParts[targetParts.length - 1]
+
+                const sourceParts = activeDragItem.pickerId.split('-')
+                const sourceSetId = sourceParts.slice(0, -1).join('-')
+                const isDifferentSet = sourceSetId !== targetSetId
+
+                let laneName = 'target lane'
+                if (lane === 'single') laneName = 'single lane'
+                else if (lane === 'Left') laneName = 'left lane'
+                else if (lane === 'Right') laneName = 'right lane'
+
+                if (isDifferentSet) {
+                  const targetSet = sets.find(s => s.id === targetSetId)
+                  if (targetSet) {
+                    return `${laneName} in set ${targetSet.index}`
+                  }
+                }
+
+                return laneName
+              })()}
+            </Badge>
+          ) : null}
+        </DragOverlay>
       </DndContext>
       {!isLocked && (
         <div className="d-flex justify-content-end mb-4">
@@ -900,5 +1129,6 @@ export function PracticeSet({ practiceId, disabled, isLocked = false, validation
       )}
       <SaveSpinner show={isSaving} />
     </div>
+    </DragProvider>
   )
 }

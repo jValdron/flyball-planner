@@ -102,7 +102,33 @@
   box-shadow: none;
 }
 
-/* Practice validation border utilities */
 .border-top-width-1 {
   border-top-width: 1px !important;
+}
+
+/* Drag and drop styles */
+.drag-overlay-badge {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transform: rotate(-2deg);
+  z-index: 1000;
+}
+
+.dogs-picker-container {
+  transition: all 0.2s ease;
+  margin: -3px;
+  padding: 3px;
+  min-height: auto;
+}
+
+.dogs-picker-container--with-feedback {
+  border-radius: var(--bs-border-radius);
+  padding: 9px;
+}
+
+.dogs-picker-container--drag-target {
+  background-color: rgba(var(--bs-primary-rgb), 0.15);
+}
+
+.dogs-picker-container--drag-source {
+  background-color: rgba(var(--bs-secondary-rgb), 0.15);
 }
