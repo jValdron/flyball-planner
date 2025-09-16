@@ -38,14 +38,31 @@ export const GetPractice = graphql(`
         type
         typeCustom
         isWarmup
+        rating
         createdAt
         updatedAt
         locationId
+        location {
+          id
+          name
+          isDoubleLane
+        }
         dogs {
           id
           index
           lane
           dogId
+          dog {
+            id
+            name
+            crn
+            trainingLevel
+            owner {
+              id
+              givenName
+              surname
+            }
+          }
         }
       }
     }

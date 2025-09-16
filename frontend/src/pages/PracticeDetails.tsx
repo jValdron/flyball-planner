@@ -4,7 +4,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useClub } from '../contexts/ClubContext'
 import { PracticeProvider, usePractice } from '../contexts/PracticeContext'
 import { SaveSpinner } from '../components/SaveSpinner'
-import { ChevronLeft, ChevronRight, Trash, CheckLg, Share, Pencil } from 'react-bootstrap-icons'
+import { ChevronLeft, ChevronRight, Trash, CheckLg, Share, Pencil, FileText } from 'react-bootstrap-icons'
 import { formatRelativeTime, isPastDay } from '../utils/dateUtils'
 import { PracticeAttendance } from '../components/PracticeSet/PracticeAttendance'
 import { useMutation } from '@apollo/client'
@@ -16,13 +16,14 @@ import { PracticeValidationService, type ValidationError } from '../services/pra
 import { PracticeValidation } from '../components/PracticeSet/PracticeValidation'
 import { PracticeSet } from '../components/PracticeSet/PracticeSet'
 import { DatePickerComponent } from '../components/PracticeSet/DatePickerComponent'
+import { SetRecapView } from '../components/PracticeSet/SetRecapView'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 function PracticeDetailsContent() {
   const navigate = useNavigate()
   const { practiceId } = useParams()
   const location = useLocation()
-  const { selectedClub, dogs, handlers } = useClub()
+  const { selectedClub, dogs, handlers, locations } = useClub()
   const {
     practice,
     isPracticeLoading,
@@ -80,11 +81,12 @@ function PracticeDetailsContent() {
     }
   }, [practiceId, isPastPractice])
 
+
   const getCurrentTab = () => {
     if (!practiceId) return 'date'
     const pathParts = location.pathname.split('/')
     const tab = pathParts[pathParts.length - 1]
-    return ['date', 'attendance', 'sets', 'checks'].includes(tab) ? tab : 'date'
+    return ['date', 'attendance', 'sets', 'checks', 'recap'].includes(tab) ? tab : 'date'
   }
 
   const handleTabChange = (tab: string) => {
@@ -218,7 +220,7 @@ function PracticeDetailsContent() {
   }
 
   return (
-    <Container>
+    <Container className="mb-5">
       <Breadcrumb>
         <Breadcrumb.Item onClick={() => navigate('/practices')}>Practices</Breadcrumb.Item>
         <Breadcrumb.Item active>
@@ -459,7 +461,65 @@ function PracticeDetailsContent() {
                 </Button>
               )}
               <Button
-                variant={practice?.status === PracticeStatus.Ready ? "primary" : "outline-primary"}
+                variant={practice?.status === PracticeStatus.Ready && !isPastPractice ? "primary" : "outline-primary"}
+                onClick={handleShare}
+                disabled={!practice?.shareCode}
+              >
+                <Share className="me-2" /> Share / Print
+              </Button>
+              {isPastPractice && practice?.status === PracticeStatus.Ready && (
+                <Button
+                  variant="info"
+                  onClick={() => handleTabChange('recap')}
+                  disabled={!practiceId}
+                >
+                  <FileText className="me-2" /> Recap <ChevronRight className="ms-1" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </Tab>
+
+        <Tab
+          eventKey="recap"
+          title={
+            <span>
+              Recap
+              <Badge bg={practiceId ? 'primary' : 'secondary'} className="ms-2">
+                {sets.length}
+              </Badge>
+            </span>
+          }
+          disabled={!practiceId}
+        >
+          {practiceId && (
+            <>
+              {isPracticeLoading ? (
+                <div className="text-center">
+                  <Spinner animation="border" role="status">
+                    <span className="visually-hidden">Loading sets...</span>
+                  </Spinner>
+                </div>
+              ) : practiceError ? (
+                <Alert variant="danger">Error loading practice: {practiceError}</Alert>
+              ) : (
+                <SetRecapView
+                  sets={sets}
+                  defaultLocationName={locations?.find(l => l.isDefault)?.name}
+                />
+              )}
+            </>
+          )}
+          <div className="d-flex justify-content-between mt-3">
+            <Button
+              variant="outline-secondary"
+              onClick={() => handleTabChange('checks')}
+            >
+              <ChevronLeft className="me-1" /> Checks
+            </Button>
+            <div className="d-flex gap-2">
+              <Button
+                variant="primary"
                 onClick={handleShare}
                 disabled={!practice?.shareCode}
               >

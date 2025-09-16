@@ -82,7 +82,7 @@ function SortableDogItem({
   }
 
   const displayName = setDog.dog.name
-  const { variant, className } = getTrainingLevelInfo(setDog.dog.trainingLevel)
+  const { variant } = getTrainingLevelInfo(setDog.dog.trainingLevel)
   const hasValidationIssue = dogsWithValidationIssues?.has(setDog.dog.id)
   const validationSeverity = getValidationSeverityForDog.get(setDog.dog.id)
 
@@ -93,7 +93,7 @@ function SortableDogItem({
       className="mb-2 w-100"
       {...attributes}
     >
-      <Badge bg={variant} className={`d-flex align-items-center justify-content-between w-100 ${className}`} style={{ minHeight: 38, cursor: disabled ? 'default' : 'grab' }} {...listeners}>
+      <Badge bg={variant} className={`d-flex align-items-center justify-content-between w-100`} style={{ minHeight: 38, cursor: disabled ? 'default' : 'grab' }} {...listeners}>
         <span className={`me-2 d-inline-flex align-items-center ${isDark ? '' : 'text-dark'}`}>
           {!disabled && <GripVertical />}
         </span>

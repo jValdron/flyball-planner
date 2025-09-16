@@ -81,7 +81,7 @@ export const hasClubAccess: MiddlewareFn<AuthContext> = async ({ context, args }
     throw new Error('Not authenticated');
   }
 
-  const clubId = args.clubId || args.id;
+  const clubId = args.clubId || args.id || args.input?.clubId;
   if (!clubId) {
     throw new Error('Club ID is required');
   }

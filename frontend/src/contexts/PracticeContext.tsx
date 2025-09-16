@@ -118,11 +118,10 @@ export function PracticeProvider({ children, practiceId }: PracticeProviderProps
         sets: sortSetsByIndex(practiceData.practice.sets)
       }
       setPractice(practiceWithSortedSets)
-      if (sets.length === 0) {
-        dispatchSets({ type: 'SET_SETS', sets: practiceData.practice.sets })
-      }
+      // Always update sets when practice data changes
+      dispatchSets({ type: 'SET_SETS', sets: practiceData.practice.sets })
     }
-  }, [practiceData, sets.length])
+  }, [practiceData])
 
   // Merge attendance data with active dogs
   const mergedAttendances = useMemo(() => {
@@ -219,9 +218,9 @@ export function PracticeProvider({ children, practiceId }: PracticeProviderProps
             case 'UPDATED':
               const existingSet = sets.find(s => s.id === updatedSet.id)
               if (existingSet) {
-                dispatchSets({ type: 'UPDATE_SET', setId: updatedSet.id, updates: updatedSet })
+                dispatchSets({ type: 'UPDATE_SET', setId: updatedSet.id, updates: updatedSet as any })
               } else {
-                dispatchSets({ type: 'ADD_SET', set: updatedSet as SetData })
+                dispatchSets({ type: 'ADD_SET', set: updatedSet as any })
               }
               break
 

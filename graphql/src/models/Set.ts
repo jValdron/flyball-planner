@@ -17,9 +17,20 @@ export enum SetType {
   AroundTheWorld = 'AroundTheWorld'
 }
 
+export enum SetRating {
+  Good = 'Good',
+  Neutral = 'Neutral',
+  Bad = 'Bad'
+}
+
 registerEnumType(SetType, {
   name: 'SetType',
   description: 'The type of set being performed'
+});
+
+registerEnumType(SetRating, {
+  name: 'SetRating',
+  description: 'The rating for a set performance'
 });
 
 @ObjectType()
@@ -69,6 +80,14 @@ export class Set {
     default: false
   })
   isWarmup: boolean;
+
+  @Field(() => SetRating, { nullable: true })
+  @Column({
+    type: 'enum',
+    enum: SetRating,
+    nullable: true
+  })
+  rating: SetRating | null;
 
   @Field()
   @CreateDateColumn()

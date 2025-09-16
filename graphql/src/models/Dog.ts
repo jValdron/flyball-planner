@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { ObjectType, Field, ID, Int, registerEnumType } from 'type-graphql';
 import { Handler } from './Handler';
 import { Club } from './Club';
+import { DogNote } from './DogNote';
 
 export enum DogStatus {
   Active = 'Active',
@@ -82,4 +83,8 @@ export class Dog {
   @ManyToOne(() => Club)
   @JoinColumn({ name: 'clubId' })
   club: Promise<Club>;
+
+  @Field(() => [DogNote])
+  @OneToMany(() => DogNote, dogNote => dogNote.dog)
+  notes: DogNote[];
 }

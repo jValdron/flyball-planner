@@ -232,21 +232,28 @@ function Practices() {
                         <ListGroup.Item><FileText className="me-1" /> {practice.setsCount} sets</ListGroup.Item>
                       </ListGroup>
                       <Card.Body className={`${isDark ? 'bg-dark' : 'bg-light'} d-flex justify-content-between`}>
-                        {practiceIsPast ? "" : (
-                          <Button
-                            variant="outline-primary"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const completionStatus = getPracticeCompletionStatus(practice)
-                              const nextStepUrl = getNextIncompleteStepUrl(practice.id, completionStatus.nextIncompleteStep)
-                              navigate(nextStepUrl);
-                            }}
-                          >
-                            <Pencil className="me-1" />
-                            Edit
-                          </Button>
-                        )}
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const completionStatus = getPracticeCompletionStatus(practice)
+                            const nextStepUrl = getNextIncompleteStepUrl(practice.id, completionStatus.nextIncompleteStep)
+                            navigate(nextStepUrl);
+                          }}
+                        >
+                          {practiceIsPast && practice.status === 'Ready' ? (
+                            <>
+                              <FileText className="me-1" />
+                              Recap
+                            </>
+                          ) : (
+                            <>
+                              <Pencil className="me-1" />
+                              Edit
+                            </>
+                          )}
+                        </Button>
                         <Button
                           variant="outline-danger"
                           size="sm"

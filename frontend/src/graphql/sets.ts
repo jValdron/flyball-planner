@@ -35,11 +35,21 @@ export const UpdateSets = graphql(`
       notes
       isWarmup
       locationId
+      rating
       dogs {
         dogId
         index
         lane
       }
+    }
+  }
+`);
+
+export const UPDATE_SET_RATING = graphql(`
+  mutation UpdateSetRating($updates: [SetUpdate!]!) {
+    updateSets(updates: $updates) {
+      id
+      rating
     }
   }
 `);

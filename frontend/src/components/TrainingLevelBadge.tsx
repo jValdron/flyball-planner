@@ -14,9 +14,9 @@ const TrainingLevelBadge: React.FC<TrainingLevelBadgeProps> = ({
   className = ''
 }) => {
   const { isDark } = useTheme()
-  const { text, variant, className: badgeClassName } = getTrainingLevelInfo(level)
+  const { text, variant } = getTrainingLevelInfo(level)
 
-  return <Badge bg={variant} className={`${isDark ? '' : 'text-dark'} ${badgeClassName} ${className}`}>{text}</Badge>
+  return <Badge bg={variant} className={`${isDark ? '' : 'text-dark'} ${className}`}>{text}</Badge>
 }
 
 export default TrainingLevelBadge

@@ -150,6 +150,7 @@ function AppWithTitle({ isAuthenticated }: { isAuthenticated: boolean }) {
                       <Route path="/practices/:practiceId/attendance" element={<PracticeDetails />} />
                       <Route path="/practices/:practiceId/sets" element={<PracticeDetails />} />
                       <Route path="/practices/:practiceId/checks" element={<PracticeDetails />} />
+                      <Route path="/practices/:practiceId/recap" element={<PracticeDetails />} />
                     </Routes>
                   </Suspense>
                 </Container>

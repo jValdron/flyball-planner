@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useClub } from '../contexts/ClubContext'
 import { ChevronLeft, Save, Trash } from 'react-bootstrap-icons'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
+import DogNotes from '../components/DogNotes'
 import { useQuery, useMutation } from '@apollo/client'
 import { GetDogById, GetDogsByHandlersInClub, CreateDog, UpdateDog, DeleteDog } from '../graphql/dogs'
 import { DogStatus, TrainingLevel } from '../graphql/generated/graphql'
@@ -260,6 +261,12 @@ function DogDetails() {
         title="Delete Dog"
         message={`Are you sure you want to delete ${dogData?.dog?.name}? This action cannot be undone.`}
       />
+
+      {dogId && dogData?.dog && (
+        <div className="mt-5">
+          <DogNotes dogId={dogId} dogName={dogData.dog.name} />
+        </div>
+      )}
 
       {dogData?.dog && (
         <div className="mt-4 text-muted">

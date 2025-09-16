@@ -39,7 +39,10 @@ export class PracticeResolver {
       relations: [
         'attendances',
         'sets',
-        'sets.dogs'
+        'sets.dogs',
+        'sets.dogs.dog',
+        'sets.dogs.dog.owner',
+        'sets.location'
       ]
     });
 
