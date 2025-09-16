@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
 import type { DragStartEvent, DragEndEvent, DragOverEvent } from '@dnd-kit/core'
 import type { SetDog } from '../graphql/generated/graphql'
 
@@ -77,7 +77,7 @@ export function DragProvider({ children, onDogMove }: DragProviderProps) {
   }, [])
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event
+    const { over } = event
 
     clearStickyTimer()
 
