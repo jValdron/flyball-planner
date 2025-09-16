@@ -1,6 +1,10 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { Form, Badge, Overlay, Popover, Button, CloseButton, OverlayTrigger, Tooltip } from 'react-bootstrap'
 import { GripVertical, ExclamationTriangle, ClockHistory, QuestionCircle } from 'react-bootstrap-icons'
+import { DndContext, closestCenter } from '@dnd-kit/core'
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import type { DragEndEvent } from '@dnd-kit/core'
 import TrainingLevelBadge from './TrainingLevelBadge'
 import { getTrainingLevelInfo } from '../utils/trainingLevels'
 import { useTheme } from '../contexts/ThemeContext'
@@ -25,9 +29,123 @@ interface DogsPickerProps {
   validationErrors?: ValidationError[]
   getValidationErrorsForSet?: (setId: string) => ValidationError[]
   currentSetId?: string
+  pickerId?: string
+  onDragStart?: (dog: SetDog, pickerId: string) => void
+  onDragEnd?: () => void
+  isDragOver?: boolean
 }
 
-export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add dog...', disabled = false, isLocked = false, dogsWithValidationIssues, validationErrors, getValidationErrorsForSet, currentSetId }: DogsPickerProps) {
+// Sortable Dog Item Component
+interface SortableDogItemProps {
+  setDog: SetDog
+  index: number
+  disabled: boolean
+  isLocked: boolean
+  dogsWithValidationIssues?: Set<string>
+  getValidationErrorsForDog: Map<string, string[]>
+  getValidationSeverityForDog: Map<string, 'warning' | 'info'>
+  onRemove: (index: number) => void
+  isDark: boolean
+}
+
+function SortableDogItem({
+  setDog,
+  index,
+  disabled,
+  isLocked,
+  dogsWithValidationIssues,
+  getValidationErrorsForDog,
+  getValidationSeverityForDog,
+  onRemove,
+  isDark
+}: SortableDogItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: `${setDog.id}-${index}`,
+    disabled: disabled || isLocked
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  const displayName = setDog.dog.name
+  const { variant, className } = getTrainingLevelInfo(setDog.dog.trainingLevel)
+  const hasValidationIssue = dogsWithValidationIssues?.has(setDog.dog.id)
+  const validationSeverity = getValidationSeverityForDog.get(setDog.dog.id)
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="mb-2 w-100"
+      {...attributes}
+    >
+      <Badge bg={variant} className={`d-flex align-items-center justify-content-between w-100 ${className}`} style={{ minHeight: 38, cursor: disabled ? 'default' : 'grab' }} {...listeners}>
+        <span className={`me-2 d-inline-flex align-items-center ${isDark ? '' : 'text-dark'}`}>
+          {!disabled && <GripVertical />}
+        </span>
+        <span className={`flex-grow-1 text-start d-flex align-items-center ${isDark ? '' : 'text-dark'}`}>
+          {hasValidationIssue && (
+            <OverlayTrigger
+              placement="top"
+              overlay={
+                <Tooltip id={`validation-error-${setDog.dog.id}`}>
+                  <div>
+                    {getValidationErrorsForDog.get(setDog.dog.id)?.map((error, index) => (
+                      <div key={index} className="mb-1">
+                        • {error}
+                      </div>
+                    )) || 'This dog has validation issues'}
+                  </div>
+                </Tooltip>
+              }
+            >
+              {validationSeverity === 'info' ? (
+                <ClockHistory size={18} className="me-2 text-info" title="This dog has validation issues" />
+              ) : (
+                <ExclamationTriangle size={18} className="me-2 text-warning" title="This dog has validation issues" />
+              )}
+            </OverlayTrigger>
+          )}
+          {displayName}
+        </span>
+        {!isLocked && (
+          <span className="p-2 d-inline-flex align-items-center justify-content-center ms-auto" style={{ marginRight: '-8px', cursor: disabled ? 'default' : 'pointer' }} tabIndex={-1}>
+            <CloseButton
+              onClick={() => onRemove(index)}
+              className={isDark ? 'btn-close-white' : 'btn-close'}
+              aria-label={`Remove ${displayName}`}
+              disabled={disabled}
+            />
+          </span>
+        )}
+      </Badge>
+    </div>
+  )
+}
+
+export function DogsPicker({
+  value,
+  onChange,
+  availableDogs,
+  placeholder = 'Add dog...',
+  disabled = false,
+  isLocked = false,
+  dogsWithValidationIssues,
+  validationErrors,
+  getValidationErrorsForSet,
+  currentSetId,
+  isDragOver = false
+}: DogsPickerProps) {
   const { isDark } = useTheme()
   const { selectedClub } = useClub()
   const idealSetsPerDog = selectedClub?.idealSetsPerDog ?? 2
@@ -38,7 +156,6 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
   const popoverRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<any>(null)
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1)
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [isSelecting, setIsSelecting] = useState(false)
 
   const filteredDogs = useMemo(() => {
@@ -210,6 +327,29 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
     onChange(newValue)
   }
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (active.id !== over?.id) {
+      const oldIndex = value.findIndex((_, index) => `${value[index].id}-${index}` === active.id)
+      const newIndex = value.findIndex((_, index) => `${value[index].id}-${index}` === over?.id)
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newValue = [...value]
+        const [removed] = newValue.splice(oldIndex, 1)
+        newValue.splice(newIndex, 0, removed)
+
+        // Update indices
+        const updatedValue = newValue.map((dog, index) => ({
+          ...dog,
+          index: index + 1
+        }))
+
+        onChange(updatedValue)
+      }
+    }
+  }
+
   const handleBlur = () => {
     if (isSelecting) return
 
@@ -269,24 +409,6 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
 
 
 
-  const handleDragStart = (idx: number) => {
-    setDraggedIndex(idx)
-  }
-
-  const handleDragOver = (idx: number, e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    if (draggedIndex === null || draggedIndex === idx) return
-
-    const newValue = [...value]
-    const [removed] = newValue.splice(draggedIndex, 1)
-    newValue.splice(idx, 0, removed)
-    onChange(newValue)
-    setDraggedIndex(idx)
-  }
-
-  const handleDragEnd = () => {
-    setDraggedIndex(null)
-  }
 
   const popover = (
     <Popover id="dogs-picker-autocomplete" ref={popoverRef} style={{ minWidth: '500px' }}>
@@ -346,71 +468,35 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
     </Popover>
   )
 
-  const renderDogBadge = (setDog: SetDog, idx: number) => {
-    const displayName = setDog.dog.name
-    const { variant, className } = getTrainingLevelInfo(setDog.dog.trainingLevel)
-    const hasValidationIssue = dogsWithValidationIssues?.has(setDog.dog.id)
-    const validationSeverity = getValidationSeverityForDog.get(setDog.dog.id)
-
-    return (
-      <div
-        key={`${setDog.id}-${idx}`}
-        className="mb-2 w-100"
-        draggable={!disabled}
-        onDragStart={() => handleDragStart(idx)}
-        onDragOver={e => handleDragOver(idx, e)}
-        onDragEnd={handleDragEnd}
-        style={{ opacity: draggedIndex === idx ? 0.5 : 1, cursor: disabled ? 'default' : 'move' }}
-      >
-        <Badge bg={variant} className={`d-flex align-items-center justify-content-between w-100 ${className}`} style={{ minHeight: 38 }}>
-          <span className={`me-2 d-inline-flex align-items-center ${isDark ? '' : 'text-dark'}`} style={{ cursor: disabled ? 'default' : 'grab' }}>
-            {!disabled && <GripVertical />}
-          </span>
-          <span className={`flex-grow-1 text-start d-flex align-items-center ${isDark ? '' : 'text-dark'}`}>
-            {hasValidationIssue && (
-              <OverlayTrigger
-                placement="top"
-                overlay={
-                  <Tooltip id={`validation-error-${setDog.dog.id}`}>
-                    <div>
-                      {getValidationErrorsForDog.get(setDog.dog.id)?.map((error, index) => (
-                        <div key={index} className="mb-1">
-                          • {error}
-                        </div>
-                      )) || 'This dog has validation issues'}
-                    </div>
-                  </Tooltip>
-                }
-              >
-                {validationSeverity === 'info' ? (
-                  <ClockHistory size={18} className="me-2 text-info" title="This dog has validation issues" />
-                ) : (
-                  <ExclamationTriangle size={18} className="me-2 text-warning" title="This dog has validation issues" />
-                )}
-              </OverlayTrigger>
-            )}
-            {displayName}
-          </span>
-          {!isLocked && (
-            <span className="p-2 d-inline-flex align-items-center justify-content-center ms-auto" style={{ marginRight: '-8px', cursor: disabled ? 'default' : 'pointer' }} tabIndex={-1}>
-              <CloseButton
-                onClick={() => handleRemove(idx)}
-                className={isDark ? 'btn-close-white' : 'btn-close'}
-                aria-label={`Remove ${displayName}`}
-                disabled={disabled}
-              />
-            </span>
-          )}
-        </Badge>
-      </div>
-    )
-  }
 
   return (
-    <div>
-      <div className="mb-2">
-        {value.sort((a, b) => a.index - b.index).map((setDog, idx) => renderDogBadge(setDog, idx))}
-      </div>
+    <div className={isDragOver ? 'border border-primary rounded p-2' : ''}>
+      <DndContext
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={value.sort((a, b) => a.index - b.index).map((setDog, idx) => `${setDog.id}-${idx}`)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="mb-2">
+            {value.sort((a, b) => a.index - b.index).map((setDog, idx) => (
+              <SortableDogItem
+                key={`${setDog.id}-${idx}`}
+                setDog={setDog}
+                index={idx}
+                disabled={disabled}
+                isLocked={isLocked}
+                dogsWithValidationIssues={dogsWithValidationIssues}
+                getValidationErrorsForDog={getValidationErrorsForDog}
+                getValidationSeverityForDog={getValidationSeverityForDog}
+                onRemove={handleRemove}
+                isDark={isDark}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
       {showInput ? (
         <div style={{ position: 'relative' }}>
           <Form.Control
