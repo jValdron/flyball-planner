@@ -20,13 +20,14 @@ interface DogsPickerProps {
   availableDogs: DogWithSetCount[]
   placeholder?: string
   disabled?: boolean
+  isLocked?: boolean
   dogsWithValidationIssues?: Set<string>
   validationErrors?: ValidationError[]
   getValidationErrorsForSet?: (setId: string) => ValidationError[]
   currentSetId?: string
 }
 
-export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add dog...', disabled = false, dogsWithValidationIssues, validationErrors, getValidationErrorsForSet, currentSetId }: DogsPickerProps) {
+export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add dog...', disabled = false, isLocked = false, dogsWithValidationIssues, validationErrors, getValidationErrorsForSet, currentSetId }: DogsPickerProps) {
   const { isDark } = useTheme()
   const { selectedClub } = useClub()
   const idealSetsPerDog = selectedClub?.idealSetsPerDog ?? 2
@@ -390,14 +391,16 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
             )}
             {displayName}
           </span>
-          <span className="p-2 d-inline-flex align-items-center justify-content-center ms-auto" style={{ marginRight: '-8px', cursor: disabled ? 'default' : 'pointer' }} tabIndex={-1}>
-            <CloseButton
-              onClick={() => handleRemove(idx)}
-              className={isDark ? 'btn-close-white' : 'btn-close'}
-              aria-label={`Remove ${displayName}`}
-              disabled={disabled}
-            />
-          </span>
+          {!isLocked && (
+            <span className="p-2 d-inline-flex align-items-center justify-content-center ms-auto" style={{ marginRight: '-8px', cursor: disabled ? 'default' : 'pointer' }} tabIndex={-1}>
+              <CloseButton
+                onClick={() => handleRemove(idx)}
+                className={isDark ? 'btn-close-white' : 'btn-close'}
+                aria-label={`Remove ${displayName}`}
+                disabled={disabled}
+              />
+            </span>
+          )}
         </Badge>
       </div>
     )
@@ -455,7 +458,7 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
             {popover}
           </Overlay>
         </div>
-      ) : (
+      ) : !isLocked ? (
         <Button
           variant="outline-primary"
           onClick={() => setShowInput(true)}
@@ -463,7 +466,7 @@ export function DogsPicker({ value, onChange, availableDogs, placeholder = 'Add 
         >
           + Add Dog
         </Button>
-      )}
+      ) : null}
     </div>
   )
 }

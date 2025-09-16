@@ -245,7 +245,7 @@ function PracticeDetailsContent() {
                 variant="outline-danger"
                 size="sm"
                 onClick={() => setShowDeleteModal(true)}
-                disabled={isDeleting}
+                disabled={isDeleting || isLocked}
               >
                 <Trash className="me-2" /> {isPastPractice ? 'Delete' : 'Cancel'}
               </Button>
@@ -398,6 +398,7 @@ function PracticeDetailsContent() {
             <PracticeSet
               practiceId={practiceId}
               disabled={isLocked}
+              isLocked={isLocked}
               validationErrors={validationErrors}
             />
           )}

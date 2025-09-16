@@ -25,6 +25,7 @@ interface DogWithSetCount extends Dog {
 interface PracticeSetProps {
   practiceId: string
   disabled: boolean
+  isLocked?: boolean
   validationErrors?: ValidationError[]
 }
 
@@ -39,6 +40,7 @@ interface SortableSetProps {
   otherLocations: Location[]
   defaultLocation?: Location | null
   disabled?: boolean
+  isLocked?: boolean
   dogsWithValidationIssues?: Set<string>
   validationErrors?: ValidationError[]
   inputRef?: React.RefObject<HTMLInputElement | null>
@@ -57,6 +59,7 @@ function SortableSet({
   otherLocations,
   defaultLocation,
   disabled = false,
+  isLocked = false,
   dogsWithValidationIssues = new Set<string>(),
   validationErrors,
   inputRef,
@@ -97,9 +100,11 @@ function SortableSet({
       {customLocation && (
         <div className="d-flex align-items-center justify-content-between mb-3">
           <h6 className="mb-0">{customLocation.name}</h6>
-          <Button variant="outline-danger" size="sm" onClick={handleLocationRemove} disabled={disabled || isDeleting}>
-            {isDeleting ? <Spinner size="sm" /> : <Trash />}
-          </Button>
+          {!isLocked && (
+            <Button variant="outline-danger" size="sm" onClick={handleLocationRemove} disabled={disabled || isDeleting}>
+              {isDeleting ? <Spinner size="sm" /> : <Trash />}
+            </Button>
+          )}
         </div>
       )}
 
@@ -121,6 +126,7 @@ function SortableSet({
         onDogsChange={handleDogsChange}
         location={setLocation}
         disabled={disabled}
+        isLocked={isLocked}
         dogsWithValidationIssues={dogsWithValidationIssues}
         validationErrors={validationErrors}
         getValidationErrorsForSet={getValidationErrorsForSet}
@@ -151,19 +157,20 @@ interface DogsSectionProps {
   onDogsChange: (lane: Lane | null, setDogs: Partial<SetDog>[]) => void
   location: { id: string; name: string; isDefault: boolean; isDoubleLane: boolean }
   disabled?: boolean
+  isLocked?: boolean
   dogsWithValidationIssues?: Set<string>
   validationErrors?: ValidationError[]
   getValidationErrorsForSet?: (setId: string) => ValidationError[]
 }
 
-function DogsSection({ set, availableDogs, onDogsChange, location, disabled, dogsWithValidationIssues, validationErrors, getValidationErrorsForSet }: DogsSectionProps) {
+function DogsSection({ set, availableDogs, onDogsChange, location, disabled, isLocked = false, dogsWithValidationIssues, validationErrors, getValidationErrorsForSet }: DogsSectionProps) {
   const getDogsForLane = (lane: Lane | null) => set.dogs.filter(d => d.lane === lane)
 
   // Determine lanes based on location
   const lanes = location.isDoubleLane ? [Lane.Left, Lane.Right] : [null]
 
   return (
-    <div className="d-flex" style={{ gap: '8px' }}>
+    <div className="row g-2">
       {lanes.map(lane => {
         const dogsUsedInOtherLanes = new Set<string>()
         set.dogs.forEach(setDog => {
@@ -175,7 +182,7 @@ function DogsSection({ set, availableDogs, onDogsChange, location, disabled, dog
         const availableDogsForLane = availableDogs.filter(dog => !dogsUsedInOtherLanes.has(dog.id))
 
         return (
-          <div key={lane ?? 'single'} className="flex-fill">
+          <div key={lane ?? 'single'} className="col-6">
             <DogsPicker
               value={getDogsForLane(lane).map(sd => {
                 const dog = availableDogs.find(d => d.id === sd.dogId)
@@ -189,6 +196,7 @@ function DogsSection({ set, availableDogs, onDogsChange, location, disabled, dog
               availableDogs={availableDogsForLane}
               placeholder={lane ? `Add dog to ${lane} lane` : 'Add dog'}
               disabled={disabled}
+              isLocked={isLocked}
               dogsWithValidationIssues={dogsWithValidationIssues}
               validationErrors={validationErrors}
               getValidationErrorsForSet={getValidationErrorsForSet}
@@ -215,6 +223,7 @@ interface SortableGroupProps {
   otherLocations: Location[]
   defaultLocation?: Location | null
   disabled?: boolean
+  isLocked?: boolean
   validationErrors?: ValidationError[]
   getSetTypeRef: (setId: string) => React.RefObject<HTMLInputElement | null>
   getDogsWithValidationIssuesForSet: (setId: string) => Set<string>
@@ -239,6 +248,7 @@ function SortableGroup({
   otherLocations,
   defaultLocation,
   disabled = false,
+  isLocked = false,
   validationErrors,
   getSetTypeRef,
   getDogsWithValidationIssuesForSet,
@@ -316,6 +326,7 @@ function SortableGroup({
                     otherLocations={otherLocations}
                     defaultLocation={defaultLocation}
                     disabled={disabled}
+                    isLocked={isLocked}
                     dogsWithValidationIssues={getDogsWithValidationIssuesForSet(set.id)}
                     validationErrors={validationErrors}
                     inputRef={getSetTypeRef(set.id)}
@@ -339,41 +350,43 @@ function SortableGroup({
                 className="me-3"
               />
             </div>
-            <div className="d-flex gap-2">
-              {availableLocationsForThisSet.length > 0 && (
-                <LocationSelector
-                  availableLocations={availableLocationsForThisSet}
-                  onSelect={handleLocationAdd}
-                  disabled={disabled}
-                />
-              )}
-              {!isGroupNotesOpen && (
-                <Button
-                  variant="outline-info"
-                  size="sm"
-                  className="text-nowrap d-flex align-items-center"
-                  onClick={() => onShowGroupNotes(group.index)}
-                  disabled={disabled}
-                >
-                  <Journal className="me-1" /> Notes
+            {!isLocked && (
+              <div className="d-flex gap-2">
+                {availableLocationsForThisSet.length > 0 && (
+                  <LocationSelector
+                    availableLocations={availableLocationsForThisSet}
+                    onSelect={handleLocationAdd}
+                    disabled={disabled}
+                  />
+                )}
+                {!isGroupNotesOpen && (
+                  <Button
+                    variant="outline-info"
+                    size="sm"
+                    className="text-nowrap d-flex align-items-center"
+                    onClick={() => onShowGroupNotes(group.index)}
+                    disabled={disabled}
+                  >
+                    <Journal className="me-1" /> Notes
+                  </Button>
+                )}
+                {group.sets.length > 0 && (
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    className="d-flex align-items-center"
+                    onClick={() => onInsertAbove?.(group.sets[0].id)}
+                    disabled={disabled}
+                    title="Insert set above"
+                  >
+                    <Arrow90degLeft />
+                  </Button>
+                )}
+                <Button variant="outline-danger" size="sm" className="text-nowrap d-flex align-items-center" onClick={() => onDeleteGroup(group.index)} disabled={disabled || isDeletingGroup}>
+                  {isDeletingGroup ? <Spinner size="sm" className="me-1" /> : <Trash className="me-1" />} Remove
                 </Button>
-              )}
-              {group.sets.length > 0 && (
-                <Button
-                  variant="outline-primary"
-                  size="sm"
-                  className="d-flex align-items-center"
-                  onClick={() => onInsertAbove?.(group.sets[0].id)}
-                  disabled={disabled}
-                  title="Insert set above"
-                >
-                  <Arrow90degLeft />
-                </Button>
-              )}
-              <Button variant="outline-danger" size="sm" className="text-nowrap d-flex align-items-center" onClick={() => onDeleteGroup(group.index)} disabled={disabled || isDeletingGroup}>
-                {isDeletingGroup ? <Spinner size="sm" className="me-1" /> : <Trash className="me-1" />} Remove
-              </Button>
-            </div>
+              </div>
+            )}
           </Card.Footer>
         </Card>
       </div>
@@ -381,7 +394,7 @@ function SortableGroup({
   )
 }
 
-export function PracticeSet({ practiceId, disabled, validationErrors }: PracticeSetProps) {
+export function PracticeSet({ practiceId, disabled, isLocked = false, validationErrors }: PracticeSetProps) {
   const { dogs, locations } = useClub()
   const { attendances, sets } = usePractice()
   const [isSaving, setIsSaving] = useState(false)
@@ -859,6 +872,7 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
               otherLocations={otherLocations}
               defaultLocation={defaultLocation}
               disabled={disabled}
+              isLocked={isLocked}
               validationErrors={validationErrors}
               getSetTypeRef={getSetTypeRef}
               getDogsWithValidationIssuesForSet={getDogsWithValidationIssuesForSet}
@@ -871,17 +885,19 @@ export function PracticeSet({ practiceId, disabled, validationErrors }: Practice
           ))}
         </SortableContext>
       </DndContext>
-      <div className="d-flex justify-content-end mb-4">
-        <Button
-          variant="primary"
-          className="text-nowrap d-flex align-items-center"
-          onClick={handleAddSet}
-          disabled={disabled || isAddingSet}
-        >
-          {isAddingSet ? <Spinner size="sm" className="me-2" /> : <PlusLg className="me-2" />}
-          Add Set
-        </Button>
-      </div>
+      {!isLocked && (
+        <div className="d-flex justify-content-end mb-4">
+          <Button
+            variant="primary"
+            className="text-nowrap d-flex align-items-center"
+            onClick={handleAddSet}
+            disabled={disabled || isAddingSet}
+          >
+            {isAddingSet ? <Spinner size="sm" className="me-2" /> : <PlusLg className="me-2" />}
+            Add Set
+          </Button>
+        </div>
+      )}
       <SaveSpinner show={isSaving} />
     </div>
   )
