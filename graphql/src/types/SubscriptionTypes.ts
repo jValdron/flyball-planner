@@ -116,3 +116,45 @@ export class PracticeSummaryEvent {
   @Field(() => EventType)
   eventType!: EventType;
 }
+
+@ObjectType()
+export class PracticeDogNoteEvent {
+  @Field(() => String)
+  id!: string;
+
+  @Field(() => String)
+  content!: string;
+
+  @Field(() => String)
+  practiceId!: string;
+
+  @Field(() => String)
+  setId!: string;
+
+  @Field(() => [String])
+  dogIds!: string[];
+
+  @Field(() => EventType)
+  eventType!: EventType;
+}
+
+@ObjectType()
+export class PracticeDogNote {
+  @Field(() => String)
+  id!: string;
+
+  @Field(() => String)
+  content!: string;
+
+  @Field(() => Date)
+  createdAt!: Date;
+
+  @Field(() => Date)
+  updatedAt!: Date;
+
+  @Field(() => String)
+  setId!: string;
+
+  @Field(() => [String])
+  dogIds!: string[];
+}

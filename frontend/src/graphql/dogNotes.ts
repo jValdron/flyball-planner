@@ -16,13 +16,50 @@ export const GET_DOG_NOTES = gql`
             index
             type
             typeCustom
+            isWarmup
+            notes
+            location {
+              id
+              name
+              isDoubleLane
+            }
             practice {
               id
               scheduledAt
             }
+            dogs {
+              id
+              index
+              lane
+              dogId
+              dog {
+                id
+                name
+                crn
+                trainingLevel
+                owner {
+                  id
+                  givenName
+                  surname
+                }
+              }
+            }
           }
         }
       }
+    }
+  }
+`
+
+export const GET_DOG_NOTES_BY_PRACTICE = gql`
+  query GetDogNotesByPractice($practiceId: ID!) {
+    dogNotesByPractice(practiceId: $practiceId) {
+      id
+      content
+      createdAt
+      updatedAt
+      setId
+      dogIds
     }
   }
 `
@@ -49,6 +86,24 @@ export const UPDATE_DOG_NOTE = gql`
   }
 `
 
+export const CREATE_SET_DOG_NOTE = gql`
+  mutation CreateSetDogNote($input: CreateSetDogNoteInput!) {
+    createSetDogNote(input: $input) {
+      id
+      content
+      createdAt
+      updatedAt
+      setDogNotes {
+        id
+        setDog {
+          id
+          dogId
+        }
+      }
+    }
+  }
+`
+
 export const DELETE_DOG_NOTE = gql`
   mutation DeleteDogNote($id: ID!) {
     deleteDogNote(id: $id)
@@ -69,11 +124,44 @@ export type DogNote = {
         index: number
         type: string | null
         typeCustom: string | null
+        isWarmup: boolean
+        notes: string | null
+        location: {
+          id: string
+          name: string
+          isDoubleLane: boolean
+        }
         practice: {
           id: string
           scheduledAt: string
         }
+        dogs: Array<{
+          id: string
+          index: number
+          lane: string | null
+          dogId: string
+          dog: {
+            id: string
+            name: string
+            crn: string | null
+            trainingLevel: string
+            owner: {
+              id: string
+              givenName: string
+              surname: string
+            } | null
+          }
+        }>
       }
     }
   }>
+}
+
+export type PracticeDogNote = {
+  id: string
+  content: string
+  createdAt: string
+  updatedAt: string
+  setId: string
+  dogIds: string[]
 }

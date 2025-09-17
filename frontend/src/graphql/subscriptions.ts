@@ -181,3 +181,16 @@ export const PRACTICE_SUMMARY_CHANGED_SUBSCRIPTION = graphql(`
     }
   }
 `);
+
+export const PRACTICE_DOG_NOTE_CHANGED_SUBSCRIPTION = graphql(`
+  subscription PracticeDogNoteChanged($practiceId: String!) {
+    practiceDogNoteChanged(practiceId: $practiceId) {
+      id
+      content
+      practiceId
+      setId
+      dogIds
+      eventType
+    }
+  }
+`);

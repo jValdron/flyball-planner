@@ -163,7 +163,7 @@ function Practices() {
 
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Practices</h1>
-        <Button variant="primary" onClick={() => navigate('/practices/new')}>
+        <Button variant="primary" className="d-flex align-items-center" onClick={() => navigate('/practices/new')}>
           <PlusLg className="me-1" /> Schedule New Practice
         </Button>
       </div>

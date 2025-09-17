@@ -1,7 +1,9 @@
 import { Card, Badge } from 'react-bootstrap'
+import { useNavigate } from 'react-router-dom'
 import { getSetTypeDisplayName } from '../../utils/setTypeUtils'
 import { getTrainingLevelInfo } from '../../utils/trainingLevels'
 import { useTheme } from '../../contexts/ThemeContext'
+import { formatRelativeTime } from '../../utils/dateUtils'
 import { Lane } from '../../graphql/generated/graphql'
 import type { GetPracticeQuery } from '../../graphql/generated/graphql'
 import './SetViewOnly.css'
@@ -13,11 +15,22 @@ interface SetDisplayBaseProps {
   twoColumns?: boolean
   defaultLocationName?: string
   showTrainingLevels?: boolean
+  clickableDogBadges?: boolean
+  smallHeader?: boolean
+  hideNotes?: boolean
+  practiceScheduledAt?: string | null
   children?: (set: SetData, setIndex: number) => React.ReactNode
 }
 
-export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, showTrainingLevels = false, children }: SetDisplayBaseProps) {
+export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, showTrainingLevels = false, clickableDogBadges = false, smallHeader = false, hideNotes = false, practiceScheduledAt, children }: SetDisplayBaseProps) {
   const { isDark } = useTheme()
+  const navigate = useNavigate()
+
+  const handleDogBadgeClick = (dogId: string) => {
+    if (clickableDogBadges) {
+      navigate(`/dogs/${dogId}`)
+    }
+  }
 
   if (sets.length === 0) {
     return <p className="text-muted text-center">No sets planned yet</p>
@@ -39,15 +52,16 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
       ).map(([index, sets]) => (
         <Card key={index} className="w-100">
           <Card.Header className="d-flex justify-content-between align-items-center">
-            <div>
-              <h5 className="mb-0">
-                <span className="fw-normal">Set {index}{(sets as any[])[0].type ? ' -' : ''}</span>
-                {(sets as any[])[0].type && (
-                  <span className="ms-2 fw-bold">
-                    {(sets as any[])[0].typeCustom || getSetTypeDisplayName((sets as any[])[0].type as any)}
-                  </span>
-                )}
-              </h5>
+            <div className={`mb-0 ${smallHeader ? '' : 'fs-5'}`}>
+              {practiceScheduledAt && (
+                <span className="text-muted me-3">{formatRelativeTime(practiceScheduledAt)}</span>
+              )}
+              <span className="fw-normal">Set {index}{(sets as any[])[0].type ? ' -' : ''}</span>
+              {(sets as any[])[0].type && (
+                <span className="ms-2 fw-bold">
+                  {(sets as any[])[0].typeCustom || getSetTypeDisplayName((sets as any[])[0].type as any)}
+                </span>
+              )}
             </div>
             <div className="text-end">
               {(sets as any[]).some((set: any) => set.isWarmup) && (
@@ -89,7 +103,9 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
                                         <Badge
                                           key={setDog.id}
                                           bg={variant}
-                                          className={`me-1 mb-1`}
+                                          className={`me-1 mb-1 ${isDark ? '' : 'text-dark'}`}
+                                          style={clickableDogBadges ? { cursor: 'pointer' } : {}}
+                                          onClick={() => handleDogBadgeClick(setDog.dogId || setDog.id)}
                                         >
                                           {setDog.dog?.name || `Dog ${setDog.dogId || setDog.id}`}
                                         </Badge>
@@ -99,7 +115,9 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
                                         <Badge
                                           key={setDog.id}
                                           bg="secondary"
-                                          className="me-1 mb-1"
+                                          className={`me-1 mb-1 ${isDark ? '' : 'text-dark'}`}
+                                          style={clickableDogBadges ? { cursor: 'pointer' } : {}}
+                                          onClick={() => handleDogBadgeClick(setDog.dogId || setDog.id)}
                                         >
                                           {setDog.dog?.name || `Dog ${setDog.dogId || setDog.id}`}
                                         </Badge>
@@ -126,6 +144,8 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
                                         key={setDog.id}
                                         bg={variant}
                                         className={`me-1 mb-1 ${isDark ? '' : 'text-dark'}`}
+                                        style={clickableDogBadges ? { cursor: 'pointer' } : {}}
+                                        onClick={() => handleDogBadgeClick(setDog.dogId || setDog.id)}
                                       >
                                         {setDog.dog?.name || `Dog ${setDog.dogId || setDog.id}`}
                                       </Badge>
@@ -136,6 +156,8 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
                                         key={setDog.id}
                                         bg="secondary"
                                         className={`me-1 mb-1 ${isDark ? '' : 'text-dark'}`}
+                                        style={clickableDogBadges ? { cursor: 'pointer' } : {}}
+                                        onClick={() => handleDogBadgeClick(setDog.dogId || setDog.id)}
                                       >
                                         {setDog.dog?.name || `Dog ${setDog.dogId || setDog.id}`}
                                       </Badge>
@@ -149,9 +171,9 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
                     })()}
                   </div>
                 ) : (
-                  <p className="text-muted">No dogs assigned</p>
+                  <em className="text-muted">No dogs assigned</em>
                 )}
-                {set.notes && (
+                {!hideNotes && set.notes && (
                   <div className="mt-2 text-muted">
                     <em>{set.notes}</em>
                   </div>

@@ -44,6 +44,7 @@ input CreateDogNoteInput {
 }
 
 input CreateSetDogNoteInput {
+  clubId: ID!
   content: String!
   dogIds: [ID!]!
   setDogId: ID!
@@ -198,6 +199,24 @@ type PracticeAttendanceEvent {
   eventType: EventType!
 }
 
+type PracticeDogNote {
+  content: String!
+  createdAt: DateTimeISO!
+  dogIds: [String!]!
+  id: String!
+  setId: String!
+  updatedAt: DateTimeISO!
+}
+
+type PracticeDogNoteEvent {
+  content: String!
+  dogIds: [String!]!
+  eventType: EventType!
+  id: String!
+  practiceId: String!
+  setId: String!
+}
+
 type PracticeEvent {
   eventType: EventType!
   practice: Practice!
@@ -237,6 +256,7 @@ type Query {
   currentUser: User!
   dog(id: String!): Dog
   dogNotes(dogId: ID!): [DogNote!]!
+  dogNotesByPractice(practiceId: ID!): [PracticeDogNote!]!
   dogs: [Dog!]!
   dogsByHandlersInClub(clubId: ID!): [Handler!]
   handler(id: String!): Handler
@@ -342,6 +362,7 @@ type Subscription {
   locationChanged(clubId: String): LocationEvent!
   practiceAttendanceChanged(practiceId: String!): PracticeAttendanceEvent!
   practiceChanged(practiceId: String!): PracticeEvent!
+  practiceDogNoteChanged(practiceId: String!): PracticeDogNoteEvent!
   practiceSetChanged(practiceId: String!): PracticeSetEvent!
   practiceSummaryChanged(clubId: String!): PracticeSummaryEvent!
 }

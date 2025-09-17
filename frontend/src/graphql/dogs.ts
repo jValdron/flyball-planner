@@ -26,6 +26,7 @@ export const GetDogById = graphql(`
       status
       trainingLevel
       ownerId
+      clubId
       updatedAt
       createdAt
     }

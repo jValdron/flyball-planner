@@ -179,11 +179,11 @@ function HandlerDetails() {
         <div className="d-flex gap-2">
           {!isNewHandler && handlerData?.handler && (
             <>
-              <Button variant="success" onClick={() => handlerData.handler && navigate(`/dogs/new?handlerId=${handlerData.handler.id}`)}>
+              <Button variant="success" className="d-flex align-items-center" onClick={() => handlerData.handler && navigate(`/dogs/new?handlerId=${handlerData.handler.id}`)}>
                 <PlusLg className="me-2" />
                 Add Dog
               </Button>
-              <Button variant="outline-danger" onClick={() => setShowDeleteModal(true)}>
+              <Button variant="outline-danger" className="d-flex align-items-center" onClick={() => setShowDeleteModal(true)}>
                 <Trash className="me-2" />
                 Delete Handler
               </Button>
@@ -233,6 +233,7 @@ function HandlerDetails() {
           <Button
             type="submit"
             variant="primary"
+            className="d-flex align-items-center"
           >
             <Save className="me-2" />
             {isNewHandler ? 'Create Handler' : 'Save Changes'}
@@ -241,6 +242,7 @@ function HandlerDetails() {
             <Button
               type="button"
               variant="success"
+              className="d-flex align-items-center"
               onClick={(e) => handleSubmit(e, true)}
             >
               <Save className="me-2" />
