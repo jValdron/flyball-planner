@@ -189,7 +189,7 @@ function ClubDetails() {
               <tr
                 key={location.id}
                 onClick={() => navigate(`/locations/${location.id}`)}
-                style={{ cursor: 'pointer' }}
+                className="cur-point"
               >
                 <td>{location.name}</td>
                 <td className="text-center">{location.isDefault ? <CheckLg /> : <XLg />}</td>

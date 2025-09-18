@@ -61,9 +61,8 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
       ).map(([index, sets]) => (
         <Card
           key={index}
-          className={`w-100 ${clickableSets ? 'clickable-card' : ''}`}
+          className={`w-100 ${clickableSets ? 'clickable-card cur-point' : ''}`}
           onClick={clickableSets ? () => handleSetClick(sets[0]) : undefined}
-          style={clickableSets ? { cursor: 'pointer' } : undefined}
         >
           <Card.Header className="d-flex justify-content-between align-items-center">
             <div className={`mb-0 ${smallHeader ? '' : 'fs-5'}`}>
@@ -117,8 +116,7 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
                                         <Badge
                                           key={setDog.id}
                                           bg={variant}
-                                          className={`me-1 mb-1 ${isDark ? '' : 'text-dark'}`}
-                                          style={clickableDogBadges ? { cursor: 'pointer' } : {}}
+                                          className={`me-1 mb-1 ${clickableDogBadges ? 'cur-point' : ''} ${isDark ? '' : 'text-dark'}`}
                                           onClick={(e) => handleDogBadgeClick(setDog.dogId || setDog.id, e)}
                                         >
                                           {setDog.dog?.name || `Dog ${setDog.dogId || setDog.id}`}
@@ -129,8 +127,7 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
                                         <Badge
                                           key={setDog.id}
                                           bg="secondary"
-                                          className={`me-1 mb-1 ${isDark ? '' : 'text-dark'}`}
-                                          style={clickableDogBadges ? { cursor: 'pointer' } : {}}
+                                          className={`me-1 mb-1 ${clickableDogBadges ? 'cur-point' : ''} ${isDark ? '' : 'text-dark'}`}
                                           onClick={(e) => handleDogBadgeClick(setDog.dogId || setDog.id, e)}
                                         >
                                           {setDog.dog?.name || `Dog ${setDog.dogId || setDog.id}`}
@@ -157,8 +154,7 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
                                       <Badge
                                         key={setDog.id}
                                         bg={variant}
-                                        className={`me-1 mb-1 ${isDark ? '' : 'text-dark'}`}
-                                        style={clickableDogBadges ? { cursor: 'pointer' } : {}}
+                                        className={`me-1 mb-1 ${clickableDogBadges ? 'cur-point' : ''} ${isDark ? '' : 'text-dark'}`}
                                         onClick={(e) => handleDogBadgeClick(setDog.dogId || setDog.id, e)}
                                       >
                                         {setDog.dog?.name || `Dog ${setDog.dogId || setDog.id}`}
@@ -169,8 +165,7 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
                                       <Badge
                                         key={setDog.id}
                                         bg="secondary"
-                                        className={`me-1 mb-1 ${isDark ? '' : 'text-dark'}`}
-                                        style={clickableDogBadges ? { cursor: 'pointer' } : {}}
+                                        className={`me-1 mb-1 ${clickableDogBadges ? 'cur-point' : ''} ${isDark ? '' : 'text-dark'}`}
                                         onClick={(e) => handleDogBadgeClick(setDog.dogId || setDog.id, e)}
                                       >
                                         {setDog.dog?.name || `Dog ${setDog.dogId || setDog.id}`}

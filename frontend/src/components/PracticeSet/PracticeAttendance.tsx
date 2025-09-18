@@ -221,8 +221,7 @@ export function PracticeAttendance({ practiceId, disabled = false }: PracticeAtt
               return (
                 <React.Fragment key={owner.id}>
                   <tr
-                    className={`${isDark ? 'table-dark' : 'table-secondary'}`}
-                    style={{ cursor: 'pointer' }}
+                    className={`${isDark ? 'table-dark' : 'table-secondary'} cur-point`}
                     onClick={() => {
                       if (!disabled) {
                         const newStatus = ownerStatus === AttendanceStatus.Attending ?
@@ -269,8 +268,8 @@ export function PracticeAttendance({ practiceId, disabled = false }: PracticeAtt
                     return (
                       <tr
                         key={dog.id}
+                        className="cur-point"
                         style={{
-                          cursor: 'pointer',
                           opacity: isOptimistic ? 0.7 : 1,
                           backgroundColor: isOptimistic ? '#f8f9fa' : undefined
                         }}

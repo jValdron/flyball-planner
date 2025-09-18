@@ -182,9 +182,8 @@ function Dogs() {
               return (
                 <React.Fragment key={handler.id}>
                   <tr
-                    className={isDark ? '' : 'table-secondary'}
+                    className={`${isDark ? '' : 'table-secondary'} cur-point`}
                     onClick={() => navigate(`/handlers/${handler.id}`)}
-                    style={{ cursor: 'pointer' }}
                   >
                     <td colSpan={5}>
                       <div className="d-flex justify-content-between align-items-center">
@@ -214,8 +213,7 @@ function Dogs() {
                       <tr
                         key={dog.id}
                         onClick={() => handleRowClick(dog.id)}
-                        style={{ cursor: 'pointer' }}
-                        className={`align-middle`}
+                        className={`align-middle cur-point`}
                       >
                         <td className={`ps-4 ${dog.status === 'Inactive' ? 'text-muted' : ''} col-6 col-md-4`}>{dog.name}</td>
                         <td className="font-monospace col-3 col-md-2">{dog.crn}</td>

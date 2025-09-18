@@ -123,7 +123,7 @@ function SortableDogItem({
           {displayName}
         </span>
         {!isLocked && (
-          <span className="p-2 d-inline-flex align-items-center justify-content-center ms-auto" style={{ marginRight: '-8px', cursor: disabled ? 'default' : 'pointer' }} tabIndex={-1}>
+          <span className={`p-2 d-inline-flex align-items-center justify-content-center ms-auto ${disabled ? '' : 'cur-point'}`} style={{ marginRight: '-8px' }} tabIndex={-1}>
             <CloseButton
               onClick={(e) => {
                 e.stopPropagation()
@@ -448,9 +448,8 @@ export function DogsPicker({
               return (
                 <div
                   key={dog.id}
-                  className={`p-2 hover-bg-light cursor-pointer${idx === highlightedIndex ? ` bg-primary ${isDark ? 'text-white' : ''}` : ''}`}
+                  className={`p-2 hover-bg-light cur-point${idx === highlightedIndex ? ` bg-primary ${isDark ? 'text-white' : ''}` : ''}`}
                   onMouseDown={() => handleSelect(dog)}
-                  style={{ cursor: 'pointer' }}
                   tabIndex={0}
                 >
                   <div className="d-flex justify-content-between align-items-center">

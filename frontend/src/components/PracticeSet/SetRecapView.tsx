@@ -342,8 +342,7 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
                     <Badge
                       key={dogId}
                       bg={variant}
-                      className={`me-1 ${isDark ? '' : 'text-dark'}`}
-                      style={{ cursor: 'pointer' }}
+                      className={`me-1 cur-point ${isDark ? '' : 'text-dark'}`}
                       onClick={() => handleDogBadgeClick(dogId)}
                     >
                       {dogName}

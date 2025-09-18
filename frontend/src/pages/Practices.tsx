@@ -213,7 +213,7 @@ function Practices() {
                         const nextStepUrl = getNextIncompleteStepUrl(practice.id, completionStatus.nextIncompleteStep)
                         navigate(nextStepUrl)
                       }}
-                      style={{ cursor: 'pointer' }}
+                      className="cur-point"
                     >
                       <Card.Body className={practiceIsPast ? 'bg-past' : practice.status === 'Draft' ? 'bg-warning-subtle' : 'bg-primary-subtle'}>
                         <Card.Title className="text-truncate">
