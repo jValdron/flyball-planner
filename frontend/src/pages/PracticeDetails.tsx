@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Container, Form, Button, Alert, Spinner, Breadcrumb, Tabs, Tab, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap'
-import { useNavigate, useParams, useLocation } from 'react-router-dom'
+import { useNavigate, useParams, useLocation, useSearchParams } from 'react-router-dom'
 import { useClub } from '../contexts/ClubContext'
 import { PracticeProvider, usePractice } from '../contexts/PracticeContext'
 import { SaveSpinner } from '../components/SaveSpinner'
@@ -23,6 +23,7 @@ function PracticeDetailsContent() {
   const navigate = useNavigate()
   const { practiceId } = useParams()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const { selectedClub, dogs, handlers, locations } = useClub()
   const {
     practice,
@@ -88,6 +89,18 @@ function PracticeDetailsContent() {
     const tab = pathParts[pathParts.length - 1]
     return ['date', 'attendance', 'sets', 'checks', 'recap'].includes(tab) ? tab : 'date'
   }
+
+  // Handle focusSet URL parameter
+  useEffect(() => {
+    const focusSetId = searchParams.get('focusSet')
+    if (focusSetId && practiceId && sets.length > 0) {
+      // Navigate to sets tab if we have a focusSet parameter
+      const currentTab = getCurrentTab()
+      if (currentTab !== 'sets') {
+        navigate(`/practices/${practiceId}/sets?focusSet=${focusSetId}`, { replace: true })
+      }
+    }
+  }, [searchParams, practiceId, sets, navigate])
 
   const handleTabChange = (tab: string) => {
     if (!practiceId) return
@@ -425,6 +438,7 @@ function PracticeDetailsContent() {
               disabled={isLocked}
               isLocked={isLocked}
               validationErrors={validationErrors}
+              focusSetId={searchParams.get('focusSet')}
             />
           )}
           <div className="d-flex justify-content-between mb-3">

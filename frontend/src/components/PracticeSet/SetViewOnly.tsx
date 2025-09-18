@@ -10,9 +10,13 @@ interface SetViewOnlyProps {
   smallHeader?: boolean
   hideNotes?: boolean
   practiceScheduledAt?: string | null
+  clickableDogBadges?: boolean
+  showTrainingLevels?: boolean
+  clickableSets?: boolean
+  practiceId?: string
 }
 
-export function SetViewOnly({ sets, twoColumns = false, defaultLocationName, smallHeader = false, hideNotes = false, practiceScheduledAt }: SetViewOnlyProps) {
+export function SetViewOnly({ sets, twoColumns = false, defaultLocationName, smallHeader = false, hideNotes = false, practiceScheduledAt, clickableDogBadges = false, showTrainingLevels = false, clickableSets = false, practiceId }: SetViewOnlyProps) {
   return (
     <SetDisplayBase
       sets={sets}
@@ -21,6 +25,10 @@ export function SetViewOnly({ sets, twoColumns = false, defaultLocationName, sma
       smallHeader={smallHeader}
       hideNotes={hideNotes}
       practiceScheduledAt={practiceScheduledAt}
+      clickableDogBadges={clickableDogBadges}
+      showTrainingLevels={showTrainingLevels}
+      clickableSets={clickableSets}
+      practiceId={practiceId}
     />
   )
 }

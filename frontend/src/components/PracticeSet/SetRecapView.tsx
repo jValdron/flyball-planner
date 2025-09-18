@@ -1,15 +1,16 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Button, Form, Row, Col, Badge, Spinner } from 'react-bootstrap'
-import { DashCircle, PlusLg, CheckSquareFill, Square, Save, Trash, X, HandThumbsUpFill, HandThumbsDownFill } from 'react-bootstrap-icons'
+import { DashCircle, PlusLg, CheckSquareFill, Square, Save, HandThumbsUpFill, HandThumbsDownFill } from 'react-bootstrap-icons'
 import { useNavigate } from 'react-router-dom'
 import { SetRating, Lane } from '../../graphql/generated/graphql'
 import { useMutation, useQuery } from '@apollo/client'
 import { UPDATE_SET_RATING } from '../../graphql/sets'
-import { CREATE_SET_DOG_NOTE, DELETE_DOG_NOTE, GET_DOG_NOTES_BY_PRACTICE } from '../../graphql/dogNotes'
+import { CREATE_SET_DOG_NOTE, GET_DOG_NOTES_BY_PRACTICE } from '../../graphql/dogNotes'
 import { usePracticeDogNoteChangedSubscription } from '../../hooks/useSubscription'
 import { SetDisplayBase } from './SetDisplayBase'
 import { getTrainingLevelInfo } from '../../utils/trainingLevels'
 import { useTheme } from '../../contexts/ThemeContext'
+import { NoteEditor } from '../NoteEditor'
 import type { GetPracticeQuery } from '../../graphql/generated/graphql'
 
 type SetData = NonNullable<GetPracticeQuery['practice']>['sets'][0]
@@ -29,7 +30,6 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
   const { isDark } = useTheme()
   const [updateSetRating] = useMutation(UPDATE_SET_RATING)
   const [createSetDogNote] = useMutation(CREATE_SET_DOG_NOTE)
-  const [deleteDogNote] = useMutation(DELETE_DOG_NOTE)
   const [noteContents, setNoteContents] = useState<Record<string, string>>({})
   const [selectedDogs, setSelectedDogs] = useState<Record<string, string[]>>({})
   const [showNoteInput, setShowNoteInput] = useState<Record<string, boolean>>({})
@@ -59,6 +59,14 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
       content: string
       selectedDogs: string[]
       createdAt: string
+      setDogs: Array<{
+        dogId: string
+        dog: {
+          id: string
+          name: string
+          trainingLevel?: string
+        }
+      }>
     }>> = {}
 
     sets.forEach(set => {
@@ -69,11 +77,25 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
       practiceNotesData.dogNotesByPractice.forEach((note: any) => {
         const setId = note.setId
         if (notesBySet[setId]) {
+          const set = sets.find(s => s.id === setId)
+          const setDogs = note.dogIds.map((dogId: string) => {
+            const setDog = set?.dogs.find((d: any) => d.dogId === dogId)
+            return {
+              dogId,
+              dog: {
+                id: setDog?.dog?.id || dogId,
+                name: setDog?.dog?.name || `Dog ${dogId}`,
+                trainingLevel: setDog?.dog?.trainingLevel
+              }
+            }
+          })
+
           notesBySet[setId].push({
             id: note.id,
             content: note.content,
             selectedDogs: note.dogIds,
-            createdAt: note.createdAt
+            createdAt: note.createdAt,
+            setDogs
           })
         }
       })
@@ -167,16 +189,6 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
 
   const handleToggleNoteInput = (setId: string) => {
     setShowNoteInput(prev => ({ ...prev, [setId]: !prev[setId] }))
-  }
-
-  const handleDeleteNote = async (_setId: string, noteId: string) => {
-    try {
-      await deleteDogNote({
-        variables: { id: noteId }
-      })
-    } catch (error) {
-      console.error('Error deleting note:', error)
-    }
   }
 
   const handleDogBadgeClick = (dogId: string) => {
@@ -289,15 +301,13 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
         {dogNotes[set.id]?.map((note) => (
           <div key={note.id} className="mb-3 p-3 border rounded">
             <div className="mb-2">
-              <Button
-                variant="outline-danger"
-                size="sm"
-                className="float-end ms-2 mb-2 d-flex align-items-center"
-                onClick={() => handleDeleteNote(set.id, note.id)}
-              >
-                <Trash className="me-1" size={12} />
-                Delete
-              </Button>
+              <div className="float-end d-flex gap-2 mb-2">
+                <NoteEditor
+                  note={note}
+                  setDogs={note.setDogs}
+                  onUpdate={refetchNotes}
+                />
+              </div>
               <p className="mb-0">{note.content}</p>
             </div>
             <div className="mt-2">
@@ -407,7 +417,6 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
                   className="mt-2 d-flex align-items-center"
                   onClick={() => handleToggleNoteInput(set.id)}
                 >
-                  <X className="me-1" size={12} />
                   Cancel
                 </Button>
                 <Button

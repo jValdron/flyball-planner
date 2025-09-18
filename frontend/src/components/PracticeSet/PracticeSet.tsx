@@ -28,6 +28,7 @@ interface PracticeSetProps {
   disabled: boolean
   isLocked?: boolean
   validationErrors?: ValidationError[]
+  focusSetId?: string | null
 }
 
 interface SortableSetProps {
@@ -439,7 +440,7 @@ function SortableGroup({
   )
 }
 
-export function PracticeSet({ practiceId, disabled, isLocked = false, validationErrors }: PracticeSetProps) {
+export function PracticeSet({ practiceId, disabled, isLocked = false, validationErrors, focusSetId }: PracticeSetProps) {
   const { dogs, locations } = useClub()
   const { attendances, sets } = usePractice()
   const [isSaving, setIsSaving] = useState(false)
@@ -858,26 +859,38 @@ export function PracticeSet({ practiceId, disabled, isLocked = false, validation
     return setTypeRefs.current.get(setId)!
   }
 
+  // Helper function to focus on a set
+  const focusOnSet = (setId: string, delay: number = 100) => {
+    const ref = setTypeRefs.current.get(setId)
+    if (ref?.current) {
+      setTimeout(() => {
+        ref.current?.focus()
+        ref.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        })
+      }, delay)
+    }
+  }
+
   // Focus newly created sets
   useEffect(() => {
     newlyCreatedSetIds.forEach(setId => {
-      const ref = setTypeRefs.current.get(setId)
-      if (ref?.current) {
-        setTimeout(() => {
-          ref.current?.focus()
-          ref.current?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-          })
-        }, 100)
-        setNewlyCreatedSetIds(prev => {
-          const newSet = new Set(prev)
-          newSet.delete(setId)
-          return newSet
-        })
-      }
+      focusOnSet(setId, 100)
+      setNewlyCreatedSetIds(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(setId)
+        return newSet
+      })
     })
   }, [newlyCreatedSetIds, sets])
+
+  // Focus on specific set when focusSetId is provided
+  useEffect(() => {
+    if (focusSetId && sets.length > 0) {
+      focusOnSet(focusSetId, 200)
+    }
+  }, [focusSetId, sets])
 
   // Clear adding state when we get any set subscription event
   useEffect(() => {
@@ -1047,7 +1060,7 @@ export function PracticeSet({ practiceId, disabled, isLocked = false, validation
         {groupedSets.length === 0 ? (
           <Alert variant="info">
             No sets for this practice.{' '}
-            {!isLocked && (
+            {!isLocked ? (
               <Button
                 variant="link"
                 className="p-0 align-baseline"
@@ -1055,9 +1068,11 @@ export function PracticeSet({ practiceId, disabled, isLocked = false, validation
                 disabled={disabled || isAddingSet}
               >
                 {isAddingSet ? <Spinner size="sm" className="me-1" /> : null}
-                Add a set now
+                Add a set now.
               </Button>
-            )}.
+            ) : (
+              <span className="text-muted">Unlock the practice to add a new set.</span>
+            )}
           </Alert>
         ) : (
           <DndContext

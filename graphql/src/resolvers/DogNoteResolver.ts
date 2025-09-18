@@ -45,27 +45,25 @@ export class DogNoteResolver {
     const clubFilter = createClubFilter(user);
     if (!clubFilter) return [];
 
-    return await this.dogNoteRepository.find({
-      where: {
-        dogId,
-        dog: clubFilter
-      },
-      relations: [
-        'dog',
-        'setDogNotes',
-        'setDogNotes.setDog',
-        'setDogNotes.setDog.set',
-        'setDogNotes.setDog.set.location',
-        'setDogNotes.setDog.set.practice',
-        'setDogNotes.setDog.set.practice.club',
-        'setDogNotes.setDog.set.dogs',
-        'setDogNotes.setDog.set.dogs.dog',
-        'setDogNotes.setDog.set.dogs.dog.owner'
-      ],
-      order: {
-        createdAt: 'DESC'
-      }
-    });
+    const dogNotes = await this.dogNoteRepository
+      .createQueryBuilder('dogNote')
+      .leftJoinAndSelect('dogNote.dog', 'dog')
+      .leftJoinAndSelect('dogNote.setDogNotes', 'setDogNote')
+      .leftJoinAndSelect('setDogNote.setDog', 'setDog')
+      .leftJoinAndSelect('setDog.set', 'set')
+      .leftJoinAndSelect('set.location', 'location')
+      .leftJoinAndSelect('set.practice', 'practice')
+      .leftJoinAndSelect('practice.club', 'club')
+      .leftJoinAndSelect('set.dogs', 'setDogs')
+      .leftJoinAndSelect('setDogs.dog', 'setDogEntity')
+      .leftJoinAndSelect('setDogEntity.owner', 'owner')
+      .where('dogNote.dogId = :dogId', { dogId })
+      .andWhere('(setDog.dogId = :dogId OR setDog.dogId IS NULL)', { dogId }) // This filters setDogNotes to only include those for the specific dog, or null for regular dog notes
+      .andWhere('dog.clubId IN (:...clubIds)', { clubIds: user?.clubIds || [] })
+      .orderBy('dogNote.createdAt', 'DESC')
+      .getMany();
+
+    return dogNotes;
   }
 
   @Query(() => [PracticeDogNote])

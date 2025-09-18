@@ -19,16 +19,25 @@ interface SetDisplayBaseProps {
   smallHeader?: boolean
   hideNotes?: boolean
   practiceScheduledAt?: string | null
+  clickableSets?: boolean
+  practiceId?: string
   children?: (set: SetData, setIndex: number) => React.ReactNode
 }
 
-export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, showTrainingLevels = false, clickableDogBadges = false, smallHeader = false, hideNotes = false, practiceScheduledAt, children }: SetDisplayBaseProps) {
+export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, showTrainingLevels = false, clickableDogBadges = false, smallHeader = false, hideNotes = false, practiceScheduledAt, clickableSets = false, practiceId, children }: SetDisplayBaseProps) {
   const { isDark } = useTheme()
   const navigate = useNavigate()
 
-  const handleDogBadgeClick = (dogId: string) => {
+  const handleDogBadgeClick = (dogId: string, event: React.MouseEvent) => {
     if (clickableDogBadges) {
+      event.stopPropagation()
       navigate(`/dogs/${dogId}`)
+    }
+  }
+
+  const handleSetClick = (set: SetData) => {
+    if (clickableSets && practiceId) {
+      navigate(`/practices/${practiceId}/sets?focusSet=${set.id}`)
     }
   }
 
@@ -50,7 +59,12 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
             return groups
           }, {} as Record<string, Array<typeof sets[0]>>)
       ).map(([index, sets]) => (
-        <Card key={index} className="w-100">
+        <Card
+          key={index}
+          className={`w-100 ${clickableSets ? 'clickable-card' : ''}`}
+          onClick={clickableSets ? () => handleSetClick(sets[0]) : undefined}
+          style={clickableSets ? { cursor: 'pointer' } : undefined}
+        >
           <Card.Header className="d-flex justify-content-between align-items-center">
             <div className={`mb-0 ${smallHeader ? '' : 'fs-5'}`}>
               {practiceScheduledAt && (
@@ -105,7 +119,7 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
                                           bg={variant}
                                           className={`me-1 mb-1 ${isDark ? '' : 'text-dark'}`}
                                           style={clickableDogBadges ? { cursor: 'pointer' } : {}}
-                                          onClick={() => handleDogBadgeClick(setDog.dogId || setDog.id)}
+                                          onClick={(e) => handleDogBadgeClick(setDog.dogId || setDog.id, e)}
                                         >
                                           {setDog.dog?.name || `Dog ${setDog.dogId || setDog.id}`}
                                         </Badge>
@@ -117,7 +131,7 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
                                           bg="secondary"
                                           className={`me-1 mb-1 ${isDark ? '' : 'text-dark'}`}
                                           style={clickableDogBadges ? { cursor: 'pointer' } : {}}
-                                          onClick={() => handleDogBadgeClick(setDog.dogId || setDog.id)}
+                                          onClick={(e) => handleDogBadgeClick(setDog.dogId || setDog.id, e)}
                                         >
                                           {setDog.dog?.name || `Dog ${setDog.dogId || setDog.id}`}
                                         </Badge>
@@ -145,7 +159,7 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
                                         bg={variant}
                                         className={`me-1 mb-1 ${isDark ? '' : 'text-dark'}`}
                                         style={clickableDogBadges ? { cursor: 'pointer' } : {}}
-                                        onClick={() => handleDogBadgeClick(setDog.dogId || setDog.id)}
+                                        onClick={(e) => handleDogBadgeClick(setDog.dogId || setDog.id, e)}
                                       >
                                         {setDog.dog?.name || `Dog ${setDog.dogId || setDog.id}`}
                                       </Badge>
@@ -157,7 +171,7 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
                                         bg="secondary"
                                         className={`me-1 mb-1 ${isDark ? '' : 'text-dark'}`}
                                         style={clickableDogBadges ? { cursor: 'pointer' } : {}}
-                                        onClick={() => handleDogBadgeClick(setDog.dogId || setDog.id)}
+                                        onClick={(e) => handleDogBadgeClick(setDog.dogId || setDog.id, e)}
                                       >
                                         {setDog.dog?.name || `Dog ${setDog.dogId || setDog.id}`}
                                       </Badge>
