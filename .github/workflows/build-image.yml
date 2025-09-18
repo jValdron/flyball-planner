@@ -15,7 +15,8 @@ jobs:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/')
     runs-on: ubuntu-latest
     outputs:
-      should-build: ${{ steps.changes.outputs.should-build }}
+      main-app: ${{ steps.changes.outputs.main-app }}
+      secret-generator: ${{ steps.changes.outputs.secret-generator }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,22 +28,12 @@ jobs:
         id: changes
         with:
           filters: |
-            frontend:
+            main-app:
               - 'frontend/**'
-            graphql:
               - 'graphql/**'
-            assets:
               - 'assets/**'
-
-      - name: Set build flag
-        run: |
-          if [ "${{ steps.changes.outputs.frontend }}" == "true" ] || [ "${{ steps.changes.outputs.graphql }}" == "true" ] || [ "${{ steps.changes.outputs.assets }}" == "true" ]; then
-            echo "should-build=true" >> $GITHUB_OUTPUT
-            echo "✅ Relevant files changed, will build"
-          else
-            echo "should-build=false" >> $GITHUB_OUTPUT
-            echo "⏭️ No relevant files changed, skipping build"
-          fi
+            secret-generator:
+              - 'deploy/secret-generator/**'
 
   version-check:
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'repository_dispatch'
@@ -95,7 +86,7 @@ jobs:
     if: |
       always() && (
         (startsWith(github.ref, 'refs/tags/') && needs.version-check.result == 'success') ||
-        (startsWith(github.ref, 'refs/heads/') && needs.check-changes.result == 'success' && needs.check-changes.outputs.should-build == 'true') ||
+        (startsWith(github.ref, 'refs/heads/') && needs.check-changes.result == 'success') ||
         (github.event_name == 'repository_dispatch' && needs.version-check.result == 'success') ||
         github.event_name == 'workflow_dispatch'
       )
@@ -130,6 +121,7 @@ jobs:
         run: echo "REPO_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
       - name: Build and push Graphql image
+        if: needs.check-changes.outputs.main-app == 'true' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'repository_dispatch'
         uses: docker/build-push-action@v5
         with:
           platforms: linux/amd64,linux/arm64
@@ -140,6 +132,7 @@ jobs:
             ghcr.io/${{ env.REPO_NAME }}/graphql:${{ env.TAG_NAME }}
 
       - name: Build and push Frontend image
+        if: needs.check-changes.outputs.main-app == 'true' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'repository_dispatch'
         uses: docker/build-push-action@v5
         with:
           platforms: linux/amd64,linux/arm64
@@ -148,3 +141,14 @@ jobs:
           tags: |
             ghcr.io/${{ env.REPO_NAME }}/frontend:latest
             ghcr.io/${{ env.REPO_NAME }}/frontend:${{ env.TAG_NAME }}
+
+      - name: Build and push Secret Generator image
+        if: needs.check-changes.outputs.secret-generator == 'true' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'repository_dispatch'
+        uses: docker/build-push-action@v5
+        with:
+          platforms: linux/amd64,linux/arm64
+          context: ./deploy/secret-generator
+          push: true
+          tags: |
+            ghcr.io/${{ env.REPO_NAME }}/secret-generator:latest
+            ghcr.io/${{ env.REPO_NAME }}/secret-generator:${{ env.TAG_NAME }}
