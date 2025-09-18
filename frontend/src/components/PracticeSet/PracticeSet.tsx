@@ -934,7 +934,7 @@ export function PracticeSet({ practiceId, disabled, isLocked = false, validation
       const rightLaneDogs = updatedDogs.filter(d => d.lane === 'Right').map((d, index) => ({ ...d, index: index + 1 }))
       const singleLaneDogs = updatedDogs.filter(d => d.lane === null).map((d, index) => ({ ...d, index: index + 1 }))
 
-      const finalDogs = [...leftLaneDogs, ...rightLaneDogs, ...singleLaneDogs]
+      const finalDogs = [...leftLaneDogs, ...rightLaneDogs, ...singleLaneDogs].map(({ dog, ...setDog }) => setDog)
 
       try {
         await handleDogsChange(fromSetId, finalDogs)
@@ -1041,8 +1041,8 @@ export function PracticeSet({ practiceId, disabled, isLocked = false, validation
               const [removed] = newDogs.splice(oldIndex, 1)
               newDogs.splice(newIndex, 0, removed)
 
-              const updatedDogs = newDogs.map((dog, index) => ({
-                ...dog,
+              const updatedDogs = newDogs.map(({ dog, ...setDog }, index) => ({
+                ...setDog,
                 index: index + 1
               }))
 

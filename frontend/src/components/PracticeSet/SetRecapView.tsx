@@ -60,6 +60,7 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
       content: string
       selectedDogs: string[]
       createdAt: string
+      updatedAt: string
       setDogs: Array<{
         dogId: string
         dog: {
@@ -96,6 +97,7 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
             content: note.content,
             selectedDogs: note.dogIds,
             createdAt: note.createdAt,
+            updatedAt: note.updatedAt || note.createdAt,
             setDogs
           })
         }

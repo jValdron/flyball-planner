@@ -22,7 +22,7 @@ interface NoteEditorProps {
     id: string
     content: string
     createdAt: string
-    updatedAt: string
+    updatedAt: string | null
   }
   setDogs?: SetDog[]
   onUpdate?: () => void
