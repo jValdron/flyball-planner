@@ -1,6 +1,6 @@
-import { gql } from '@apollo/client'
+import { graphql } from './generated/gql';
 
-export const GET_DOG_NOTES = gql`
+export const GET_DOG_NOTES = graphql(`
   query GetDogNotes($dogId: ID!) {
     dogNotes(dogId: $dogId) {
       id
@@ -43,9 +43,9 @@ export const GET_DOG_NOTES = gql`
       }
     }
   }
-`
+`)
 
-export const GET_DOG_NOTES_BY_PRACTICE = gql`
+export const GET_DOG_NOTES_BY_PRACTICE = graphql(`
   query GetDogNotesByPractice($practiceId: ID!) {
     dogNotesByPractice(practiceId: $practiceId) {
       id
@@ -56,9 +56,9 @@ export const GET_DOG_NOTES_BY_PRACTICE = gql`
       dogIds
     }
   }
-`
+`)
 
-export const CREATE_DOG_NOTE = gql`
+export const CREATE_DOG_NOTE = graphql(`
   mutation CreateDogNote($input: CreateDogNoteInput!) {
     createDogNote(input: $input) {
       id
@@ -67,9 +67,9 @@ export const CREATE_DOG_NOTE = gql`
       updatedAt
     }
   }
-`
+`)
 
-export const UPDATE_DOG_NOTE = gql`
+export const UPDATE_DOG_NOTE = graphql(`
   mutation UpdateDogNote($id: ID!, $content: String!) {
     updateDogNote(id: $id, content: $content) {
       id
@@ -78,9 +78,9 @@ export const UPDATE_DOG_NOTE = gql`
       updatedAt
     }
   }
-`
+`)
 
-export const CREATE_SET_DOG_NOTE = gql`
+export const CREATE_SET_DOG_NOTE = graphql(`
   mutation CreateSetDogNote($input: CreateSetDogNoteInput!) {
     createSetDogNote(input: $input) {
       id
@@ -96,70 +96,10 @@ export const CREATE_SET_DOG_NOTE = gql`
       }
     }
   }
-`
+`)
 
-export const DELETE_DOG_NOTE = gql`
+export const DELETE_DOG_NOTE = graphql(`
   mutation DeleteDogNote($id: ID!) {
     deleteDogNote(id: $id)
   }
-`
-
-export type DogNote = {
-  id: string
-  content: string
-  createdAt: string
-  updatedAt: string
-  setDogNotes: Array<{
-    id: string
-    setDog: {
-      id: string
-      set: {
-        id: string
-        index: number
-        type: string | null
-        typeCustom: string | null
-        isWarmup: boolean
-        notes: string | null
-        location: {
-          id: string
-          name: string
-          isDoubleLane: boolean
-        }
-        practice: {
-          id: string
-          scheduledAt: string
-        }
-        dogs: Array<{
-          id: string
-          index: number
-          lane: string | null
-          dogId: string
-          dog: {
-            id: string
-            name: string
-            crn: string | null
-            trainingLevel: string
-            owner: {
-              id: string
-              givenName: string
-              surname: string
-            } | null
-          }
-        }>
-      }
-    }
-  }>
-  setDogs: Array<{
-    id: string
-    dogId: string
-  }>
-}
-
-export type PracticeDogNote = {
-  id: string
-  content: string
-  createdAt: string
-  updatedAt: string
-  setId: string
-  dogIds: string[]
-}
+`)
