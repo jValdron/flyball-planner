@@ -50,6 +50,12 @@ httpRoute:
     namespace: "kube-system"
   host: "flyball.local"
 
+secretGenerator:
+  image:
+    repository: ghcr.io/jvaldron/flyball-planner/secret-generator
+    tag: ""
+    pullPolicy: IfNotPresent
+
 postgresql:
   enabled: true
   image:
