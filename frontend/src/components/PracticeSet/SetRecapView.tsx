@@ -323,7 +323,7 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
         {dogNotes[set.id]?.map((note) => (
           <div key={note.id} className="mb-3 p-3 border rounded">
             <div className="mb-2">
-              <div className="float-end d-flex gap-2 mb-2">
+              <div className="float-end d-flex gap-2 mb-2 ms-2">
                 <NoteEditor
                   note={note}
                   setDogs={note.setDogs}

@@ -115,89 +115,90 @@ function DogNotes({ dogId, dogName }: DogNotesProps) {
       ) : (
         <div>
           {notes.map((note: DogNote) => (
-                <div key={note.id} className="border rounded p-3 mb-3">
-                  <div className="d-flex justify-content-between align-items-start mb-2">
-                    <div className="flex-grow-1">
-                      <small className="text-muted d-flex align-items-center">
-                        <Calendar3 className="me-2" />
-                        {formatFullDateTime(note.createdAt)}
-                        {note.updatedAt !== note.createdAt && (
-                          <span className="ms-2">(edited)</span>
-                        )}
-                      </small>
-                      <p className="m-0 mt-2">{note.content}</p>
-                    </div>
-                    <div className="d-flex gap-2">
-                      <NoteEditor
-                        note={note}
-                        setDogs={note.setDogs && note.setDogs.length > 0 ? note.setDogs.map(setDog => {
-                          const dog = dogs.find(d => d.id === setDog.dogId)
-                          return {
-                            dogId: setDog.dogId,
-                            dog: {
-                              id: dog?.id || '',
-                              name: dog?.name || '',
-                              trainingLevel: dog?.trainingLevel || ''
-                            }
-                          }
-                        }) : undefined}
-                        onUpdate={refetch}
-                      />
-                      {note.setDogNotes.length > 0 && (
-                        <Link
-                          to={`/practices/${note.setDogNotes[0].setDog.set.practice.id}/sets?focusSet=${note.setDogNotes[0].setDog.set.id}`}
-                          className="btn btn-outline-primary btn-sm d-flex align-items-center"
-                        >
-                          Go to practice <ChevronRight />
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-
+            <div key={note.id} className="border rounded p-3 mb-3">
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <div className="flex-grow-1">
+                  <small className="text-muted d-flex align-items-center">
+                    <Calendar3 className="me-2" />
+                    {formatFullDateTime(note.createdAt)}
+                    {note.updatedAt !== note.createdAt && (
+                      <span className="ms-2">(edited)</span>
+                    )}
+                  </small>
+                </div>
+                <div className="d-flex gap-2">
+                  <NoteEditor
+                    note={note}
+                    setDogs={note.setDogs && note.setDogs.length > 0 ? note.setDogs.map(setDog => {
+                      const dog = dogs.find(d => d.id === setDog.dogId)
+                      return {
+                        dogId: setDog.dogId,
+                        dog: {
+                          id: dog?.id || '',
+                          name: dog?.name || '',
+                          trainingLevel: dog?.trainingLevel || ''
+                        }
+                      }
+                    }) : undefined}
+                    onUpdate={refetch}
+                  />
                   {note.setDogNotes.length > 0 && (
-                    <div className="mt-3">
-                      <SetViewOnly
-                        sets={note.setDogNotes.map(setDogNote => ({
-                          ...setDogNote.setDog.set,
-                          __typename: 'Set' as const,
-                          createdAt: new Date().toISOString(),
-                          updatedAt: new Date().toISOString(),
-                          locationId: setDogNote.setDog.set.location.id,
-                          type: setDogNote.setDog.set.type as SetType | null,
-                          practice: setDogNote.setDog.set.practice,
-                          dogs: setDogNote.setDog.set.dogs
-                            .map(setDog => {
-                              const dog = dogs.find(d => d.id === setDog.dogId)
-                              return dog ? {
-                                ...setDog,
-                                __typename: 'SetDog' as const,
-                                lane: setDog.lane as Lane | null,
-                                dog: {
-                                  ...dog,
-                                  __typename: 'Dog' as const,
-                                  trainingLevel: dog.trainingLevel as TrainingLevel,
-                                  owner: dog.owner,
-                                },
-                              } : null
-                            })
-                            .filter((item): item is NonNullable<typeof item> => item !== null),
-                        }))}
-                        defaultLocationName={note.setDogNotes[0].setDog.set.location.name}
-                        twoColumns={false}
-                        smallHeader={true}
-                        hideNotes={true}
-                        practiceScheduledAt={note.setDogNotes[0]?.setDog.set.practice.scheduledAt}
-                        clickableDogBadges={true}
-                        showTrainingLevels={true}
-                        clickableSets={true}
-                        practiceId={note.setDogNotes[0].setDog.set.practice.id}
-                      />
-                    </div>
+                    <Link
+                      to={`/practices/${note.setDogNotes[0].setDog.set.practice.id}/sets?focusSet=${note.setDogNotes[0].setDog.set.id}`}
+                      className="btn btn-outline-primary btn-sm d-flex align-items-center text-nowrap"
+                    >
+                      Go to practice <ChevronRight className="ms-1" />
+                    </Link>
                   )}
                 </div>
-              ))}
+              </div>
+
+              <p className="m-0 mt-2">{note.content}</p>
+
+              {note.setDogNotes.length > 0 && (
+                <div className="mt-3">
+                  <SetViewOnly
+                    sets={note.setDogNotes.map(setDogNote => ({
+                      ...setDogNote.setDog.set,
+                      __typename: 'Set' as const,
+                      createdAt: new Date().toISOString(),
+                      updatedAt: new Date().toISOString(),
+                      locationId: setDogNote.setDog.set.location.id,
+                      type: setDogNote.setDog.set.type as SetType | null,
+                      practice: setDogNote.setDog.set.practice,
+                      dogs: setDogNote.setDog.set.dogs
+                        .map(setDog => {
+                          const dog = dogs.find(d => d.id === setDog.dogId)
+                          return dog ? {
+                            ...setDog,
+                            __typename: 'SetDog' as const,
+                            lane: setDog.lane as Lane | null,
+                            dog: {
+                              ...dog,
+                              __typename: 'Dog' as const,
+                              trainingLevel: dog.trainingLevel as TrainingLevel,
+                              owner: dog.owner,
+                            },
+                          } : null
+                        })
+                        .filter((item): item is NonNullable<typeof item> => item !== null),
+                    }))}
+                    defaultLocationName={note.setDogNotes[0].setDog.set.location.name}
+                    twoColumns={false}
+                    smallHeader={true}
+                    hideNotes={true}
+                    practiceScheduledAt={note.setDogNotes[0]?.setDog.set.practice.scheduledAt}
+                    clickableDogBadges={true}
+                    showTrainingLevels={true}
+                    clickableSets={true}
+                    practiceId={note.setDogNotes[0].setDog.set.practice.id}
+                  />
+                </div>
+              )}
             </div>
-          )}
+          ))}
+        </div>
+      )}
 
       <Modal show={showCreateModal} onHide={handleModalClose} size="lg">
         <Modal.Header closeButton>

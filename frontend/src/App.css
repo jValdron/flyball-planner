@@ -7,7 +7,7 @@
 }
 
 .mh-125-expand {
-  min-height: 125px;
+  min-height: 125px !important;
   height: calc(100% - 1rem);
 }
 
