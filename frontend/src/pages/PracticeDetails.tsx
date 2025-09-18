@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Container, Form, Button, Alert, Spinner, Breadcrumb, Tabs, Tab, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap'
-import { useNavigate, useParams, useLocation } from 'react-router-dom'
+import { useNavigate, useParams, useLocation, useSearchParams } from 'react-router-dom'
 import { useClub } from '../contexts/ClubContext'
 import { PracticeProvider, usePractice } from '../contexts/PracticeContext'
 import { SaveSpinner } from '../components/SaveSpinner'
-import { ChevronLeft, ChevronRight, Trash, CheckLg, Share, Pencil } from 'react-bootstrap-icons'
+import { ChevronLeft, ChevronRight, Trash, CheckLg, Share, Pencil, FileText, ExclamationTriangle } from 'react-bootstrap-icons'
 import { formatRelativeTime, isPastDay } from '../utils/dateUtils'
 import { PracticeAttendance } from '../components/PracticeSet/PracticeAttendance'
 import { useMutation } from '@apollo/client'
@@ -16,13 +16,15 @@ import { PracticeValidationService, type ValidationError } from '../services/pra
 import { PracticeValidation } from '../components/PracticeSet/PracticeValidation'
 import { PracticeSet } from '../components/PracticeSet/PracticeSet'
 import { DatePickerComponent } from '../components/PracticeSet/DatePickerComponent'
+import { SetRecapView } from '../components/PracticeSet/SetRecapView'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 function PracticeDetailsContent() {
   const navigate = useNavigate()
   const { practiceId } = useParams()
   const location = useLocation()
-  const { selectedClub, dogs, handlers } = useClub()
+  const [searchParams] = useSearchParams()
+  const { selectedClub, dogs, handlers, locations } = useClub()
   const {
     practice,
     isPracticeLoading,
@@ -80,12 +82,25 @@ function PracticeDetailsContent() {
     }
   }, [practiceId, isPastPractice])
 
+
   const getCurrentTab = () => {
     if (!practiceId) return 'date'
     const pathParts = location.pathname.split('/')
     const tab = pathParts[pathParts.length - 1]
-    return ['date', 'attendance', 'sets', 'checks'].includes(tab) ? tab : 'date'
+    return ['date', 'attendance', 'sets', 'checks', 'recap'].includes(tab) ? tab : 'date'
   }
+
+  // Handle focusSet URL parameter
+  useEffect(() => {
+    const focusSetId = searchParams.get('focusSet')
+    if (focusSetId && practiceId && sets.length > 0) {
+      // Navigate to sets tab if we have a focusSet parameter
+      const currentTab = getCurrentTab()
+      if (currentTab !== 'sets') {
+        navigate(`/practices/${practiceId}/sets?focusSet=${focusSetId}`, { replace: true })
+      }
+    }
+  }, [searchParams, practiceId, sets, navigate])
 
   const handleTabChange = (tab: string) => {
     if (!practiceId) return
@@ -191,10 +206,30 @@ function PracticeDetailsContent() {
     }
   }
 
-  const handleShare = () => {
+  const handleShare = (event?: React.MouseEvent) => {
     if (!practiceId || !practice?.shareCode) return
 
+    if (event) {
+      if (event.button === 1) {
+        event.preventDefault()
+        const shareUrl = `/practices/${practiceId}/view?code=${practice.shareCode}`
+        window.open(shareUrl, '_blank')
+        return
+      } else if (event.button === 0) {
+        event.preventDefault()
+      }
+    }
+
     navigate(`/practices/${practiceId}/view?code=${practice.shareCode}`)
+  }
+
+  const handleShareMouseDown = (event: React.MouseEvent) => {
+    if (!practiceId || !practice?.shareCode) return
+
+    if (event.button === 1) {
+      event.preventDefault()
+      event.stopPropagation()
+    }
   }
 
   if (isPracticeLoading) {
@@ -218,7 +253,7 @@ function PracticeDetailsContent() {
   }
 
   return (
-    <Container>
+    <Container className="mb-5">
       <Breadcrumb>
         <Breadcrumb.Item onClick={() => navigate('/practices')}>Practices</Breadcrumb.Item>
         <Breadcrumb.Item active>
@@ -236,7 +271,8 @@ function PracticeDetailsContent() {
               <Button
                 variant="outline-primary"
                 size="sm"
-                onClick={handleShare}
+                onMouseDown={handleShareMouseDown}
+                onMouseUp={handleShare}
                 disabled={!practice?.shareCode}
               >
                 <Share className="me-2" /> Share
@@ -373,12 +409,14 @@ function PracticeDetailsContent() {
           <div className="d-flex justify-content-between mb-3">
             <Button
               variant="outline-secondary"
+              className="d-flex align-items-center"
               onClick={() => handleTabChange('date')}
             >
               <ChevronLeft className="me-1" /> Date & Time
             </Button>
             <Button
               variant="outline-primary"
+              className="d-flex align-items-center"
               onClick={() => handleTabChange('sets')}
             >
               Sets <ChevronRight className="ms-1" />
@@ -400,17 +438,20 @@ function PracticeDetailsContent() {
               disabled={isLocked}
               isLocked={isLocked}
               validationErrors={validationErrors}
+              focusSetId={searchParams.get('focusSet')}
             />
           )}
           <div className="d-flex justify-content-between mb-3">
             <Button
               variant="outline-secondary"
+              className="d-flex align-items-center"
               onClick={() => handleTabChange('attendance')}
             >
               <ChevronLeft className="me-1" /> Attendance
             </Button>
             <Button
               variant="outline-primary"
+              className="d-flex align-items-center"
               onClick={() => handleTabChange('checks')}
             >
               Checks <ChevronRight className="ms-1" />
@@ -422,6 +463,17 @@ function PracticeDetailsContent() {
           eventKey="checks"
           title={
             <span className={!practiceId || !scheduledAt ? 'text-muted' : ''}>
+              {(() => {
+                const hasErrors = validationErrors.some(error => error.severity === 'error')
+                const isReady = practice?.status === PracticeStatus.Ready
+
+                if (hasErrors) {
+                  return <ExclamationTriangle className="me-2 text-danger" />
+                } else if (isReady) {
+                  return <CheckLg className="me-2 text-success" />
+                }
+                return ""
+              })()}
               Checks
               {validationErrors.length > 0 && (
                 <Badge bg="primary" className="ms-2">
@@ -436,6 +488,7 @@ function PracticeDetailsContent() {
           <div className="d-flex justify-content-between mb-3">
             <Button
               variant="outline-secondary"
+              className="d-flex align-items-center"
               onClick={() => handleTabChange('sets')}
             >
               <ChevronLeft className="me-1" /> Sets
@@ -444,6 +497,7 @@ function PracticeDetailsContent() {
               {!isPastPractice && (
                 <Button
                   variant={practice?.status === PracticeStatus.Ready ? "outline-warning" : "success"}
+                  className="d-flex align-items-center"
                   onClick={() => handleStatusChange(practice?.status === PracticeStatus.Ready ? PracticeStatus.Draft : PracticeStatus.Ready)}
                   disabled={validationErrors.some(error => error.severity === 'error') && practice?.status === PracticeStatus.Draft}
                 >
@@ -459,15 +513,84 @@ function PracticeDetailsContent() {
                 </Button>
               )}
               <Button
-                variant={practice?.status === PracticeStatus.Ready ? "primary" : "outline-primary"}
-                onClick={handleShare}
+                variant={practice?.status === PracticeStatus.Ready && !isPastPractice ? "primary" : "outline-primary"}
+                className="d-flex align-items-center"
+                onMouseDown={handleShareMouseDown}
+                onMouseUp={handleShare}
                 disabled={!practice?.shareCode}
               >
                 <Share className="me-2" /> Share / Print
               </Button>
+              {isPastPractice && practice?.status === PracticeStatus.Ready && (
+                <Button
+                  variant="info"
+                  className="d-flex align-items-center"
+                  onClick={() => handleTabChange('recap')}
+                  disabled={!practiceId}
+                >
+                  <FileText className="me-2" /> Recap <ChevronRight className="ms-1" />
+                </Button>
+              )}
             </div>
           </div>
         </Tab>
+
+        {isPastPractice && (
+          <Tab
+            eventKey="recap"
+            title={
+              <span>
+                Recap
+                <Badge bg={practiceId ? 'primary' : 'secondary'} className="ms-2">
+                  {sets.length}
+                </Badge>
+              </span>
+            }
+            disabled={!practiceId}
+          >
+            {practiceId && (
+              <>
+                {isPracticeLoading ? (
+                  <div className="text-center">
+                    <Spinner animation="border" role="status">
+                      <span className="visually-hidden">Loading sets...</span>
+                    </Spinner>
+                  </div>
+                ) : practiceError ? (
+                  <Alert variant="danger">Error loading practice: {practiceError}</Alert>
+                ) : (
+                  <SetRecapView
+                    sets={sets}
+                    dogs={dogs}
+                    practiceId={practiceId}
+                    clubId={selectedClub?.id || ''}
+                    defaultLocationName={locations?.find(l => l.isDefault)?.name}
+                  />
+                )}
+              </>
+            )}
+            <div className="d-flex justify-content-between mt-3">
+              <Button
+                variant="outline-secondary"
+                className="d-flex align-items-center"
+                onClick={() => handleTabChange('checks')}
+              >
+                <ChevronLeft className="me-1" /> Checks
+              </Button>
+              <div className="d-flex gap-2">
+                <Button
+                  variant="primary"
+                  className="d-flex align-items-center"
+                  onMouseDown={handleShareMouseDown}
+                  onMouseUp={handleShare}
+                  disabled={!practice?.shareCode}
+                >
+                  <Share className="me-2" /> Share / Print
+                </Button>
+              </div>
+            </div>
+          </Tab>
+        )}
       </Tabs>
 
       <SaveSpinner show={isSaving} />

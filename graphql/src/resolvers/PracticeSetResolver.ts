@@ -2,7 +2,7 @@ import { Resolver, Query, Mutation, Arg, UseMiddleware, Ctx } from 'type-graphql
 import { SetDog, Lane } from '../models/SetDog';
 import { AppDataSource } from '../db';
 import { InputType, Field, ID } from 'type-graphql';
-import { Set as SetModel, SetType } from '../models/Set';
+import { Set as SetModel, SetType, SetRating } from '../models/Set';
 import { Location } from '../models/Location';
 import { Practice } from '../models/Practice';
 import { In } from 'typeorm';
@@ -47,6 +47,9 @@ class SetUpdate {
 
   @Field({ nullable: true })
   isWarmup?: boolean;
+
+  @Field(() => SetRating, { nullable: true })
+  rating?: SetRating;
 
   @Field(() => [SetDogUpdate], { nullable: true })
   dogs?: SetDogUpdate[];
@@ -177,6 +180,7 @@ export class PracticeSetResolver {
           if (update.typeCustom !== undefined) set.typeCustom = update.typeCustom;
           if (update.notes !== undefined) set.notes = update.notes;
           if (update.isWarmup !== undefined) set.isWarmup = update.isWarmup;
+          if (update.rating !== undefined) set.rating = update.rating;
 
           // Track affected practice
           if (set.practiceId) {
@@ -190,7 +194,8 @@ export class PracticeSetResolver {
             type: update.type,
             typeCustom: update.typeCustom,
             notes: update.notes,
-            isWarmup: update.isWarmup ?? false
+            isWarmup: update.isWarmup ?? false,
+            rating: update.rating
           });
 
           // Track affected practice

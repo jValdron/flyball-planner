@@ -189,31 +189,33 @@ function ClubDetails() {
               <tr
                 key={location.id}
                 onClick={() => navigate(`/locations/${location.id}`)}
-                style={{ cursor: 'pointer' }}
+                className="cur-point"
               >
                 <td>{location.name}</td>
                 <td className="text-center">{location.isDefault ? <CheckLg /> : <XLg />}</td>
                 <td className="text-center">{location.isDoubleLane ? <CheckLg /> : <XLg />}</td>
-                <td className="text-nowrap">
-                  <Button
-                    variant="outline-primary"
-                    size="sm"
-                    className="me-2"
-                    onClick={() => navigate(`/locations/${location.id}`)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline-danger"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setLocationToDelete({ id: location.id, name: location.name })
-                      setShowDeleteModal(true)
-                    }}
-                  >
-                    <Trash />
-                  </Button>
+                <td>
+                  <div className="d-flex gap-2">
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      onClick={() => navigate(`/locations/${location.id}`)}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      className="d-flex align-items-center"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setLocationToDelete({ id: location.id, name: location.name })
+                        setShowDeleteModal(true)
+                      }}
+                    >
+                      <Trash />
+                    </Button>
+                  </div>
                 </td>
               </tr>
             ))

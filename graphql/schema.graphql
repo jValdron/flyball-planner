@@ -37,6 +37,19 @@ type ClubEvent {
   eventType: EventType!
 }
 
+input CreateDogNoteInput {
+  clubId: ID!
+  content: String!
+  dogId: ID!
+}
+
+input CreateSetDogNoteInput {
+  clubId: ID!
+  content: String!
+  dogIds: [ID!]!
+  setDogId: ID!
+}
+
 """
 A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.This scalar is serialized to a string in ISO 8601 format and parsed from a string in ISO 8601 format.
 """
@@ -49,6 +62,7 @@ type Dog {
   crn: String
   id: ID!
   name: String!
+  notes: [DogNote!]!
   owner: Handler
   ownerId: ID!
   status: DogStatus!
@@ -59,6 +73,17 @@ type Dog {
 type DogEvent {
   dog: Dog!
   eventType: EventType!
+}
+
+type DogNote {
+  content: String!
+  createdAt: DateTimeISO!
+  dog: Dog!
+  dogId: ID!
+  id: ID!
+  setDogNotes: [SetDogNote!]
+  setDogs: [SetDog!]!
+  updatedAt: DateTimeISO!
 }
 
 """The status of a dog"""
@@ -120,11 +145,14 @@ type LoginResponse {
 type Mutation {
   changePassword(currentPassword: String!, newPassword: String!): Boolean!
   createDog(clubId: String!, crn: String, name: String!, ownerId: String!, status: DogStatus!, trainingLevel: TrainingLevel!): Dog!
+  createDogNote(input: CreateDogNoteInput!): DogNote!
   createHandler(clubId: ID!, givenName: String!, surname: String!): Handler!
   createLocation(clubId: ID!, isDefault: Boolean, isDoubleLane: Boolean, name: String!): Location!
   createPractice(clubId: String!, scheduledAt: DateTimeISO!, status: PracticeStatus!): Practice!
+  createSetDogNote(input: CreateSetDogNoteInput!): DogNote!
   deleteClub(id: String!): Boolean!
   deleteDog(id: String!): Boolean!
+  deleteDogNote(id: ID!): Boolean!
   deleteHandler(id: String!): Boolean!
   deleteLocation(id: String!): Boolean!
   deletePractice(id: String!): Boolean!
@@ -133,6 +161,7 @@ type Mutation {
   updateAttendances(practiceId: String!, updates: [AttendanceUpdate!]!): [PracticeAttendance!]!
   updateClub(defaultPracticeTime: String, id: String!, idealSetsPerDog: Float, nafaClubNumber: String, name: String): Club
   updateDog(crn: String, id: String!, name: String, ownerId: String, status: DogStatus, trainingLevel: TrainingLevel): Dog
+  updateDogNote(content: String!, id: ID!): DogNote
   updateHandler(givenName: String, id: String!, surname: String): Handler
   updateLocation(id: String!, isDefault: Boolean, isDoubleLane: Boolean, name: String): Location
   updatePractice(id: String!, scheduledAt: DateTimeISO, status: PracticeStatus): Practice
@@ -169,6 +198,24 @@ type PracticeAttendance {
 type PracticeAttendanceEvent {
   attendance: PracticeAttendance!
   eventType: EventType!
+}
+
+type PracticeDogNote {
+  content: String!
+  createdAt: DateTimeISO!
+  dogIds: [String!]!
+  id: String!
+  setId: String!
+  updatedAt: DateTimeISO!
+}
+
+type PracticeDogNoteEvent {
+  content: String!
+  dogIds: [String!]!
+  eventType: EventType!
+  id: String!
+  practiceId: String!
+  setId: String!
 }
 
 type PracticeEvent {
@@ -209,6 +256,8 @@ type Query {
   clubs: [Club!]!
   currentUser: User!
   dog(id: String!): Dog
+  dogNotes(dogId: ID!): [DogNote!]!
+  dogNotesByPractice(practiceId: ID!): [PracticeDogNote!]!
   dogs: [Dog!]!
   dogsByHandlersInClub(clubId: ID!): [Handler!]
   handler(id: String!): Handler
@@ -238,6 +287,7 @@ type Set {
   notes: String
   practice: Practice!
   practiceId: ID!
+  rating: SetRating
   type: SetType
   typeCustom: String
   updatedAt: DateTimeISO!
@@ -251,7 +301,18 @@ type SetDog {
   index: Float!
   lane: Lane
   set: Set!
+  setDogNotes: [SetDogNote!]!
   setId: ID!
+  updatedAt: DateTimeISO!
+}
+
+type SetDogNote {
+  createdAt: DateTimeISO!
+  dogNote: DogNote!
+  dogNoteId: ID!
+  id: ID!
+  setDog: SetDog!
+  setDogId: ID!
   updatedAt: DateTimeISO!
 }
 
@@ -259,6 +320,13 @@ input SetDogUpdate {
   dogId: ID
   index: Float
   lane: Lane
+}
+
+"""The rating for a set performance"""
+enum SetRating {
+  Bad
+  Good
+  Neutral
 }
 
 """The type of set being performed"""
@@ -282,6 +350,7 @@ input SetUpdate {
   locationId: ID
   notes: String
   practiceId: ID
+  rating: SetRating
   type: SetType
   typeCustom: String
 }
@@ -294,6 +363,7 @@ type Subscription {
   locationChanged(clubId: String): LocationEvent!
   practiceAttendanceChanged(practiceId: String!): PracticeAttendanceEvent!
   practiceChanged(practiceId: String!): PracticeEvent!
+  practiceDogNoteChanged(practiceId: String!): PracticeDogNoteEvent!
   practiceSetChanged(practiceId: String!): PracticeSetEvent!
   practiceSummaryChanged(clubId: String!): PracticeSummaryEvent!
 }

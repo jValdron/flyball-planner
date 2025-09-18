@@ -21,6 +21,9 @@ export enum SubscriptionEvents {
   PRACTICE_ATTENDANCE_UPDATED = 'PRACTICE_ATTENDANCE_UPDATED',
   PRACTICE_SET_UPDATED = 'PRACTICE_SET_UPDATED',
   PRACTICE_SET_DELETED = 'PRACTICE_SET_DELETED',
+  PRACTICE_DOG_NOTE_CREATED = 'PRACTICE_DOG_NOTE_CREATED',
+  PRACTICE_DOG_NOTE_UPDATED = 'PRACTICE_DOG_NOTE_UPDATED',
+  PRACTICE_DOG_NOTE_DELETED = 'PRACTICE_DOG_NOTE_DELETED',
 
   PRACTICE_SUMMARY_CREATED = 'PRACTICE_SUMMARY_CREATED',
   PRACTICE_SUMMARY_UPDATED = 'PRACTICE_SUMMARY_UPDATED',
@@ -122,6 +125,27 @@ export class PubSubService {
       await this.publish(summaryEvent, payload);
     } catch (error) {
       console.error(`Error publishing practice summary event ${event}:`, error);
+    }
+  }
+
+  static async publishPracticeDogNoteEvent(event: SubscriptionEvents, dogNote: any, practiceId: string): Promise<void> {
+    try {
+      // Extract setId and dogIds from setDogNotes
+      const setId = dogNote.setDogNotes?.[0]?.setDog?.set?.id;
+      const dogIds = dogNote.setDogNotes?.map((setDogNote: any) => setDogNote.setDog?.dogId).filter(Boolean) || [];
+
+      const payload = {
+        id: dogNote.id,
+        content: dogNote.content,
+        practiceId,
+        setId,
+        dogIds,
+        eventType: getEventType(event)
+      };
+
+      await this.publish(event, payload);
+    } catch (error) {
+      console.error(`Error publishing practice dog note event ${event}:`, error);
     }
   }
 }

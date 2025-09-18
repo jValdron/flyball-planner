@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany, Index } from 'typeorm';
 import { ObjectType, Field, ID, registerEnumType } from 'type-graphql';
 import { Set } from './Set';
 import { Dog } from './Dog';
+import { SetDogNote } from './SetDogNote';
 
 export enum Lane {
   Left = 'Left',
@@ -58,4 +59,8 @@ export class SetDog {
   @ManyToOne(() => Dog)
   @JoinColumn({ name: 'dogId' })
   dog: Dog;
+
+  @Field(() => [SetDogNote])
+  @OneToMany(() => SetDogNote, setDogNote => setDogNote.setDog)
+  setDogNotes: SetDogNote[];
 }

@@ -1,6 +1,7 @@
 import type { PracticeSummary } from '../graphql/generated/graphql'
+import { isPastDay } from './dateUtils'
 
-export type PracticeStep = 'date' | 'attendance' | 'sets' | 'checks'
+export type PracticeStep = 'date' | 'attendance' | 'sets' | 'checks' | 'recap'
 
 export interface PracticeCompletionStatus {
   dateComplete: boolean
@@ -18,6 +19,9 @@ export function getPracticeCompletionStatus(practice: PracticeSummary): Practice
   // Attendance is complete if no attendances have Unknown status
   const attendanceComplete = practice.unconfirmedCount === 0
 
+  // Check if practice is past
+  const practiceIsPast = isPastDay(practice.scheduledAt)
+
   // Determine the next incomplete step
   let nextIncompleteStep: PracticeStep | null = null
 
@@ -25,6 +29,9 @@ export function getPracticeCompletionStatus(practice: PracticeSummary): Practice
     nextIncompleteStep = 'date'
   } else if (!attendanceComplete) {
     nextIncompleteStep = 'attendance'
+  } else if (practiceIsPast && practice.status === 'Ready') {
+    // For ready past practices, go to recap
+    nextIncompleteStep = 'recap'
   } else {
     // Both date and attendance are complete
     // If practice is Ready, go to checks; if Draft, go to sets

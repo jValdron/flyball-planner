@@ -163,7 +163,7 @@ function Practices() {
 
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Practices</h1>
-        <Button variant="primary" onClick={() => navigate('/practices/new')}>
+        <Button variant="primary" className="d-flex align-items-center" onClick={() => navigate('/practices/new')}>
           <PlusLg className="me-1" /> Schedule New Practice
         </Button>
       </div>
@@ -213,7 +213,7 @@ function Practices() {
                         const nextStepUrl = getNextIncompleteStepUrl(practice.id, completionStatus.nextIncompleteStep)
                         navigate(nextStepUrl)
                       }}
-                      style={{ cursor: 'pointer' }}
+                      className="cur-point"
                     >
                       <Card.Body className={practiceIsPast ? 'bg-past' : practice.status === 'Draft' ? 'bg-warning-subtle' : 'bg-primary-subtle'}>
                         <Card.Title className="text-truncate">
@@ -232,21 +232,28 @@ function Practices() {
                         <ListGroup.Item><FileText className="me-1" /> {practice.setsCount} sets</ListGroup.Item>
                       </ListGroup>
                       <Card.Body className={`${isDark ? 'bg-dark' : 'bg-light'} d-flex justify-content-between`}>
-                        {practiceIsPast ? "" : (
-                          <Button
-                            variant="outline-primary"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const completionStatus = getPracticeCompletionStatus(practice)
-                              const nextStepUrl = getNextIncompleteStepUrl(practice.id, completionStatus.nextIncompleteStep)
-                              navigate(nextStepUrl);
-                            }}
-                          >
-                            <Pencil className="me-1" />
-                            Edit
-                          </Button>
-                        )}
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const completionStatus = getPracticeCompletionStatus(practice)
+                            const nextStepUrl = getNextIncompleteStepUrl(practice.id, completionStatus.nextIncompleteStep)
+                            navigate(nextStepUrl);
+                          }}
+                        >
+                          {practiceIsPast && practice.status === 'Ready' ? (
+                            <>
+                              <FileText className="me-1" />
+                              Recap
+                            </>
+                          ) : (
+                            <>
+                              <Pencil className="me-1" />
+                              Edit
+                            </>
+                          )}
+                        </Button>
                         <Button
                           variant="outline-danger"
                           size="sm"

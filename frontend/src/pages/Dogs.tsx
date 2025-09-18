@@ -2,17 +2,19 @@ import React from 'react'
 import { Container, Table, Button, Badge, Alert, Form, InputGroup, Breadcrumb } from 'react-bootstrap'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useState } from 'react'
-import { useMutation } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { useClub } from '../contexts/ClubContext'
 import { useTheme } from '../contexts/ThemeContext'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import TrainingLevelBadge from '../components/TrainingLevelBadge'
-import { PlusLg, Trash, PersonPlus } from 'react-bootstrap-icons'
+import { PlusLg, Trash, PersonPlus, Pencil } from 'react-bootstrap-icons'
 import { DeleteDog } from '../graphql/dogs'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import type { DogStatus } from '../graphql/generated/graphql'
 import { getFilteredAndSortedDogsByHandlers, getHandlerName } from '../utils/dogsUtils'
 import type { HandlerWithDogs, DogWithBasicInfo } from '../utils/dogsUtils'
+import DogModal from '../components/DogModal'
+import { GetDogById } from '../graphql/dogs'
 
 const getStatusBadge = (status: DogStatus) => {
   const variants = {
@@ -30,13 +32,25 @@ function Dogs() {
   const { isDark } = useTheme()
   const [error, setError] = useState<string | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [dogToDelete, setDogToDelete] = useState<DogWithBasicInfo | null>(null)
+  const [dogToEdit, setDogToEdit] = useState<DogWithBasicInfo | null>(null)
   const [showInactive, setShowInactive] = useState(searchParams.get('showInactive') === 'true')
   const [searchQuery, setSearchQuery] = useState('')
 
   useDocumentTitle('Handlers & Dogs')
 
   const [deleteDog] = useMutation(DeleteDog)
+
+  // Get full dog data for editing
+  const { data: dogData } = useQuery(GetDogById, {
+    variables: { id: dogToEdit?.id || '' },
+    skip: !dogToEdit?.id,
+    onError: (error) => {
+      setError('Failed to load dog details for editing.')
+      console.error('Error loading dog:', error)
+    }
+  })
 
   const handleShowInactiveChange = (checked: boolean) => {
     setShowInactive(checked)
@@ -60,6 +74,12 @@ function Dogs() {
     setShowDeleteModal(true)
   }
 
+  const handleEdit = async (e: React.MouseEvent, dog: DogWithBasicInfo) => {
+    e.stopPropagation()
+    setDogToEdit(dog)
+    setShowEditModal(true)
+  }
+
   const handleDeleteConfirm = async () => {
     if (!dogToDelete) return
     try {
@@ -71,6 +91,12 @@ function Dogs() {
       setShowDeleteModal(false)
       setDogToDelete(null)
     }
+  }
+
+  const handleEditSuccess = () => {
+    setShowEditModal(false)
+    setDogToEdit(null)
+    // The club context will automatically refetch the data
   }
 
   const filteredDogsByHandlers = getFilteredAndSortedDogsByHandlers(dogsByHandlersInSelectedClub, searchQuery, showInactive)
@@ -94,12 +120,12 @@ function Dogs() {
 
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Handlers & Dogs</h1>
-        <div>
-          <Button variant="primary" className="me-2" onClick={() => navigate('/handlers/new')}>
+        <div className="d-flex gap-2">
+          <Button variant="success" className="me-2 d-flex align-items-center" onClick={() => navigate('/handlers/new')}>
             <PersonPlus className="me-2" />
             New Handler
           </Button>
-          <Button variant="success" onClick={() => navigate('/dogs/new')}>
+          <Button variant="primary" className="d-flex align-items-center" onClick={() => navigate('/dogs/new')}>
             <PlusLg className="me-2" />
             New Dog
           </Button>
@@ -156,15 +182,14 @@ function Dogs() {
               return (
                 <React.Fragment key={handler.id}>
                   <tr
-                    className={isDark ? '' : 'table-secondary'}
+                    className={`${isDark ? '' : 'table-secondary'} cur-point`}
                     onClick={() => navigate(`/handlers/${handler.id}`)}
-                    style={{ cursor: 'pointer' }}
                   >
                     <td colSpan={5}>
                       <div className="d-flex justify-content-between align-items-center">
                         <strong>{handlerName}</strong>
                         <Button
-                          variant="outline-success"
+                          variant="outline-primary"
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation()
@@ -188,22 +213,30 @@ function Dogs() {
                       <tr
                         key={dog.id}
                         onClick={() => handleRowClick(dog.id)}
-                        style={{ cursor: 'pointer' }}
-                        className={`align-middle`}
+                        className={`align-middle cur-point`}
                       >
                         <td className={`ps-4 ${dog.status === 'Inactive' ? 'text-muted' : ''} col-6 col-md-4`}>{dog.name}</td>
                         <td className="font-monospace col-3 col-md-2">{dog.crn}</td>
                         {showInactive && <td className="d-none d-md-table-cell col-md-2">{getStatusBadge(dog.status)}</td>}
                         <td className="col-2 col-md-2">{<TrainingLevelBadge level={dog.trainingLevel} />}</td>
                         <td className="col-1 text-nowrap text-end">
-                          <Button
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={(e) => handleDelete(e, dog)}
-                          >
-                            <Trash className="me-md-1" />
-                            <span className="d-none d-md-inline">Delete</span>
-                          </Button>
+                          <div className="d-flex gap-1 justify-content-end">
+                            <Button
+                              variant="outline-primary"
+                              size="sm"
+                              onClick={(e) => handleEdit(e, dog)}
+                            >
+                              <Pencil className="me-md-1" />
+                              <span className="d-none d-md-inline">Edit</span>
+                            </Button>
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              onClick={(e) => handleDelete(e, dog)}
+                            >
+                              <Trash />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -225,6 +258,16 @@ function Dogs() {
         title="Confirm Dog Deletion"
         message="Are you sure you want to delete this dog?"
         confirmButtonText="Delete Dog"
+      />
+
+      <DogModal
+        show={showEditModal}
+        onHide={() => {
+          setShowEditModal(false)
+          setDogToEdit(null)
+        }}
+        dog={dogData?.dog || null}
+        onSuccess={handleEditSuccess}
       />
     </Container>
   )

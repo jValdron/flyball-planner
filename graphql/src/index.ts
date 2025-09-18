@@ -17,6 +17,7 @@ import { PracticeResolver } from './resolvers/PracticeResolver';
 import { PracticeAttendanceResolver } from './resolvers/PracticeAttendanceResolver';
 import { LocationResolver } from './resolvers/LocationResolver';
 import { PracticeSetResolver } from './resolvers/PracticeSetResolver';
+import { DogNoteResolver } from './resolvers/DogNoteResolver';
 import { ClubSubscriptionResolver } from './resolvers/ClubSubscriptionResolver';
 import { PracticeSubscriptionResolver } from './resolvers/PracticeSubscriptionResolver';
 import { UserResolver } from './resolvers/UserResolver';
@@ -42,6 +43,7 @@ async function startServer() {
         PracticeResolver,
         PracticeAttendanceResolver,
         PracticeSetResolver,
+        DogNoteResolver,
         LocationResolver,
         ClubSubscriptionResolver,
         PracticeSubscriptionResolver,

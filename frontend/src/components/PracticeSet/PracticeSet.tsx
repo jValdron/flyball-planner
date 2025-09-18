@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Button, Form, Card, Spinner, Badge } from 'react-bootstrap'
+import { Button, Form, Card, Spinner, Badge, Alert } from 'react-bootstrap'
 import { DndContext, DragOverlay } from '@dnd-kit/core'
 import type { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
@@ -28,6 +28,7 @@ interface PracticeSetProps {
   disabled: boolean
   isLocked?: boolean
   validationErrors?: ValidationError[]
+  focusSetId?: string | null
 }
 
 interface SortableSetProps {
@@ -169,7 +170,7 @@ function SortableSet({
         <div className="d-flex align-items-center justify-content-between mb-3">
           <h6 className="mb-0">{customLocation.name}</h6>
           {!isLocked && (
-            <Button variant="outline-danger" size="sm" onClick={handleLocationRemove} disabled={disabled || isDeleting}>
+            <Button variant="outline-danger" size="sm" className="d-flex align-items-center" onClick={handleLocationRemove} disabled={disabled || isDeleting}>
               {isDeleting ? <Spinner size="sm" /> : <Trash />}
             </Button>
           )}
@@ -332,11 +333,11 @@ function SortableGroup({
   return (
     <div className="mb-3" ref={setNodeRef} style={style}>
       <div className="d-flex gap-0">
-        <Card className="flex-shrink-0 rounded-end-0" style={{ width: 'auto' }}>
+        <Card className="flex-shrink-0 rounded-end-0 border-end-0" style={{ width: '80px' }}>
           <Card.Body
             {...attributes}
             {...listeners}
-            className={`${isDark ? 'bg-dark' : 'bg-light'} cursor-grab p-4 d-flex align-items-center h-100 ${disabled ? '' : 'cursor-grab'}`}>
+            className={`${isDark ? 'bg-dark' : 'bg-light'} cursor-grab d-flex align-items-center justify-content-center h-100 ${disabled ? '' : 'cursor-grab'}`}>
             <h5 className="text-nowrap mb-0">
               {!disabled && <GripVertical />}
               <span>{group.index}</span>
@@ -439,7 +440,7 @@ function SortableGroup({
   )
 }
 
-export function PracticeSet({ practiceId, disabled, isLocked = false, validationErrors }: PracticeSetProps) {
+export function PracticeSet({ practiceId, disabled, isLocked = false, validationErrors, focusSetId }: PracticeSetProps) {
   const { dogs, locations } = useClub()
   const { attendances, sets } = usePractice()
   const [isSaving, setIsSaving] = useState(false)
@@ -858,26 +859,38 @@ export function PracticeSet({ practiceId, disabled, isLocked = false, validation
     return setTypeRefs.current.get(setId)!
   }
 
+  // Helper function to focus on a set
+  const focusOnSet = (setId: string, delay: number = 100) => {
+    const ref = setTypeRefs.current.get(setId)
+    if (ref?.current) {
+      setTimeout(() => {
+        ref.current?.focus()
+        ref.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        })
+      }, delay)
+    }
+  }
+
   // Focus newly created sets
   useEffect(() => {
     newlyCreatedSetIds.forEach(setId => {
-      const ref = setTypeRefs.current.get(setId)
-      if (ref?.current) {
-        setTimeout(() => {
-          ref.current?.focus()
-          ref.current?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-          })
-        }, 100)
-        setNewlyCreatedSetIds(prev => {
-          const newSet = new Set(prev)
-          newSet.delete(setId)
-          return newSet
-        })
-      }
+      focusOnSet(setId, 100)
+      setNewlyCreatedSetIds(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(setId)
+        return newSet
+      })
     })
   }, [newlyCreatedSetIds, sets])
+
+  // Focus on specific set when focusSetId is provided
+  useEffect(() => {
+    if (focusSetId && sets.length > 0) {
+      focusOnSet(focusSetId, 200)
+    }
+  }, [focusSetId, sets])
 
   // Clear adding state when we get any set subscription event
   useEffect(() => {
@@ -1044,91 +1057,110 @@ export function PracticeSet({ practiceId, disabled, isLocked = false, validation
   return (
     <DragProvider onDogMove={handleDogMove}>
       <div>
-        <DndContext
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
-        >
-        <SortableContext
-          items={groupedSets.map(group => group.index.toString())}
-          strategy={verticalListSortingStrategy}
-        >
-          {groupedSets.map(group => (
-            <SortableGroup
-              key={group.index}
-              group={group}
-              onDelete={handleDeleteSet}
-              onDeleteGroup={handleDeleteGroup}
-              onSetTypeChange={handleSetTypeChange}
-              onSetDogsChange={handleDogsChange}
-              onSetNotesChange={handleSetNotesChange}
-              onInsertAbove={handleInsertAbove}
-              onWarmupChange={handleWarmupChange}
-              onLocationAdd={handleLocationAdd}
-              availableDogs={availableDogs}
-              otherLocations={otherLocations}
-              defaultLocation={defaultLocation}
-              disabled={disabled}
-              isLocked={isLocked}
-              validationErrors={validationErrors}
-              getSetTypeRef={getSetTypeRef}
-              getDogsWithValidationIssuesForSet={getDogsWithValidationIssuesForSet}
-              getValidationErrorsForSet={getValidationErrorsForSet}
-              isGroupNotesOpen={openNotesGroupIndices.has(group.index)}
-              onShowGroupNotes={(groupIndex) => setOpenNotesGroupIndices(prev => new Set([...prev, groupIndex]))}
-              isDeletingGroup={deletingGroupIndices.has(group.index)}
-              deletingSetIds={deletingSetIds}
-            />
-          ))}
-        </SortableContext>
-        <DragOverlay>
-          {activeDragItem && activeDragItem.targetPickerId ? (
-            <Badge
-              bg="primary"
-              className="fs-6 px-3 py-2 drag-overlay-badge"
-            >
-              Move {activeDragItem.setDog.dog.name} to {(() => {
-                const targetParts = activeDragItem.targetPickerId.split('-')
-                const targetSetId = targetParts.slice(0, -1).join('-')
-                const lane = targetParts[targetParts.length - 1]
-
-                const sourceParts = activeDragItem.pickerId.split('-')
-                const sourceSetId = sourceParts.slice(0, -1).join('-')
-                const isDifferentSet = sourceSetId !== targetSetId
-
-                let laneName = 'target lane'
-                if (lane === 'single') laneName = 'single lane'
-                else if (lane === 'Left') laneName = 'left lane'
-                else if (lane === 'Right') laneName = 'right lane'
-
-                if (isDifferentSet) {
-                  const targetSet = sets.find(s => s.id === targetSetId)
-                  if (targetSet) {
-                    return `${laneName} in set ${targetSet.index}`
-                  }
-                }
-
-                return laneName
-              })()}
-            </Badge>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
-      {!isLocked && (
-        <div className="d-flex justify-content-end mb-4">
-          <Button
-            variant="primary"
-            className="text-nowrap d-flex align-items-center"
-            onClick={handleAddSet}
-            disabled={disabled || isAddingSet}
+        {groupedSets.length === 0 ? (
+          <Alert variant="info">
+            No sets for this practice.{' '}
+            {!isLocked ? (
+              <Button
+                variant="link"
+                className="p-0 align-baseline"
+                onClick={handleAddSet}
+                disabled={disabled || isAddingSet}
+              >
+                {isAddingSet ? <Spinner size="sm" className="me-1" /> : null}
+                Add a set now.
+              </Button>
+            ) : (
+              <span className="text-muted">Unlock the practice to add a new set.</span>
+            )}
+          </Alert>
+        ) : (
+          <DndContext
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
           >
-            {isAddingSet ? <Spinner size="sm" className="me-2" /> : <PlusLg className="me-2" />}
-            Add Set
-          </Button>
-        </div>
-      )}
-      <SaveSpinner show={isSaving} />
-    </div>
+            <SortableContext
+              items={groupedSets.map(group => group.index.toString())}
+              strategy={verticalListSortingStrategy}
+            >
+              {groupedSets.map(group => (
+                <SortableGroup
+                  key={group.index}
+                  group={group}
+                  onDelete={handleDeleteSet}
+                  onDeleteGroup={handleDeleteGroup}
+                  onSetTypeChange={handleSetTypeChange}
+                  onSetDogsChange={handleDogsChange}
+                  onSetNotesChange={handleSetNotesChange}
+                  onInsertAbove={handleInsertAbove}
+                  onWarmupChange={handleWarmupChange}
+                  onLocationAdd={handleLocationAdd}
+                  availableDogs={availableDogs}
+                  otherLocations={otherLocations}
+                  defaultLocation={defaultLocation}
+                  disabled={disabled}
+                  isLocked={isLocked}
+                  validationErrors={validationErrors}
+                  getSetTypeRef={getSetTypeRef}
+                  getDogsWithValidationIssuesForSet={getDogsWithValidationIssuesForSet}
+                  getValidationErrorsForSet={getValidationErrorsForSet}
+                  isGroupNotesOpen={openNotesGroupIndices.has(group.index)}
+                  onShowGroupNotes={(groupIndex) => setOpenNotesGroupIndices(prev => new Set([...prev, groupIndex]))}
+                  isDeletingGroup={deletingGroupIndices.has(group.index)}
+                  deletingSetIds={deletingSetIds}
+                />
+              ))}
+            </SortableContext>
+            <DragOverlay>
+              {activeDragItem && activeDragItem.targetPickerId ? (
+                <Badge
+                  bg="primary"
+                  className="fs-6 px-3 py-2 drag-overlay-badge"
+                >
+                  Move {activeDragItem.setDog.dog.name} to {(() => {
+                    const targetParts = activeDragItem.targetPickerId.split('-')
+                    const targetSetId = targetParts.slice(0, -1).join('-')
+                    const lane = targetParts[targetParts.length - 1]
+
+                    const sourceParts = activeDragItem.pickerId.split('-')
+                    const sourceSetId = sourceParts.slice(0, -1).join('-')
+                    const isDifferentSet = sourceSetId !== targetSetId
+
+                    let laneName = 'target lane'
+                    if (lane === 'single') laneName = 'single lane'
+                    else if (lane === 'Left') laneName = 'left lane'
+                    else if (lane === 'Right') laneName = 'right lane'
+
+                    if (isDifferentSet) {
+                      const targetSet = sets.find(s => s.id === targetSetId)
+                      if (targetSet) {
+                        return `${laneName} in set ${targetSet.index}`
+                      }
+                    }
+
+                    return laneName
+                  })()}
+                </Badge>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        )}
+        {!isLocked && (
+          <div className="d-flex justify-content-end mb-4">
+            <Button
+              variant="primary"
+              className="text-nowrap d-flex align-items-center"
+              onClick={handleAddSet}
+              disabled={disabled || isAddingSet}
+            >
+              {isAddingSet ? <Spinner size="sm" className="me-2" /> : <PlusLg className="me-2" />}
+              Add Set
+            </Button>
+          </div>
+        )}
+        <SaveSpinner show={isSaving} />
+      </div>
     </DragProvider>
   )
 }

@@ -67,7 +67,7 @@ function PublicHeaderContent() {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
-            <Nav.Link onClick={handleBackToPractice} style={{ cursor: 'pointer' }}>
+            <Nav.Link onClick={handleBackToPractice} className="cur-point">
               ← Back to Practice
             </Nav.Link>
           </Nav>
@@ -150,6 +150,7 @@ function AppWithTitle({ isAuthenticated }: { isAuthenticated: boolean }) {
                       <Route path="/practices/:practiceId/attendance" element={<PracticeDetails />} />
                       <Route path="/practices/:practiceId/sets" element={<PracticeDetails />} />
                       <Route path="/practices/:practiceId/checks" element={<PracticeDetails />} />
+                      <Route path="/practices/:practiceId/recap" element={<PracticeDetails />} />
                     </Routes>
                   </Suspense>
                 </Container>
