@@ -16,7 +16,7 @@ interface DogNotesProps {
 }
 
 function DogNotes({ dogId, dogName }: DogNotesProps) {
-  const { selectedClub } = useClub()
+  const { selectedClub, dogs } = useClub()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [noteContent, setNoteContent] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -118,8 +118,8 @@ function DogNotes({ dogId, dogName }: DogNotesProps) {
                 <div key={note.id} className="border rounded p-3 mb-3">
                   <div className="d-flex justify-content-between align-items-start mb-2">
                     <div className="flex-grow-1">
-                      <small className="text-muted">
-                        <Calendar3 className="me-1" />
+                      <small className="text-muted d-flex align-items-center">
+                        <Calendar3 className="me-2" />
                         {formatFullDateTime(note.createdAt)}
                         {note.updatedAt !== note.createdAt && (
                           <span className="ms-2">(edited)</span>
@@ -130,16 +130,17 @@ function DogNotes({ dogId, dogName }: DogNotesProps) {
                     <div className="d-flex gap-2">
                       <NoteEditor
                         note={note}
-                        setDogs={note.setDogNotes.length > 0 ? note.setDogNotes.flatMap(setDogNote =>
-                          setDogNote.setDog.set.dogs.map(dog => ({
-                            dogId: dog.dogId,
+                        setDogs={note.setDogs && note.setDogs.length > 0 ? note.setDogs.map(setDog => {
+                          const dog = dogs.find(d => d.id === setDog.dogId)
+                          return {
+                            dogId: setDog.dogId,
                             dog: {
-                              id: dog.dog.id,
-                              name: dog.dog.name,
-                              trainingLevel: dog.dog.trainingLevel
+                              id: dog?.id || '',
+                              name: dog?.name || '',
+                              trainingLevel: dog?.trainingLevel || ''
                             }
-                          }))
-                        ) : undefined}
+                          }
+                        }) : undefined}
                         onUpdate={refetch}
                       />
                       {note.setDogNotes.length > 0 && (
@@ -164,17 +165,22 @@ function DogNotes({ dogId, dogName }: DogNotesProps) {
                           locationId: setDogNote.setDog.set.location.id,
                           type: setDogNote.setDog.set.type as SetType | null,
                           practice: setDogNote.setDog.set.practice,
-                          dogs: setDogNote.setDog.set.dogs.map(dog => ({
-                            ...dog,
-                            __typename: 'SetDog' as const,
-                            lane: dog.lane as Lane | null,
-                            dog: {
-                              ...dog.dog,
-                              __typename: 'Dog' as const,
-                              trainingLevel: dog.dog.trainingLevel as TrainingLevel,
-                              owner: dog.dog.owner,
-                            },
-                          })),
+                          dogs: setDogNote.setDog.set.dogs
+                            .map(setDog => {
+                              const dog = dogs.find(d => d.id === setDog.dogId)
+                              return dog ? {
+                                ...setDog,
+                                __typename: 'SetDog' as const,
+                                lane: setDog.lane as Lane | null,
+                                dog: {
+                                  ...dog,
+                                  __typename: 'Dog' as const,
+                                  trainingLevel: dog.trainingLevel as TrainingLevel,
+                                  owner: dog.owner,
+                                },
+                              } : null
+                            })
+                            .filter((item): item is NonNullable<typeof item> => item !== null),
                         }))}
                         defaultLocationName={note.setDogNotes[0].setDog.set.location.name}
                         twoColumns={false}

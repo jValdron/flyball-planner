@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Button, Form, Row, Col, Badge, Spinner } from 'react-bootstrap'
-import { DashCircle, PlusLg, CheckSquareFill, Square, Save, HandThumbsUpFill, HandThumbsDownFill } from 'react-bootstrap-icons'
+import { Button, Form, Row, Col, Badge, Spinner, Modal, Alert } from 'react-bootstrap'
+import { DashCircle, PlusLg, CheckSquareFill, Square, HandThumbsUpFill, HandThumbsDownFill } from 'react-bootstrap-icons'
 import { useNavigate } from 'react-router-dom'
 import { SetRating, Lane } from '../../graphql/generated/graphql'
 import { useMutation, useQuery } from '@apollo/client'
@@ -30,11 +30,12 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
   const { isDark } = useTheme()
   const [updateSetRating] = useMutation(UPDATE_SET_RATING)
   const [createSetDogNote] = useMutation(CREATE_SET_DOG_NOTE)
-  const [noteContents, setNoteContents] = useState<Record<string, string>>({})
-  const [selectedDogs, setSelectedDogs] = useState<Record<string, string[]>>({})
-  const [showNoteInput, setShowNoteInput] = useState<Record<string, boolean>>({})
   const [savingRatings, setSavingRatings] = useState<Record<string, SetRating>>({})
   const [savingNotes, setSavingNotes] = useState<Record<string, boolean>>({})
+  const [showCreateModal, setShowCreateModal] = useState<Record<string, boolean>>({})
+  const [modalNoteContent, setModalNoteContent] = useState<Record<string, string>>({})
+  const [modalSelectedDogs, setModalSelectedDogs] = useState<Record<string, string[]>>({})
+  const [error, setError] = useState<string | null>(null)
 
   const { data: practiceNotesData, refetch: refetchNotes } = useQuery(GET_DOG_NOTES_BY_PRACTICE, {
     variables: { practiceId: String(practiceId) },
@@ -136,12 +137,12 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
     }
   }
 
-  const handleNoteContentChange = (setId: string, content: string) => {
-    setNoteContents(prev => ({ ...prev, [setId]: content }))
+  const handleModalNoteContentChange = (setId: string, content: string) => {
+    setModalNoteContent(prev => ({ ...prev, [setId]: content }))
   }
 
-  const handleDogSelectionChange = (setId: string, dogId: string, isChecked: boolean) => {
-    setSelectedDogs(prev => {
+  const handleModalDogSelectionChange = (setId: string, dogId: string, isChecked: boolean) => {
+    setModalSelectedDogs(prev => {
       const currentSelected = prev[setId] || []
       if (isChecked) {
         return { ...prev, [setId]: [...currentSelected, dogId] }
@@ -152,13 +153,14 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
   }
 
   const handleAddNote = async (setId: string) => {
-    const content = noteContents[setId]?.trim()
-    const selectedDogIds = selectedDogs[setId] || []
+    const content = modalNoteContent[setId]?.trim()
+    const selectedDogIds = modalSelectedDogs[setId] || []
 
     if (!content || selectedDogIds.length === 0) return
 
     try {
       setSavingNotes(prev => ({ ...prev, [setId]: true }))
+      setError(null)
 
       const set = sets.find(s => s.id === setId)
       if (!set) return
@@ -177,18 +179,31 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
         }
       })
 
-      setNoteContents(prev => ({ ...prev, [setId]: '' }))
-      setSelectedDogs(prev => ({ ...prev, [setId]: [] }))
-      setShowNoteInput(prev => ({ ...prev, [setId]: false }))
+      setModalNoteContent(prev => ({ ...prev, [setId]: '' }))
+      setModalSelectedDogs(prev => ({ ...prev, [setId]: [] }))
+      setShowCreateModal(prev => ({ ...prev, [setId]: false }))
     } catch (error) {
+      setError('Failed to create note. Please try again later.')
       console.error('Error creating note:', error)
     } finally {
       setSavingNotes(prev => ({ ...prev, [setId]: false }))
     }
   }
 
-  const handleToggleNoteInput = (setId: string) => {
-    setShowNoteInput(prev => ({ ...prev, [setId]: !prev[setId] }))
+  const handleToggleCreateModal = (setId: string) => {
+    setShowCreateModal(prev => ({ ...prev, [setId]: !prev[setId] }))
+    if (!showCreateModal[setId]) {
+      setModalNoteContent(prev => ({ ...prev, [setId]: '' }))
+      setModalSelectedDogs(prev => ({ ...prev, [setId]: [] }))
+      setError(null)
+    }
+  }
+
+  const handleModalClose = (setId: string) => {
+    setShowCreateModal(prev => ({ ...prev, [setId]: false }))
+    setModalNoteContent(prev => ({ ...prev, [setId]: '' }))
+    setModalSelectedDogs(prev => ({ ...prev, [setId]: [] }))
+    setError(null)
   }
 
   const handleDogBadgeClick = (dogId: string) => {
@@ -216,11 +231,13 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
     }
   }
 
-  const renderDogButton = (setDog: any, setId: string) => {
+  const renderDogButton = (setDog: any, setId: string, isModal: boolean = false) => {
     const dogName = setDog.dog?.name || `Dog ${setDog.dogId || setDog.id}`
     const trainingLevel = setDog.dog?.trainingLevel
     const { variant: trainingVariant } = getTrainingLevelInfo(trainingLevel)
-    const isSelected = selectedDogs[setId]?.includes(setDog.dogId || '') || false
+    const isSelected = isModal
+      ? modalSelectedDogs[setId]?.includes(setDog.dogId || '') || false
+      : false
 
     const buttonVariant = trainingVariant.replace('-subtle', '')
 
@@ -228,14 +245,17 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
       <div key={setDog.id} className="w-100 mb-2">
         <Form.Check
           type="checkbox"
-          id={`dog-${setDog.id}`}
+          id={`dog-${setDog.id}-${isModal ? 'modal' : 'inline'}`}
           checked={isSelected}
-          onChange={(e) => handleDogSelectionChange(setId, setDog.dogId || '', e.target.checked)}
+          onChange={(e) => isModal
+            ? handleModalDogSelectionChange(setId, setDog.dogId || '', e.target.checked)
+            : () => {}
+          }
           className="d-none"
         />
         <Button
           as="label"
-          htmlFor={`dog-${setDog.id}`}
+          htmlFor={`dog-${setDog.id}-${isModal ? 'modal' : 'inline'}`}
           variant={isSelected ? buttonVariant : `outline-${buttonVariant}`}
           size="sm"
           className={`d-flex align-items-center w-100 ${isDark ? '' : 'text-dark'}`}
@@ -335,116 +355,127 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
           </div>
         ))}
 
-        {!showNoteInput[set.id] ? (
-          <div className="d-flex justify-content-center">
-            <Button
-              variant="outline-primary"
-              className="d-flex align-items-center"
-              onClick={() => handleToggleNoteInput(set.id)}
-            >
-              <PlusLg className="me-2" /> New Note
-            </Button>
-          </div>
-        ) : (
-          <div className="border-top pt-3">
-          <Row>
-            <Col md={4}>
-              <div className="mb-2">
-                <div className="row">
-                  {(() => {
-                    const allDogs = set.dogs.filter((d: any) => d.lane === null || d.lane === Lane.Left || d.lane === Lane.Right)
-                    const hasDogsInLeftLane = set.dogs.some((d: any) => d.lane === Lane.Left)
-                    const hasDogsInRightLane = set.dogs.some((d: any) => d.lane === Lane.Right)
-                    const isDoubleLane = hasDogsInLeftLane && hasDogsInRightLane
+        <div className="d-flex justify-content-center">
+          <Button
+            variant="outline-primary"
+            className="d-flex align-items-center"
+            onClick={() => handleToggleCreateModal(set.id)}
+          >
+            <PlusLg className="me-2" /> New Note
+          </Button>
+        </div>
+      </div>
+    </>
+  )
 
-                    if (isDoubleLane) {
-                      const leftDogs = set.dogs.filter((d: any) => d.lane === Lane.Left)
-                        .sort((a: any, b: any) => a.index - b.index)
-                      const rightDogs = set.dogs.filter((d: any) => d.lane === Lane.Right)
-                        .sort((a: any, b: any) => a.index - b.index)
+  return (
+    <>
+      <SetDisplayBase sets={enrichedSets} twoColumns={false} defaultLocationName={defaultLocationName} showTrainingLevels={true} clickableDogBadges={true}>
+        {renderSetContent}
+      </SetDisplayBase>
 
-                      return (
-                        <>
-                          <div className="col-6">
-                            {leftDogs.map((setDog: any) => renderDogButton(setDog, set.id))}
-                          </div>
-                          <div className="col-6">
-                            {rightDogs.map((setDog: any) => renderDogButton(setDog, set.id))}
-                          </div>
-                        </>
-                      )
-                    } else {
-                      const sortedDogs = allDogs.sort((a: any, b: any) => a.index - b.index)
-                      const midPoint = Math.ceil(sortedDogs.length / 2)
-                      const leftDogs = sortedDogs.slice(0, midPoint)
-                      const rightDogs = sortedDogs.slice(midPoint)
+      {/* Create Note Modals */}
+      {sets.map(set => (
+        <Modal
+          key={`create-note-${set.id}`}
+          show={showCreateModal[set.id] || false}
+          onHide={() => handleModalClose(set.id)}
+          size="lg"
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>Add Note for Set {set.index + 1}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {error && (
+              <Alert variant="danger" className="mb-3" onClose={() => setError(null)} dismissible>
+                {error}
+              </Alert>
+            )}
 
-                      return (
-                        <>
-                          <div className="col-6">
-                            {leftDogs.map((setDog: any) => renderDogButton(setDog, set.id))}
-                          </div>
-                          <div className="col-6">
-                            {rightDogs.map((setDog: any) => renderDogButton(setDog, set.id))}
-                          </div>
-                        </>
-                      )
-                    }
-                  })()}
+            <Row>
+              <Col md={4}>
+                <div className="mb-2">
+                  <div className="row">
+                    {(() => {
+                      const allDogs = set.dogs.filter((d: any) => d.lane === null || d.lane === Lane.Left || d.lane === Lane.Right)
+                      const hasDogsInLeftLane = set.dogs.some((d: any) => d.lane === Lane.Left)
+                      const hasDogsInRightLane = set.dogs.some((d: any) => d.lane === Lane.Right)
+                      const isDoubleLane = hasDogsInLeftLane && hasDogsInRightLane
+
+                      if (isDoubleLane) {
+                        const leftDogs = set.dogs.filter((d: any) => d.lane === Lane.Left)
+                          .sort((a: any, b: any) => a.index - b.index)
+                        const rightDogs = set.dogs.filter((d: any) => d.lane === Lane.Right)
+                          .sort((a: any, b: any) => a.index - b.index)
+
+                        return (
+                          <>
+                            <div className="col-6">
+                              {leftDogs.map((setDog: any) => renderDogButton(setDog, set.id, true))}
+                            </div>
+                            <div className="col-6">
+                              {rightDogs.map((setDog: any) => renderDogButton(setDog, set.id, true))}
+                            </div>
+                          </>
+                        )
+                      } else {
+                        const sortedDogs = allDogs.sort((a: any, b: any) => a.index - b.index)
+                        const midPoint = Math.ceil(sortedDogs.length / 2)
+                        const leftDogs = sortedDogs.slice(0, midPoint)
+                        const rightDogs = sortedDogs.slice(midPoint)
+
+                        return (
+                          <>
+                            <div className="col-6">
+                              {leftDogs.map((setDog: any) => renderDogButton(setDog, set.id, true))}
+                            </div>
+                            <div className="col-6">
+                              {rightDogs.map((setDog: any) => renderDogButton(setDog, set.id, true))}
+                            </div>
+                          </>
+                        )
+                      }
+                    })()}
+                  </div>
                 </div>
-              </div>
-            </Col>
-            <Col md={8}>
-              <Form.Group>
+              </Col>
+              <Col md={8}>
                 <Form.Control
                   as="textarea"
-                  rows={3}
-                  placeholder="Note for selected dogs..."
-                  value={noteContents[set.id] || ''}
-                  onChange={(e) => handleNoteContentChange(set.id, e.target.value)}
+                  placeholder="Enter your note about the selected dogs..."
+                  value={modalNoteContent[set.id] || ''}
+                  onChange={(e) => handleModalNoteContentChange(set.id, e.target.value)}
                   onKeyDown={(e) => {
                     if (e.ctrlKey && e.key === 'Enter') {
                       e.preventDefault()
                       handleAddNote(set.id)
                     }
                   }}
+                  className="mh-125-expand"
                 />
-              </Form.Group>
-              <div className="d-flex justify-content-end gap-2">
-                <Button
-                  variant="outline-secondary"
-                  size="sm"
-                  className="mt-2 d-flex align-items-center"
-                  onClick={() => handleToggleNoteInput(set.id)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="mt-2 d-flex align-items-center"
-                  onClick={() => handleAddNote(set.id)}
-                  disabled={!noteContents[set.id]?.trim() || selectedDogs[set.id]?.length === 0 || savingNotes[set.id]}
-                >
-                  {savingNotes[set.id] ? (
-                    <Spinner animation="border" size="sm" className="me-2" />
-                  ) : (
-                    <Save className="me-2" />
-                  )}
-                  Add Note
-                </Button>
-              </div>
-            </Col>
-          </Row>
-          </div>
-        )}
-      </div>
+              </Col>
+            </Row>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => handleModalClose(set.id)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => handleAddNote(set.id)}
+              disabled={!modalNoteContent[set.id]?.trim() || modalSelectedDogs[set.id]?.length === 0 || savingNotes[set.id]}
+              className="d-flex align-items-center"
+            >
+              {savingNotes[set.id] ? (
+                <Spinner animation="border" size="sm" className="me-2" />
+              ) : (
+                <PlusLg className="me-2" />
+              )}
+              Create Note
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      ))}
     </>
-  )
-
-  return (
-    <SetDisplayBase sets={enrichedSets} twoColumns={false} defaultLocationName={defaultLocationName} showTrainingLevels={true} clickableDogBadges={true}>
-      {renderSetContent}
-    </SetDisplayBase>
   )
 }

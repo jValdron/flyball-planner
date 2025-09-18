@@ -11,6 +11,7 @@ export const GET_DOG_NOTES = gql`
         id
         setDog {
           id
+          dogId
           set {
             id
             index
@@ -32,20 +33,13 @@ export const GET_DOG_NOTES = gql`
               index
               lane
               dogId
-              dog {
-                id
-                name
-                crn
-                trainingLevel
-                owner {
-                  id
-                  givenName
-                  surname
-                }
-              }
             }
           }
         }
+      }
+      setDogs {
+        id
+        dogId
       }
     }
   }
@@ -154,6 +148,10 @@ export type DogNote = {
         }>
       }
     }
+  }>
+  setDogs: Array<{
+    id: string
+    dogId: string
   }>
 }
 

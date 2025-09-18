@@ -82,6 +82,7 @@ type DogNote {
   dogId: ID!
   id: ID!
   setDogNotes: [SetDogNote!]
+  setDogs: [SetDog!]!
   updatedAt: DateTimeISO!
 }
 

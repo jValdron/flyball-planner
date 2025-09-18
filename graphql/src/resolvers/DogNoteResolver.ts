@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Arg, ID, UseMiddleware, Ctx, InputType, Field } from 'type-graphql';
+import { Resolver, Query, Mutation, Arg, ID, UseMiddleware, Ctx, InputType, Field, FieldResolver, Root } from 'type-graphql';
 import { DogNote } from '../models/DogNote';
 import { SetDogNote } from '../models/SetDogNote';
 import { SetDog } from '../models/SetDog';
@@ -57,9 +57,9 @@ export class DogNoteResolver {
       .leftJoinAndSelect('set.dogs', 'setDogs')
       .leftJoinAndSelect('setDogs.dog', 'setDogEntity')
       .leftJoinAndSelect('setDogEntity.owner', 'owner')
-      .where('dogNote.dogId = :dogId', { dogId })
-      .andWhere('(setDog.dogId = :dogId OR setDog.dogId IS NULL)', { dogId }) // This filters setDogNotes to only include those for the specific dog, or null for regular dog notes
-      .andWhere('dog.clubId IN (:...clubIds)', { clubIds: user?.clubIds || [] })
+      .where('(dogNote.dogId = :dogId OR setDog.dogId = :dogId)', { dogId })
+      .andWhere('(setDog.dogId = :dogId OR setDog.dogId IS NULL)', { dogId })
+      .andWhere('(dog.clubId IN (:...clubIds) OR setDogEntity.clubId IN (:...clubIds))', { clubIds: user?.clubIds || [] })
       .orderBy('dogNote.createdAt', 'DESC')
       .getMany();
 
@@ -249,5 +249,19 @@ export class DogNoteResolver {
     }
 
     return result.affected !== 0;
+  }
+
+  @FieldResolver(() => [SetDog])
+  async setDogs(@Root() dogNote: DogNote): Promise<SetDog[]> {
+    const setDogNotes = await this.setDogNoteRepository.find({
+      where: { dogNoteId: dogNote.id },
+      relations: ['setDog']
+    });
+
+    if (setDogNotes.length === 0) {
+      return [];
+    }
+
+    return setDogNotes.map(setDogNote => setDogNote.setDog);
   }
 }

@@ -94,12 +94,12 @@ function DogDetails() {
 
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h1 className="mb-1">{dog.name}</h1>
-          {dog.crn && (
-            <p className="text-muted mb-0">
-              <span className="font-monospace">{dog.crn}</span>
-            </p>
-          )}
+          <h1 className="mb-1">
+            {dog.name}
+            {dog.crn && (
+              <span className="fs-6 text-muted font-monospace ps-2">CRN {dog.crn}</span>
+            )}
+          </h1>
         </div>
         <div className="d-flex gap-2">
           <Button

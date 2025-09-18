@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Button, Form, Modal, Badge } from 'react-bootstrap'
-import { Pencil, Trash } from 'react-bootstrap-icons'
+import { Pencil, Trash, Calendar3 } from 'react-bootstrap-icons'
 import { useMutation } from '@apollo/client'
 import { UPDATE_DOG_NOTE, DELETE_DOG_NOTE } from '../graphql/dogNotes'
 import { getTrainingLevelInfo } from '../utils/trainingLevels'
+import { formatFullDateTime } from '../utils/dateUtils'
 import { TrainingLevel } from '../graphql/generated/graphql'
 import DeleteConfirmationModal from './DeleteConfirmationModal'
 
@@ -20,6 +21,8 @@ interface NoteEditorProps {
   note: {
     id: string
     content: string
+    createdAt: string
+    updatedAt: string
   }
   setDogs?: SetDog[]
   onUpdate?: () => void
@@ -147,6 +150,15 @@ export function NoteEditor({
           <Modal.Title>{modalTitle}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
+          <div className="mb-3">
+            <small className="text-muted d-flex align-items-center">
+              <Calendar3 className="me-2" />
+              {formatFullDateTime(note.createdAt)}
+              {note.updatedAt !== note.createdAt && (
+                <span className="ms-2">(edited)</span>
+              )}
+            </small>
+          </div>
           <Form>
             <Form.Group>
               <Form.Control
@@ -183,7 +195,7 @@ export function NoteEditor({
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={handleModalClose}>
+          <Button variant="outline-secondary" onClick={handleModalClose}>
             Cancel
           </Button>
           <Button
