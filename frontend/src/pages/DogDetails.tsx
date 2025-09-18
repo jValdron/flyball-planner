@@ -1,4 +1,4 @@
-import { Container, Button, Alert, Spinner, Breadcrumb, Card, Badge } from 'react-bootstrap'
+import { Container, Button, Alert, Spinner, Breadcrumb, Card, Badge, ListGroup } from 'react-bootstrap'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useState } from 'react'
 import { Trash, Pencil } from 'react-bootstrap-icons'
@@ -135,28 +135,22 @@ function DogDetails() {
             <Card.Header>
               <h5 className="mb-0">Dog Information</h5>
             </Card.Header>
-            <Card.Body>
-              <div className="row mb-2">
-                <div className="col-4"><strong>Status:</strong></div>
-                <div className="col-8">
-                  <Badge bg={dog.status === 'Active' ? 'success' : 'secondary'}>
-                    {dog.status}
-                  </Badge>
-                </div>
-              </div>
-              <div className="row mb-2">
-                <div className="col-4"><strong>Training Level:</strong></div>
-                <div className="col-8">
-                  <TrainingLevelBadge level={dog.trainingLevel} />
-                </div>
-              </div>
-              <div className="row mb-2">
-                <div className="col-4"><strong>Owner:</strong></div>
-                <div className="col-8">
-                  {owner ? `${owner.givenName} ${owner.surname}` : 'Unknown'}
-                </div>
-              </div>
-            </Card.Body>
+            <ListGroup variant="flush">
+              <ListGroup.Item className="d-flex justify-content-between align-items-center">
+                <strong>Status</strong>
+                <Badge bg={dog.status === 'Active' ? 'success' : 'secondary'}>
+                  {dog.status}
+                </Badge>
+              </ListGroup.Item>
+              <ListGroup.Item className="d-flex justify-content-between align-items-center">
+                <strong>Training Level</strong>
+                <TrainingLevelBadge level={dog.trainingLevel} />
+              </ListGroup.Item>
+              <ListGroup.Item className="d-flex justify-content-between align-items-center">
+                <strong>Owner</strong>
+                <span>{owner ? `${owner.givenName} ${owner.surname}` : 'Unknown'}</span>
+              </ListGroup.Item>
+            </ListGroup>
           </Card>
         </div>
         <div className="col-md-6">
@@ -164,20 +158,16 @@ function DogDetails() {
             <Card.Header>
               <h5 className="mb-0">Timestamps</h5>
             </Card.Header>
-            <Card.Body>
-              <div className="row mb-2">
-                <div className="col-4"><strong>Created:</strong></div>
-                <div className="col-8 text-muted">
-                  {formatFullDateTime(dog.createdAt)}
-                </div>
-              </div>
-              <div className="row">
-                <div className="col-4"><strong>Last Updated:</strong></div>
-                <div className="col-8 text-muted">
-                  {formatFullDateTime(dog.updatedAt)}
-                </div>
-              </div>
-            </Card.Body>
+            <ListGroup variant="flush">
+              <ListGroup.Item className="d-flex justify-content-between align-items-center">
+                <strong>Created</strong>
+                <span className="text-muted">{formatFullDateTime(dog.createdAt)}</span>
+              </ListGroup.Item>
+              <ListGroup.Item className="d-flex justify-content-between align-items-center">
+                <strong>Last Updated</strong>
+                <span className="text-muted">{formatFullDateTime(dog.updatedAt)}</span>
+              </ListGroup.Item>
+            </ListGroup>
           </Card>
         </div>
       </div>

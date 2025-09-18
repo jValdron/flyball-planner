@@ -31,11 +31,25 @@ const DogBadge: React.FC<DogBadgeProps> = ({
     if (clickable) {
       event.preventDefault()
       event.stopPropagation()
+
+      if (event.ctrlKey || event.metaKey) {
+        window.open(`/dogs/${dog.id}`, '_blank')
+        return
+      }
+
       if (onClick) {
         onClick(dog, event)
       } else {
         navigate(`/dogs/${dog.id}`)
       }
+    }
+  }
+
+  const handleMouseDown = (event: React.MouseEvent) => {
+    if (clickable && event.button === 1) {
+      event.preventDefault()
+      event.stopPropagation()
+      window.open(`/dogs/${dog.id}`, '_blank')
     }
   }
 
@@ -52,6 +66,7 @@ const DogBadge: React.FC<DogBadgeProps> = ({
       bg={badgeVariant}
       className={allClassName}
       onClick={handleClick}
+      onMouseDown={handleMouseDown}
     >
       {dog.name}
       {showTrainingLevel && (
