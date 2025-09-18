@@ -32,7 +32,6 @@ interface DogsPickerProps {
   isDragOver?: boolean
 }
 
-// Sortable Dog Item Component
 interface SortableDogItemProps {
   setDog: SetDog
   index: number

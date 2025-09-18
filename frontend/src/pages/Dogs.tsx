@@ -6,7 +6,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import { useClub } from '../contexts/ClubContext'
 import { useTheme } from '../contexts/ThemeContext'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
-import TrainingLevelBadge from '../components/TrainingLevelBadge'
+import DogBadge from '../components/DogBadge'
 import { PlusLg, Trash, PersonPlus, Pencil } from 'react-bootstrap-icons'
 import { DeleteDog } from '../graphql/dogs'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
@@ -218,7 +218,9 @@ function Dogs() {
                         <td className={`ps-4 ${dog.status === 'Inactive' ? 'text-muted' : ''} col-6 col-md-4`}>{dog.name}</td>
                         <td className="font-monospace col-3 col-md-2">{dog.crn}</td>
                         {showInactive && <td className="d-none d-md-table-cell col-md-2">{getStatusBadge(dog.status)}</td>}
-                        <td className="col-2 col-md-2">{<TrainingLevelBadge level={dog.trainingLevel} />}</td>
+                        <td className="col-2 col-md-2">
+                          <DogBadge dog={dog} bgByTrainingLevel={true} />
+                        </td>
                         <td className="col-1 text-nowrap text-end">
                           <div className="d-flex gap-1 justify-content-end">
                             <Button

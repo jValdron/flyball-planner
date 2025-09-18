@@ -186,7 +186,7 @@ export function NoteEditor({
                 const { variant } = getTrainingLevelInfo((setDog.dog.trainingLevel as TrainingLevel) || TrainingLevel.Novice)
                 return (
                   <Badge key={setDog.dogId} bg={variant} className="me-1">
-                  {setDog.dog.name}
+                    {setDog.dog.name}
                   </Badge>
                 )
                 })}

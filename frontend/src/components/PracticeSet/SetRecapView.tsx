@@ -11,6 +11,7 @@ import { SetDisplayBase } from './SetDisplayBase'
 import { getTrainingLevelInfo } from '../../utils/trainingLevels'
 import { useTheme } from '../../contexts/ThemeContext'
 import { NoteEditor } from '../NoteEditor'
+import DogBadge from '../DogBadge'
 import type { GetPracticeQuery } from '../../graphql/generated/graphql'
 
 type SetData = NonNullable<GetPracticeQuery['practice']>['sets'][0]
@@ -336,20 +337,18 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
               <div className="mt-1">
                 {note.selectedDogs.map(dogId => {
                   const setDog = set.dogs.find((d: any) => d.dogId === dogId)
-                  const dogName = setDog?.dog?.name || `Dog ${dogId}`
-                  const trainingLevel = setDog?.dog?.trainingLevel
-                  const { variant } = getTrainingLevelInfo(trainingLevel)
 
-                  return (
-                    <Badge
-                      key={dogId}
-                      bg={variant}
-                      className={`me-1 cur-point ${isDark ? '' : 'text-dark'}`}
-                      onClick={() => handleDogBadgeClick(dogId)}
-                    >
-                      {dogName}
-                    </Badge>
-                  )
+                  if (setDog?.dog) {
+                    return (
+                      <DogBadge
+                        key={dogId}
+                        dog={setDog.dog}
+                        bgByTrainingLevel={true}
+                        clickable={true}
+                        onClick={() => handleDogBadgeClick(dogId)}
+                      />
+                    )
+                  }
                 })}
               </div>
             </div>

@@ -6,6 +6,7 @@ import { useTheme } from '../../contexts/ThemeContext'
 import { formatRelativeTime } from '../../utils/dateUtils'
 import { Lane } from '../../graphql/generated/graphql'
 import type { GetPracticeQuery } from '../../graphql/generated/graphql'
+import DogBadge from '../DogBadge'
 import './SetViewOnly.css'
 
 type SetData = NonNullable<GetPracticeQuery['practice']>['sets'][0]
@@ -109,29 +110,15 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
                                 {[...laneDogs]
                                   .sort((a, b) => a.index - b.index)
                                   .map((setDog) => {
-                                    if (showTrainingLevels) {
-                                      const trainingLevel = setDog.dog?.trainingLevel
-                                      const { variant } = getTrainingLevelInfo(trainingLevel)
+                                    if (setDog.dog) {
                                       return (
-                                        <Badge
+                                        <DogBadge
                                           key={setDog.id}
-                                          bg={variant}
-                                          className={`me-1 mb-1 ${clickableDogBadges ? 'cur-point' : ''} ${isDark ? '' : 'text-dark'}`}
-                                          onClick={(e) => handleDogBadgeClick(setDog.dogId || setDog.id, e)}
-                                        >
-                                          {setDog.dog?.name || `Dog ${setDog.dogId || setDog.id}`}
-                                        </Badge>
-                                      )
-                                    } else {
-                                      return (
-                                        <Badge
-                                          key={setDog.id}
-                                          bg="secondary"
-                                          className={`me-1 mb-1 ${clickableDogBadges ? 'cur-point' : ''} ${isDark ? '' : 'text-dark'}`}
-                                          onClick={(e) => handleDogBadgeClick(setDog.dogId || setDog.id, e)}
-                                        >
-                                          {setDog.dog?.name || `Dog ${setDog.dogId || setDog.id}`}
-                                        </Badge>
+                                          dog={setDog.dog}
+                                          bgByTrainingLevel={showTrainingLevels}
+                                          clickable={clickableDogBadges}
+                                          onClick={handleDogBadgeClick}
+                                        />
                                       )
                                     }
                                   })}
@@ -147,29 +134,15 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
                               {[...allDogs]
                                 .sort((a, b) => a.index - b.index)
                                 .map((setDog) => {
-                                  if (showTrainingLevels) {
-                                    const trainingLevel = setDog.dog?.trainingLevel
-                                    const { variant } = getTrainingLevelInfo(trainingLevel)
+                                  if (setDog.dog) {
                                     return (
-                                      <Badge
+                                      <DogBadge
                                         key={setDog.id}
-                                        bg={variant}
-                                        className={`me-1 mb-1 ${clickableDogBadges ? 'cur-point' : ''} ${isDark ? '' : 'text-dark'}`}
-                                        onClick={(e) => handleDogBadgeClick(setDog.dogId || setDog.id, e)}
-                                      >
-                                        {setDog.dog?.name || `Dog ${setDog.dogId || setDog.id}`}
-                                      </Badge>
-                                    )
-                                  } else {
-                                    return (
-                                      <Badge
-                                        key={setDog.id}
-                                        bg="secondary"
-                                        className={`me-1 mb-1 ${clickableDogBadges ? 'cur-point' : ''} ${isDark ? '' : 'text-dark'}`}
-                                        onClick={(e) => handleDogBadgeClick(setDog.dogId || setDog.id, e)}
-                                      >
-                                        {setDog.dog?.name || `Dog ${setDog.dogId || setDog.id}`}
-                                      </Badge>
+                                        dog={setDog.dog}
+                                        bgByTrainingLevel={showTrainingLevels}
+                                        clickable={clickableDogBadges}
+                                        onClick={handleDogBadgeClick}
+                                      />
                                     )
                                   }
                                 })}
