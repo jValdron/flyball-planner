@@ -42,8 +42,6 @@ function DogNotes({ dog }: DogNotesProps) {
     }
   })
 
-
-
   const handleCreateNote = async () => {
     if (!noteContent.trim()) return
 

@@ -8,7 +8,7 @@ import { DragProvider, useDrag } from '../../contexts/DragContext'
 import { useMutation } from '@apollo/client'
 import { UpdateSets, DeleteSets } from '../../graphql/sets'
 import { SetType, AttendanceStatus, Lane, DogStatus } from '../../graphql/generated/graphql'
-import { GripVertical, PlusLg, Trash, Journal, Arrow90degLeft } from 'react-bootstrap-icons'
+import { GripVertical, PlusLg, Trash, Journal, Arrow90degLeft, CheckSquareFill, Square } from 'react-bootstrap-icons'
 import { SaveSpinner } from '../SaveSpinner'
 import { useClub } from '../../contexts/ClubContext'
 import { usePractice } from '../../contexts/PracticeContext'
@@ -389,12 +389,26 @@ function SortableGroup({
               <Form.Check
                 type="checkbox"
                 id={`warmup-${group.index}`}
-                label="Warmup"
                 checked={group.sets.some(set => set.isWarmup)}
                 onChange={(e) => onWarmupChange?.(group.index, e.target.checked)}
                 disabled={disabled}
-                className="me-3"
+                className="d-none"
               />
+              <Button
+                as="label"
+                htmlFor={`warmup-${group.index}`}
+                variant={group.sets.some(set => set.isWarmup) ? "info" : "outline-secondary"}
+                size="sm"
+                className={`d-flex align-items-center me-3 ${disabled ? 'disabled' : ''}`}
+                disabled={disabled}
+              >
+                {group.sets.some(set => set.isWarmup) ? (
+                  <CheckSquareFill className="me-2" size={14} />
+                ) : (
+                  <Square className="me-2" size={14} />
+                )}
+                Warmup
+              </Button>
             </div>
             {!isLocked && (
               <div className="d-flex gap-2">

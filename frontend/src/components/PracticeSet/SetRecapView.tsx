@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Button, Form, Row, Col, Spinner, Modal, Alert } from 'react-bootstrap'
-import { DashCircle, PlusLg, CheckSquareFill, Square, HandThumbsUpFill, HandThumbsDownFill } from 'react-bootstrap-icons'
+import { DashCircle, PlusLg, CheckSquareFill, Square, HandThumbsUpFill, HandThumbsDownFill, Calendar3 } from 'react-bootstrap-icons'
 import { useNavigate } from 'react-router-dom'
 import { SetRating, Lane } from '../../graphql/generated/graphql'
 import { useMutation, useQuery } from '@apollo/client'
@@ -13,6 +13,7 @@ import { useTheme } from '../../contexts/ThemeContext'
 import { NoteEditor } from '../NoteEditor'
 import DogBadge from '../DogBadge'
 import type { Set, SetDog, PracticeDogNote } from '../../graphql/generated/graphql'
+import { formatFullDateTime } from '../../utils/dateUtils'
 
 interface SetRecapViewProps {
   sets: Set[]
@@ -93,6 +94,8 @@ export function SetRecapView({ sets, practiceId, clubId, onRatingChange }: SetRe
     const notesBySet: Record<string, Array<{
       id: string
       content: string
+      createdAt: string | null
+      updatedAt: string | null,
       selectedDogs: string[],
       setDogs: SetDog[]
     }>> = {}
@@ -107,6 +110,8 @@ export function SetRecapView({ sets, practiceId, clubId, onRatingChange }: SetRe
           notesBySet[setId].push({
             id: note.id,
             content: note.content,
+            createdAt: note.createdAt,
+            updatedAt: note.updatedAt,
             selectedDogs: note.dogIds,
             setDogs: (sets.find(s => s.id === setId)?.dogs || []).filter(d => note.dogIds.includes(d.dogId || ''))
           })
@@ -323,32 +328,41 @@ export function SetRecapView({ sets, practiceId, clubId, onRatingChange }: SetRe
         {dogNotes[set.id]?.map((note) => (
           <div key={note.id} className="mb-3 p-3 border rounded">
             <div className="mb-2">
-              <div className="float-end d-flex gap-2 mb-2 ms-2">
-                <NoteEditor
-                  note={note}
-                  setDogs={note.setDogs}
-                />
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <div className="flex-grow-1">
+                  <small className="text-muted d-flex align-items-center">
+                    <Calendar3 className="me-2" />
+                    {formatFullDateTime(note.createdAt)}
+                    {note.updatedAt !== note.createdAt && (
+                      <span className="ms-2">(edited)</span>
+                    )}
+                  </small>
+                </div>
+                <div className="d-flex gap-2">
+                  <NoteEditor
+                    note={note}
+                    setDogs={note.setDogs}
+                  />
+                </div>
               </div>
-              <p className="mb-0">{note.content}</p>
+              <p className="m-0 mt-2">{note.content}</p>
             </div>
-            <div className="mt-2">
-              <div className="mt-1">
-                {note.selectedDogs.map(dogId => {
-                  const setDog = set.dogs.find((d: any) => d.dogId === dogId)
+            <div className="mt-3">
+              {note.selectedDogs.map(dogId => {
+                const setDog = set.dogs.find((d: any) => d.dogId === dogId)
 
-                  if (setDog?.dog) {
-                    return (
-                      <DogBadge
-                        key={dogId}
-                        dog={setDog.dog}
-                        bgByTrainingLevel={true}
-                        clickable={true}
-                        onClick={() => handleDogBadgeClick(dogId)}
-                      />
-                    )
-                  }
-                })}
-              </div>
+                if (setDog?.dog) {
+                  return (
+                    <DogBadge
+                      key={dogId}
+                      dog={setDog.dog}
+                      bgByTrainingLevel={true}
+                      clickable={true}
+                      onClick={() => handleDogBadgeClick(dogId)}
+                    />
+                  )
+                }
+              })}
             </div>
           </div>
         ))}

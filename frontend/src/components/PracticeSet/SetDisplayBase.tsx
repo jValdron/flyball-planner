@@ -74,7 +74,7 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
             </div>
             <div className="text-end">
               {sets.some((set: Set) => set.isWarmup) && (
-                <Badge bg="info">Warmup</Badge>
+                <Badge bg="info" className="text-dark">Warmup</Badge>
               )}
             </div>
           </Card.Header>
