@@ -77,11 +77,11 @@ const dogsData = [
   { name: 'Midge', ownerName: 'Shelby Hallihan', status: 'active', crn: null, trainingLevel: TrainingLevel.Novice },
   { name: 'Sloan', ownerName: 'Shelby Hallihan', status: 'active', crn: '240755', trainingLevel: TrainingLevel.Solid },
   { name: 'Even', ownerName: 'Stefani Chouinard', status: 'active', crn: '190829', trainingLevel: TrainingLevel.Solid },
-  { name: 'Prize', ownerName: 'Stefani Chouinard', status: 'active', crn: '190529', trainingLevel: TrainingLevel.Solid },
+  { name: 'Prize', ownerName: 'Stefani Chouinard', status: 'active', crn: '180529', trainingLevel: TrainingLevel.Solid },
   { name: 'Logan', ownerName: 'Whitney Yapp', status: 'active', crn: '220285', trainingLevel: TrainingLevel.Solid },
   { name: 'Lupin', ownerName: 'Whitney Yapp', status: 'active', crn: '230712', trainingLevel: TrainingLevel.Advanced },
   { name: 'Pippin', ownerName: 'Whitney Yapp', status: 'active', crn: null, trainingLevel: TrainingLevel.Beginner },
-  { name: 'Oakley', ownerName: 'Raphaëlle Lavigne', status: 'active', crn: null, trainingLevel: TrainingLevel.Beginner },
+  { name: 'Oakley', ownerName: 'Raphaëlle Lavigne', status: 'active', crn: '250658', trainingLevel: TrainingLevel.Beginner },
   // Dogs from original list that are no longer active
   { name: 'Prim', ownerName: 'Christine NT', status: 'inactive', crn: null, trainingLevel: TrainingLevel.Beginner },
   { name: 'Lexi', ownerName: 'Janice Aubé', status: 'inactive', crn: null, trainingLevel: TrainingLevel.Beginner },
