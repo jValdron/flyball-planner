@@ -10,6 +10,7 @@ import { GetClubs } from '../graphql/clubs'
 import { useAuth } from '../contexts/AuthContext'
 import { useClub } from '../contexts/ClubContext'
 import { ThemeToggle } from './ThemeToggle'
+import { getGravatarUrl } from '../utils/gravatar'
 
 export const UserDropdown: React.FC = () => {
   const navigate = useNavigate()
@@ -41,6 +42,17 @@ export const UserDropdown: React.FC = () => {
         size="sm"
         className="d-flex align-items-center gap-2"
       >
+        <img
+          src={getGravatarUrl(user.email, 24)}
+          alt={`${user.firstName} ${user.lastName}`}
+          className="rounded-circle"
+          style={{ width: '24px', height: '24px' }}
+          onError={(e) => {
+            // Fallback to a default avatar if Gravatar fails to load
+            const target = e.target as HTMLImageElement
+            target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.firstName + ' ' + user.lastName)}&size=24&background=6c757d&color=ffffff&format=svg`
+          }}
+        />
         <span className="d-none d-md-inline">
           {user.firstName} @ {selectedClub?.name || 'No Club'}
         </span>
