@@ -15,6 +15,7 @@ graphql:
     DB_HOST: ""
     DB_PORT: 5432
     DB_SSLMODE: disable
+    TZ: UTC
     ALLOWED_ORIGINS: "http://flyball.local"
   databasePassword:
     enabled: true

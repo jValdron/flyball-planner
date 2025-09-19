@@ -57,6 +57,8 @@ spec:
               value: "{{ .Values.graphql.env.DB_PORT }}"
             - name: DB_SSLMODE
               value: {{ .Values.graphql.env.DB_SSLMODE }}
+            - name: TZ
+              value: {{ .Values.graphql.env.TZ | default "UTC" }}
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:

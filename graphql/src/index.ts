@@ -1,6 +1,5 @@
 import { createServer } from 'http'
 import { config } from 'dotenv'
-import path from 'path'
 
 import { ApolloServer } from '@apollo/server'
 import { expressMiddleware } from '@as-integrations/express5'
@@ -13,7 +12,7 @@ import cors from 'cors'
 
 import packageJson from '../package.json'
 import { AppDataSource } from './db'
-import { AuthContext, isAuth } from './middleware/auth'
+import { AuthContext } from './middleware/auth'
 import { AuthService } from './services/AuthService'
 import { pubsub } from './services/PubSubService'
 import { ClubResolver } from './resolvers/ClubResolver'
