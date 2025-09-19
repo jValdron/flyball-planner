@@ -11,6 +11,7 @@ import { CreatePractice, UpdatePractice, DeletePractice } from '../graphql/pract
 import { formatRelativeTime, isPastDay, formatFullDateTime } from '../utils/dateUtils'
 import { PracticeValidationService, type ValidationError } from '../services/practiceValidation'
 import { useClub } from '../contexts/ClubContext'
+import { useAuth } from '../contexts/AuthContext'
 import { PracticeProvider, usePractice } from '../contexts/PracticeContext'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { SaveSpinner } from '../components/SaveSpinner'
@@ -28,6 +29,7 @@ function PracticeDetailsContent() {
   const location = useLocation()
   const [searchParams] = useSearchParams()
   const { selectedClub, dogs, handlers } = useClub()
+  const { user: currentUser } = useAuth()
   const {
     practice,
     isPracticeLoading,
@@ -75,6 +77,10 @@ function PracticeDetailsContent() {
 
   const isPastPractice = practiceId ? isPastDay(practice?.scheduledAt ?? null) : false
   const isSaving = isCreating || isUpdating
+
+  const canManagePractice = () => {
+    return currentUser?.id === practice?.plannedBy?.id
+  }
 
   // Set initial lock state based on whether it's a past practice
   useEffect(() => {
@@ -287,6 +293,10 @@ function PracticeDetailsContent() {
               )
             }
 
+            const isOwner = canManagePractice()
+            const shouldDisableForOwner = shouldDisable && isOwner
+            const shouldDisableForNonOwner = !isOwner
+
             const statusButton = (
               <ToggleButton
                 id="status-toggle"
@@ -294,22 +304,39 @@ function PracticeDetailsContent() {
                 onChange={(checked) => handleStatusChange(checked ? PracticeStatus.Draft : PracticeStatus.Ready)}
                 label={practice.status === PracticeStatus.Ready ? "Mark as Draft" : "Mark as Ready"}
                 variant={practice.status === PracticeStatus.Ready ? "warning" : "success"}
-                disabled={shouldDisable}
+                disabled={shouldDisableForOwner || shouldDisableForNonOwner}
               />
             )
 
-            return shouldDisable ? (
-              <OverlayTrigger
-                placement="top"
-                overlay={
-                  <Tooltip>
-                    You must fix validation <strong>errors</strong> in the <em>Checks</em> tab before marking as ready
-                  </Tooltip>
-                }
-              >
-                <div>{statusButton}</div>
-              </OverlayTrigger>
-            ) : statusButton
+            if (shouldDisableForOwner) {
+              return (
+                <OverlayTrigger
+                  placement="top"
+                  overlay={
+                    <Tooltip>
+                      You must fix validation <strong>errors</strong> in the <em>Checks</em> tab before marking as ready
+                    </Tooltip>
+                  }
+                >
+                  <div>{statusButton}</div>
+                </OverlayTrigger>
+              )
+            } else if (shouldDisableForNonOwner) {
+              return (
+                <OverlayTrigger
+                  placement="top"
+                  overlay={
+                    <Tooltip>
+                      Only the practice planner can change the status
+                    </Tooltip>
+                  }
+                >
+                  <div>{statusButton}</div>
+                </OverlayTrigger>
+              )
+            } else {
+              return statusButton
+            }
           })()}
           {practiceId && (
             <div className="d-flex gap-2">
@@ -321,14 +348,16 @@ function PracticeDetailsContent() {
               >
                 <Share className="me-2" /> Share
               </Button>
-              <Button
-                variant="outline-danger"
-                onClick={() => setShowDeleteModal(true)}
-                disabled={isDeleting || isLocked}
-                title={isPastPractice ? "Delete Practice" : "Cancel Practice"}
-              >
-                <Trash />
-              </Button>
+              {canManagePractice() && (
+                <Button
+                  variant="outline-danger"
+                  onClick={() => setShowDeleteModal(true)}
+                  disabled={isDeleting || isLocked}
+                  title={isPastPractice ? "Delete Practice" : "Cancel Practice"}
+                >
+                  <Trash />
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -352,42 +381,48 @@ function PracticeDetailsContent() {
         </Alert>
       )}
 
-      <div className="row mb-4">
-        <div className="col-md-6">
-          <Card>
-            <Card.Header>
-              <h5 className="mb-0">Practice Information</h5>
-            </Card.Header>
-            <ListGroup variant="flush">
-              <ListGroup.Item className="d-flex justify-content-between align-items-center">
-                <strong>Status</strong>
-                <div className="d-flex gap-2">
-                  {practice?.status === 'Ready' && <Badge bg="primary" className="d-flex align-items-center"><CalendarCheck className="me-1" /> Ready</Badge>}
-                  {practice?.status === 'Draft' && <Badge bg="warning" className="text-dark d-flex align-items-center"><Pencil className="me-1" /> Draft</Badge>}
-                  {isPastPractice && <Badge bg="secondary" className="text-dark d-flex align-items-center"><CalendarX className="me-1" /> Past</Badge>}
-                </div>
-              </ListGroup.Item>
-            </ListGroup>
-          </Card>
+      {practiceId && (
+        <div className="row mb-4">
+          <div className="col-md-6">
+            <Card>
+              <Card.Header>
+                <h5 className="mb-0">Practice Information</h5>
+              </Card.Header>
+              <ListGroup variant="flush">
+                <ListGroup.Item className="d-flex justify-content-between align-items-center">
+                  <strong>Status</strong>
+                  <div className="d-flex gap-2">
+                    {practice?.status === 'Ready' && <Badge bg="primary" className="d-flex align-items-center"><CalendarCheck className="me-1" /> Ready</Badge>}
+                    {practice?.status === 'Draft' && <Badge bg="warning" className="text-dark d-flex align-items-center"><Pencil className="me-1" /> Draft</Badge>}
+                    {isPastPractice && <Badge bg="secondary" className="text-dark d-flex align-items-center"><CalendarX className="me-1" /> Past</Badge>}
+                  </div>
+                </ListGroup.Item>
+                <ListGroup.Item className="d-flex justify-content-between align-items-center">
+                  <strong>Planned By</strong>
+                  <span className="text-muted">{practice?.plannedBy.firstName} {practice?.plannedBy.lastName}</span>
+                </ListGroup.Item>
+              </ListGroup>
+            </Card>
+          </div>
+          <div className="col-md-6">
+            <Card>
+              <Card.Header>
+                <h5 className="mb-0">Timestamps</h5>
+              </Card.Header>
+              <ListGroup variant="flush">
+                <ListGroup.Item className="d-flex justify-content-between align-items-center">
+                  <strong>Created</strong>
+                  <span className="text-muted">{practice?.createdAt ? formatFullDateTime(practice.createdAt) : 'N/A'}</span>
+                </ListGroup.Item>
+                <ListGroup.Item className="d-flex justify-content-between align-items-center">
+                  <strong>Last Updated</strong>
+                  <span className="text-muted">{practice?.updatedAt ? formatFullDateTime(practice.updatedAt) : 'N/A'}</span>
+                </ListGroup.Item>
+              </ListGroup>
+            </Card>
+          </div>
         </div>
-        <div className="col-md-6">
-          <Card>
-            <Card.Header>
-              <h5 className="mb-0">Timestamps</h5>
-            </Card.Header>
-            <ListGroup variant="flush">
-              <ListGroup.Item className="d-flex justify-content-between align-items-center">
-                <strong>Created</strong>
-                <span className="text-muted">{practice?.createdAt ? formatFullDateTime(practice.createdAt) : 'N/A'}</span>
-              </ListGroup.Item>
-              <ListGroup.Item className="d-flex justify-content-between align-items-center">
-                <strong>Last Updated</strong>
-                <span className="text-muted">{practice?.updatedAt ? formatFullDateTime(practice.updatedAt) : 'N/A'}</span>
-              </ListGroup.Item>
-            </ListGroup>
-          </Card>
-        </div>
-      </div>
+      )}
 
       <Tabs activeKey={getCurrentTab()} onSelect={(k) => handleTabChange(k || 'date')}>
         <Tab eventKey="date" title={
@@ -534,7 +569,7 @@ function PracticeDetailsContent() {
               <ChevronLeft className="me-1" /> Sets
             </Button>
             <div className="d-flex gap-2">
-              {!isPastPractice && (
+              {!isPastPractice && canManagePractice() && (
                 <Button
                   variant={practice?.status === PracticeStatus.Ready ? "outline-warning" : "success"}
                   className="d-flex align-items-center"

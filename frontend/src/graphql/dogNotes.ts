@@ -8,6 +8,13 @@ export const GET_DOG_NOTES = graphql(`
       createdAt
       updatedAt
       dogId
+      isPrivate
+      createdBy {
+        id
+        firstName
+        lastName
+        username
+      }
       setDogNotes {
         id
         setDog {
@@ -53,6 +60,13 @@ export const GET_DOG_NOTES_BY_PRACTICE = graphql(`
       content
       createdAt
       updatedAt
+      isPrivate
+      createdBy {
+        id
+        firstName
+        lastName
+        username
+      }
       setId
       dogIds
     }
@@ -66,17 +80,19 @@ export const CREATE_DOG_NOTE = graphql(`
       content
       createdAt
       updatedAt
+      isPrivate
     }
   }
 `)
 
 export const UPDATE_DOG_NOTE = graphql(`
-  mutation UpdateDogNote($id: ID!, $content: String!) {
-    updateDogNote(id: $id, content: $content) {
+  mutation UpdateDogNote($id: ID!, $content: String, $isPrivate: Boolean) {
+    updateDogNote(id: $id, content: $content, isPrivate: $isPrivate) {
       id
       content
       createdAt
       updatedAt
+      isPrivate
     }
   }
 `)

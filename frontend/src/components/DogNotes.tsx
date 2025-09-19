@@ -10,6 +10,7 @@ import { Lane, TrainingLevel } from '../graphql/generated/graphql'
 import { formatFullDateTime } from '../utils/dateUtils'
 import { getTrainingLevelInfo } from '../utils/trainingLevels'
 import { DOG_NOTE_CHANGED, PRACTICE_DOG_NOTE_CHANGED } from '../graphql/dogNotes'
+import { useAuth } from '../contexts/AuthContext'
 import { SetViewOnly } from './PracticeSet/SetViewOnly'
 import DogBadge from './DogBadge'
 import DeleteConfirmationModal from './DeleteConfirmationModal'
@@ -51,6 +52,7 @@ function DogNotes({
   loading = false,
   error
 }: DogNotesProps) {
+  const { user: currentUser } = useAuth()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -61,6 +63,10 @@ function DogNotes({
 
   const isPracticeMode = setDogs.length > 0
   const isDogMode = !!dog
+
+  const canManageNote = (note: DogNote) => {
+    return currentUser?.id === note.createdBy?.id
+  }
 
   // Subscribe to note changes based on mode
   useSubscription(DOG_NOTE_CHANGED, {
@@ -247,29 +253,38 @@ function DogNotes({
                     <Calendar3 className="me-2 text-muted" size={14} />
                     <small className="text-muted">
                       {formatFullDateTime(note.createdAt)}
+                      {note.createdBy && (
+                        <span className="ms-2">
+                          by {note.createdBy.firstName} {note.createdBy.lastName}
+                        </span>
+                      )}
                       {note.updatedAt !== note.createdAt && (
                         <span className="ms-2">(edited)</span>
                       )}
                     </small>
                   </div>
                   <div className="d-flex gap-2">
-                    <Button
-                      variant="outline-secondary"
-                      size="sm"
-                      className="d-flex align-items-center"
-                      onClick={() => handleEditClick({ id: note.id, content: note.content })}
-                    >
-                      <Pencil className="me-1" size={12} />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline-danger"
-                      size="sm"
-                      className="d-flex align-items-center"
-                      onClick={() => handleDeleteClick(note.id)}
-                    >
-                      <Trash size={12} />
-                    </Button>
+                    {canManageNote(note) && (
+                      <>
+                        <Button
+                          variant="outline-secondary"
+                          size="sm"
+                          className="d-flex align-items-center"
+                          onClick={() => handleEditClick({ id: note.id, content: note.content })}
+                        >
+                          <Pencil className="me-1" size={12} />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          className="d-flex align-items-center"
+                          onClick={() => handleDeleteClick(note.id)}
+                        >
+                          <Trash size={12} />
+                        </Button>
+                      </>
+                    )}
                     {note.setDogNotes && note.setDogNotes.length > 0 && (
                       <Link
                         to={`/practices/${note.setDogNotes[0].setDog.set.practice.id}/sets?focusSet=${note.setDogNotes[0].setDog.set.id}`}

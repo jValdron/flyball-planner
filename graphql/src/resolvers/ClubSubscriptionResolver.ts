@@ -27,6 +27,7 @@ export class ClubSubscriptionResolver {
   @Subscription(() => ClubEvent, {
     topics: [SubscriptionEvents.CLUB_CREATED, SubscriptionEvents.CLUB_UPDATED, SubscriptionEvents.CLUB_DELETED],
     filter: ({ payload, context }) => {
+      if (!payload?.club?.id) return false;
       return createClubFilter(context.user, payload.club.id);
     }
   })
@@ -38,6 +39,7 @@ export class ClubSubscriptionResolver {
   @Subscription(() => DogEvent, {
     topics: [SubscriptionEvents.DOG_CREATED, SubscriptionEvents.DOG_UPDATED, SubscriptionEvents.DOG_DELETED],
     filter: ({ payload, context, args }) => {
+      if (!payload?.dog?.clubId) return false;
       return createEntityClubFilter(context.user, payload.dog.clubId, args.clubId);
     }
   })
@@ -52,6 +54,7 @@ export class ClubSubscriptionResolver {
   @Subscription(() => HandlerEvent, {
     topics: [SubscriptionEvents.HANDLER_CREATED, SubscriptionEvents.HANDLER_UPDATED, SubscriptionEvents.HANDLER_DELETED],
     filter: ({ payload, context, args }) => {
+      if (!payload?.handler?.clubId) return false;
       return createEntityClubFilter(context.user, payload.handler.clubId, args.clubId);
     }
   })
@@ -66,6 +69,7 @@ export class ClubSubscriptionResolver {
   @Subscription(() => ClubEvent, {
     topics: [SubscriptionEvents.CLUB_CREATED, SubscriptionEvents.CLUB_UPDATED, SubscriptionEvents.CLUB_DELETED],
     filter: ({ payload, context, args }) => {
+      if (!payload?.club?.id) return false;
       return createEntityClubFilter(context.user, payload.club.id, args.clubId);
     }
   })
@@ -80,6 +84,7 @@ export class ClubSubscriptionResolver {
   @Subscription(() => LocationEvent, {
     topics: [SubscriptionEvents.LOCATION_CREATED, SubscriptionEvents.LOCATION_UPDATED, SubscriptionEvents.LOCATION_DELETED],
     filter: ({ payload, context, args }) => {
+      if (!payload?.location?.clubId) return false;
       return createEntityClubFilter(context.user, payload.location.clubId, args.clubId);
     }
   })

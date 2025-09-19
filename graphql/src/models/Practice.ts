@@ -48,6 +48,10 @@ export class Practice {
   shareCode?: string;
 
   @Field()
+  @Column({ default: false })
+  isPrivate: boolean;
+
+  @Field()
   @CreateDateColumn()
   createdAt: Date;
 

@@ -10,6 +10,12 @@ export const GetPracticesByClub = graphql(`
         attendingCount
         notAttendingCount
         unconfirmedCount
+        plannedBy {
+          id
+          firstName
+          lastName
+          username
+        }
       }
     }
   `);
@@ -22,8 +28,15 @@ export const GetPractice = graphql(`
       status
       clubId
       shareCode
+      isPrivate
       createdAt
       updatedAt
+      plannedBy {
+        id
+        firstName
+        lastName
+        username
+      }
       attendances {
         id
         attending
@@ -120,23 +133,25 @@ export const GetPublicPractice = graphql(`
 `);
 
 export const CreatePractice = graphql(`
-  mutation CreatePractice($clubId: String!, $scheduledAt: DateTimeISO!, $status: PracticeStatus!) {
-    createPractice(clubId: $clubId, scheduledAt: $scheduledAt, status: $status) {
+  mutation CreatePractice($clubId: String!, $scheduledAt: DateTimeISO!, $status: PracticeStatus!, $isPrivate: Boolean) {
+    createPractice(clubId: $clubId, scheduledAt: $scheduledAt, status: $status, isPrivate: $isPrivate) {
       id
       scheduledAt
       status
       clubId
+      isPrivate
     }
   }
 `);
 
 export const UpdatePractice = graphql(`
-  mutation UpdatePractice($id: String!, $scheduledAt: DateTimeISO, $status: PracticeStatus) {
-    updatePractice(id: $id, scheduledAt: $scheduledAt, status: $status) {
+  mutation UpdatePractice($id: String!, $scheduledAt: DateTimeISO, $status: PracticeStatus, $isPrivate: Boolean) {
+    updatePractice(id: $id, scheduledAt: $scheduledAt, status: $status, isPrivate: $isPrivate) {
       id
       scheduledAt
       status
       clubId
+      isPrivate
     }
   }
 `);

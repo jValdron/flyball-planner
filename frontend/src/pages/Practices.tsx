@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 
 import { Container, Button, Card, Spinner, Alert, Badge, ListGroup, Breadcrumb } from 'react-bootstrap'
 import { Link, useNavigate } from 'react-router-dom'
-import { CalendarCheck, CalendarX, CheckLg, Pencil, PlusLg, Trash, FileText, XLg, QuestionLg } from 'react-bootstrap-icons'
+import { CalendarCheck, CalendarX, CheckLg, Pencil, PlusLg, Trash, FileText, XLg, QuestionLg, Person } from 'react-bootstrap-icons'
 import { compareDesc, isAfter, isBefore, compareAsc } from 'date-fns'
 import { useQuery, useMutation } from '@apollo/client'
 
@@ -14,12 +14,14 @@ import { useClub } from '../contexts/ClubContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { usePracticeSummaryChangedSubscription } from '../hooks/useSubscription'
+import { useAuth } from '../contexts/AuthContext'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import { ToggleButton } from '../components/ToggleButton'
 
 function Practices() {
   const { selectedClub } = useClub()
   const { isDark } = useTheme()
+  const { user: currentUser } = useAuth()
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [practiceToDelete, setPracticeToDelete] = useState<string | null>(null)
   const [showDraftsOnly, setShowDraftsOnly] = useState(false)
@@ -101,6 +103,10 @@ function Practices() {
       setShowDeleteModal(false)
       setPracticeToDelete(null)
     }
+  }
+
+  const canDeletePractice = (practice: PracticeSummary) => {
+    return currentUser?.id === practice.plannedBy?.id
   }
 
   const now = new Date()
@@ -229,6 +235,7 @@ function Practices() {
                         </Card.Text>
                       </Card.Body>
                       <ListGroup className="list-group-flush">
+                        <ListGroup.Item><Person className="me-1" /> {practice.plannedBy.firstName} {practice.plannedBy.lastName}</ListGroup.Item>
                         <ListGroup.Item><CheckLg className="me-1" /> {practice.attendingCount} attending</ListGroup.Item>
                         <ListGroup.Item><XLg className="me-1" /> {practice.notAttendingCount} not attending</ListGroup.Item>
                         <ListGroup.Item><QuestionLg className="me-1" /> {practice.unconfirmedCount} unconfirmed</ListGroup.Item>
@@ -257,16 +264,18 @@ function Practices() {
                             </>
                           )}
                         </Button>
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteClick(practice.id);
-                          }}
-                        >
-                          <Trash />
-                        </Button>
+                        {canDeletePractice(practice) && (
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteClick(practice.id);
+                            }}
+                          >
+                            <Trash />
+                          </Button>
+                        )}
                       </Card.Body>
                     </Card>
                   </div>

@@ -136,8 +136,10 @@ export async function seedDatabase(dataSource: DataSource) {
   });
   await dataSource.getRepository(Club).save(club);
 
-  // Create user 'jvaldron'
+  // Create users
   const userRepository = dataSource.getRepository(User);
+
+  // Create user 'jvaldron'
   const existingUser = await userRepository.findOne({ where: { username: 'jvaldron' } });
   if (!existingUser) {
     const hashedPassword = await AuthService.hashPassword('password');
@@ -150,6 +152,21 @@ export async function seedDatabase(dataSource: DataSource) {
       clubs: [club],
     });
     await userRepository.save(user);
+  }
+
+  // Create test user
+  const existingTestUser = await userRepository.findOne({ where: { username: 'test' } });
+  if (!existingTestUser) {
+    const hashedTestPassword = await AuthService.hashPassword('password');
+    const testUser = userRepository.create({
+      username: 'test',
+      email: 'test@example.com',
+      firstName: 'Test',
+      lastName: 'User',
+      password: hashedTestPassword,
+      clubs: [club],
+    });
+    await userRepository.save(testUser);
   }
 
   // Create locations

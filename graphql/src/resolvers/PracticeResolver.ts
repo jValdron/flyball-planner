@@ -1,6 +1,6 @@
 import { randomBytes } from 'crypto'
 
-import { Resolver, Query, Mutation, Arg, UseMiddleware, Ctx } from 'type-graphql'
+import { Resolver, Query, Mutation, Arg, UseMiddleware, Ctx, InputType, Field, ID } from 'type-graphql'
 
 import { Practice, PracticeStatus } from '../models/Practice'
 import { AppDataSource } from '../db'
@@ -19,11 +19,16 @@ export class PracticeResolver {
 
   @Query(() => [PracticeSummary])
   @UseMiddleware(isAuth, hasClubAccess)
-  async practiceSummariesByClub(@Arg('clubId') clubId: string): Promise<PracticeSummary[]> {
-    const practices = await this.practiceRepository.find({
-      where: { clubId },
-      relations: ['attendances', 'sets']
-    });
+  async practiceSummariesByClub(@Arg('clubId') clubId: string, @Ctx() { user }: AuthContext): Promise<PracticeSummary[]> {
+    const practices = await this.practiceRepository
+      .createQueryBuilder('practice')
+      .leftJoinAndSelect('practice.plannedBy', 'plannedBy')
+      .leftJoinAndSelect('practice.attendances', 'attendances')
+      .leftJoinAndSelect('practice.sets', 'sets')
+      .where('practice.clubId = :clubId', { clubId })
+      .andWhere('(practice.isPrivate = false OR practice.plannedById = :userId)', { userId: user?.id })
+      .getMany();
+
     return Promise.all(practices.map(practice => PracticeSummaryService.createPracticeSummary(practice)));
   }
 
@@ -33,20 +38,19 @@ export class PracticeResolver {
     const clubFilter = createClubFilter(user);
     if (!clubFilter) return null;
 
-    const practice = await this.practiceRepository.findOne({
-      where: {
-        id,
-        ...clubFilter
-      },
-      relations: [
-        'attendances',
-        'sets',
-        'sets.dogs',
-        'sets.dogs.dog',
-        'sets.dogs.dog.owner',
-        'sets.location'
-      ]
-    });
+    const practice = await this.practiceRepository
+      .createQueryBuilder('practice')
+      .leftJoinAndSelect('practice.plannedBy', 'plannedBy')
+      .leftJoinAndSelect('practice.attendances', 'attendances')
+      .leftJoinAndSelect('practice.sets', 'sets')
+      .leftJoinAndSelect('sets.dogs', 'setDogs')
+      .leftJoinAndSelect('setDogs.dog', 'dog')
+      .leftJoinAndSelect('dog.owner', 'owner')
+      .leftJoinAndSelect('sets.location', 'location')
+      .where('practice.id = :id', { id })
+      .andWhere('practice.clubId IN (:...clubIds)', { clubIds: user?.clubIds || [] })
+      .andWhere('(practice.isPrivate = false OR practice.plannedById = :userId)', { userId: user?.id })
+      .getOne();
 
     // Generate shareCode if it doesn't exist (for existing practices)
     if (practice && !practice.shareCode) {
@@ -91,6 +95,7 @@ export class PracticeResolver {
     @Arg('clubId') clubId: string,
     @Arg('scheduledAt') scheduledAt: Date,
     @Arg('status', () => PracticeStatus) status: PracticeStatus,
+    @Arg('isPrivate', { defaultValue: false }) isPrivate: boolean,
     @Ctx() { user }: AuthContext
   ): Promise<Practice> {
     if (!user) {
@@ -102,14 +107,14 @@ export class PracticeResolver {
       scheduledAt,
       status,
       plannedById: user.id,
+      isPrivate,
       shareCode: this.generateShareCode()
     });
     const savedPractice = await this.practiceRepository.save(practice);
 
-    // Load relations for the summary
     const practiceWithRelations = await this.practiceRepository.findOne({
       where: { id: savedPractice.id },
-      relations: ['attendances', 'sets']
+      relations: ['attendances', 'sets', 'plannedBy']
     });
 
     if (practiceWithRelations) {
@@ -126,7 +131,8 @@ export class PracticeResolver {
     @Arg('id') id: string,
     @Ctx() { user }: AuthContext,
     @Arg('scheduledAt', { nullable: true }) scheduledAt?: Date,
-    @Arg('status', () => PracticeStatus, { nullable: true }) status?: PracticeStatus
+    @Arg('status', () => PracticeStatus, { nullable: true }) status?: PracticeStatus,
+    @Arg('isPrivate', { nullable: true }) isPrivate?: boolean
   ): Promise<Practice | null> {
     const clubFilter = createClubFilter(user);
     if (!clubFilter) return null;
@@ -139,6 +145,10 @@ export class PracticeResolver {
     });
     if (!practice) return null;
 
+    if (practice.plannedById !== user?.id) {
+      throw new Error('You can only update practices you created');
+    }
+
     const newScheduledAt = scheduledAt ?? practice.scheduledAt;
     const newStatus = status;
 
@@ -148,7 +158,8 @@ export class PracticeResolver {
 
     Object.assign(practice, {
       scheduledAt: newScheduledAt,
-      status: status ?? practice.status
+      status: status ?? practice.status,
+      isPrivate: isPrivate ?? practice.isPrivate
     });
 
     const updatedPractice = await this.practiceRepository.save(practice);
@@ -174,10 +185,14 @@ export class PracticeResolver {
         id,
         ...clubFilter
       },
-      relations: ['attendances', 'sets']
+      relations: ['attendances', 'sets', 'plannedBy']
     });
 
     if (!practice) return false;
+
+    if (practice.plannedById !== user?.id) {
+      throw new Error('You can only delete practices you created');
+    }
 
     const summary = await PracticeSummaryService.createPracticeSummary(practice);
     const result = await this.practiceRepository.delete(id);

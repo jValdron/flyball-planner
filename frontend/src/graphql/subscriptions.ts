@@ -176,6 +176,12 @@ export const PRACTICE_SUMMARY_CHANGED_SUBSCRIPTION = graphql(`
         attendingCount
         notAttendingCount
         unconfirmedCount
+        plannedBy {
+          id
+          firstName
+          lastName
+          username
+        }
       }
       eventType
     }

@@ -27,6 +27,7 @@ export class PracticeSubscriptionResolver {
   @Subscription(() => PracticeSummaryEvent, {
     topics: [SubscriptionEvents.PRACTICE_SUMMARY_CREATED, SubscriptionEvents.PRACTICE_SUMMARY_UPDATED, SubscriptionEvents.PRACTICE_SUMMARY_DELETED, SubscriptionEvents.PRACTICE_ATTENDANCE_UPDATED, SubscriptionEvents.PRACTICE_SET_UPDATED, SubscriptionEvents.PRACTICE_SET_DELETED],
     filter: ({ payload, context, args }) => {
+      if (!payload?.practice?.clubId) return false;
       return createPracticeClubFilter(context.user, payload.practice.clubId, args.clubId);
     }
   })
@@ -44,8 +45,8 @@ export class PracticeSubscriptionResolver {
   @Subscription(() => PracticeEvent, {
     topics: [SubscriptionEvents.PRACTICE_UPDATED],
     filter: ({ payload, context, args }) => {
-      return payload.practice &&
-             payload.practice.id === args.practiceId &&
+      if (!payload?.practice?.id || !payload?.practice?.clubId) return false;
+      return payload.practice.id === args.practiceId &&
              createPracticeFilter(context.user, args.practiceId, payload.practice.clubId);
     }
   })
@@ -60,7 +61,8 @@ export class PracticeSubscriptionResolver {
   @Subscription(() => PracticeAttendanceEvent, {
     topics: [SubscriptionEvents.PRACTICE_ATTENDANCE_UPDATED],
     filter: ({ payload, context, args }) => {
-      return payload.attendance && payload.attendance.practiceId === args.practiceId;
+      if (!payload?.attendance?.practiceId) return false;
+      return payload.attendance.practiceId === args.practiceId;
     }
   })
   @UseMiddleware(isAuth)
@@ -74,7 +76,8 @@ export class PracticeSubscriptionResolver {
   @Subscription(() => PracticeSetEvent, {
     topics: [SubscriptionEvents.PRACTICE_SET_UPDATED, SubscriptionEvents.PRACTICE_SET_DELETED],
     filter: ({ payload, context, args }) => {
-      return payload.set && payload.set.practiceId === args.practiceId;
+      if (!payload?.set?.practiceId) return false;
+      return payload.set.practiceId === args.practiceId;
     }
   })
   @UseMiddleware(isAuth)
@@ -88,6 +91,7 @@ export class PracticeSubscriptionResolver {
   @Subscription(() => PracticeDogNoteEvent, {
     topics: [SubscriptionEvents.PRACTICE_DOG_NOTE_CREATED, SubscriptionEvents.PRACTICE_DOG_NOTE_UPDATED, SubscriptionEvents.PRACTICE_DOG_NOTE_DELETED],
     filter: ({ payload, context, args }) => {
+      if (!payload?.practiceId) return false;
       return payload.practiceId === args.practiceId;
     }
   })

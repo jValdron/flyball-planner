@@ -18,6 +18,9 @@ export class CreateDogNoteInput {
 
   @Field(() => ID)
   clubId: string;
+
+  @Field({ defaultValue: false })
+  isPrivate: boolean;
 }
 
 @InputType()
@@ -33,6 +36,9 @@ export class CreateSetDogNoteInput {
 
   @Field(() => ID)
   clubId: string;
+
+  @Field({ defaultValue: false })
+  isPrivate: boolean;
 }
 
 @Resolver(DogNote)
@@ -49,6 +55,7 @@ export class DogNoteResolver {
     const dogNotes = await this.dogNoteRepository
       .createQueryBuilder('dogNote')
       .leftJoinAndSelect('dogNote.dog', 'dog')
+      .leftJoinAndSelect('dogNote.createdBy', 'createdBy')
       .leftJoinAndSelect('dogNote.setDogNotes', 'setDogNote')
       .leftJoinAndSelect('setDogNote.setDog', 'setDog')
       .leftJoinAndSelect('setDog.set', 'set')
@@ -61,6 +68,7 @@ export class DogNoteResolver {
       .where('(dogNote.dogId = :dogId OR setDog.dogId = :dogId)', { dogId })
       .andWhere('(setDog.dogId = :dogId OR setDog.dogId IS NULL)', { dogId })
       .andWhere('(dog.clubId IN (:...clubIds) OR setDogEntity.clubId IN (:...clubIds))', { clubIds: user?.clubIds || [] })
+      .andWhere('(dogNote.isPrivate = false OR dogNote.createdById = :userId)', { userId: user?.id })
       .orderBy('dogNote.createdAt', 'DESC')
       .getMany();
 
@@ -86,6 +94,7 @@ export class DogNoteResolver {
     const setDogNotes = await this.setDogNoteRepository
       .createQueryBuilder('setDogNote')
       .leftJoinAndSelect('setDogNote.dogNote', 'dogNote')
+      .leftJoinAndSelect('dogNote.createdBy', 'createdBy')
       .leftJoinAndSelect('setDogNote.setDog', 'setDog')
       .leftJoinAndSelect('setDog.dog', 'dog')
       .leftJoinAndSelect('setDog.set', 'set')
@@ -93,6 +102,7 @@ export class DogNoteResolver {
       .leftJoin('dog.club', 'club')
       .where('practice.id = :practiceId', { practiceId })
       .andWhere('club.id IN (:...clubIds)', { clubIds: user?.clubIds || [] })
+      .andWhere('(dogNote.isPrivate = false OR dogNote.createdById = :userId)', { userId: user?.id })
       .orderBy(`dogNote.${sortField}`, sortDirection as 'ASC' | 'DESC')
       .getMany();
 
@@ -107,6 +117,8 @@ export class DogNoteResolver {
           content: setDogNote.dogNote.content,
           createdAt: setDogNote.dogNote.createdAt,
           updatedAt: setDogNote.dogNote.updatedAt,
+          isPrivate: setDogNote.dogNote.isPrivate,
+          createdBy: setDogNote.dogNote.createdBy,
           setId: setDogNote.setDog.setId,
           dogIds: []
         });
@@ -122,18 +134,25 @@ export class DogNoteResolver {
   @Mutation(() => DogNote)
   @UseMiddleware(isAuth, hasClubAccess)
   async createDogNote(
-    @Arg('input') input: CreateDogNoteInput
+    @Arg('input') input: CreateDogNoteInput,
+    @Ctx() { user }: AuthContext
   ): Promise<DogNote> {
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
     const dogNote = this.dogNoteRepository.create({
       content: input.content,
-      dogId: input.dogId
+      dogId: input.dogId,
+      createdById: user.id,
+      isPrivate: input.isPrivate
     });
 
     const savedDogNote = await this.dogNoteRepository.save(dogNote);
 
     const dogNoteWithRelations = await this.dogNoteRepository.findOne({
       where: { id: savedDogNote.id },
-      relations: ['dog', 'dog.club', 'setDogNotes', 'setDogNotes.setDog', 'setDogNotes.setDog.set']
+      relations: ['dog', 'dog.club', 'createdBy', 'setDogNotes', 'setDogNotes.setDog', 'setDogNotes.setDog.set']
     });
 
     if (dogNoteWithRelations) {
@@ -151,11 +170,18 @@ export class DogNoteResolver {
   @Mutation(() => DogNote)
   @UseMiddleware(isAuth, hasClubAccess)
   async createSetDogNote(
-    @Arg('input') input: CreateSetDogNoteInput
+    @Arg('input') input: CreateSetDogNoteInput,
+    @Ctx() { user }: AuthContext
   ): Promise<DogNote> {
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
     const dogNote = this.dogNoteRepository.create({
       content: input.content,
-      dogId: input.dogIds[0]
+      dogId: input.dogIds[0],
+      createdById: user.id,
+      isPrivate: input.isPrivate || false
     });
 
     const savedDogNote = await this.dogNoteRepository.save(dogNote);
@@ -188,7 +214,7 @@ export class DogNoteResolver {
 
     const dogNoteWithRelations = await this.dogNoteRepository.findOne({
       where: { id: savedDogNote.id },
-      relations: ['dog', 'dog.club', 'setDogNotes', 'setDogNotes.setDog', 'setDogNotes.setDog.set']
+      relations: ['dog', 'dog.club', 'createdBy', 'setDogNotes', 'setDogNotes.setDog', 'setDogNotes.setDog.set']
     });
 
     if (dogNoteWithRelations) {
@@ -207,8 +233,9 @@ export class DogNoteResolver {
   @UseMiddleware(isAuth)
   async updateDogNote(
     @Arg('id', () => ID) id: string,
-    @Arg('content') content: string,
-    @Ctx() { user }: AuthContext
+    @Ctx() { user }: AuthContext,
+    @Arg('content', { nullable: true }) content?: string,
+    @Arg('isPrivate', { nullable: true }) isPrivate?: boolean
   ): Promise<DogNote | null> {
     const clubFilter = createClubFilter(user);
     if (!clubFilter) return null;
@@ -222,12 +249,21 @@ export class DogNoteResolver {
 
     if (!dogNote) return null;
 
-    dogNote.content = content;
+    if (dogNote.createdById !== user?.id) {
+      throw new Error('You can only update notes you created');
+    }
+
+    if (content !== undefined) {
+      dogNote.content = content;
+    }
+    if (isPrivate !== undefined) {
+      dogNote.isPrivate = isPrivate;
+    }
     const savedDogNote = await this.dogNoteRepository.save(dogNote);
 
     const dogNoteWithRelations = await this.dogNoteRepository.findOne({
       where: { id: savedDogNote.id },
-      relations: ['dog', 'dog.club', 'setDogNotes', 'setDogNotes.setDog', 'setDogNotes.setDog.set']
+      relations: ['dog', 'dog.club', 'createdBy', 'setDogNotes', 'setDogNotes.setDog', 'setDogNotes.setDog.set']
     });
 
     if (dogNoteWithRelations) {
@@ -253,10 +289,14 @@ export class DogNoteResolver {
         id,
         dog: clubFilter
       },
-      relations: ['dog', 'dog.club', 'setDogNotes', 'setDogNotes.setDog', 'setDogNotes.setDog.set']
+      relations: ['dog', 'dog.club', 'createdBy', 'setDogNotes', 'setDogNotes.setDog', 'setDogNotes.setDog.set']
     });
 
     if (!dogNote) return false;
+
+    if (dogNote.createdById !== user?.id) {
+      throw new Error('You can only delete notes you created');
+    }
 
     const result = await this.dogNoteRepository.delete(id);
 

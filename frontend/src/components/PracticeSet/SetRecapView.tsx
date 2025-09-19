@@ -4,7 +4,7 @@ import { Button, Spinner } from 'react-bootstrap'
 import { DashCircle, HandThumbsUpFill, HandThumbsDownFill } from 'react-bootstrap-icons'
 import { useMutation, useQuery } from '@apollo/client'
 
-import type { Set, DogNote, PracticeDogNote } from '../../graphql/generated/graphql'
+import type { Set, DogNote } from '../../graphql/generated/graphql'
 import { SetRating } from '../../graphql/generated/graphql'
 import { UPDATE_SET_RATING } from '../../graphql/sets'
 import { GET_DOG_NOTES_BY_PRACTICE, CREATE_SET_DOG_NOTE, UPDATE_DOG_NOTE, DELETE_DOG_NOTE } from '../../graphql/dogNotes'
@@ -38,7 +38,7 @@ export function SetRecapView({ sets, practiceId, clubId, onRatingChange }: SetRe
     })
 
     if (notesData?.dogNotesByPractice) {
-      notesData.dogNotesByPractice.forEach((note: PracticeDogNote) => {
+      notesData.dogNotesByPractice.forEach((note) => {
         const setId = note.setId
         if (notesBySet[setId]) {
           const set = sets.find(s => s.id === setId)
@@ -47,9 +47,17 @@ export function SetRecapView({ sets, practiceId, clubId, onRatingChange }: SetRe
             content: note.content,
             createdAt: note.createdAt,
             updatedAt: note.updatedAt,
+            isPrivate: note.isPrivate,
+            createdBy: {
+              ...note.createdBy,
+              clubs: [],
+              email: '',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            },
+            createdById: note.createdBy.id,
             dog: {} as any,
             dogId: '',
-            clubId: clubId,
             setDogs: (set?.dogs || []).filter(d => note.dogIds.includes(d.dogId || '')),
             setDogNotes: []
           } as DogNote)
@@ -216,7 +224,7 @@ export function SetRecapView({ sets, practiceId, clubId, onRatingChange }: SetRe
       {/* Notes section */}
       <div className="mt-3">
         <DogNotes
-          notes={notesBySet[set.id] || [] as DogNote[]}
+          notes={notesBySet[set.id] || []}
           setDogs={set.dogs}
           isDoubleLane={set.location?.isDoubleLane || false}
           practiceId={practiceId}

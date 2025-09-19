@@ -41,12 +41,14 @@ input CreateDogNoteInput {
   clubId: ID!
   content: String!
   dogId: ID!
+  isPrivate: Boolean! = false
 }
 
 input CreateSetDogNoteInput {
   clubId: ID!
   content: String!
   dogIds: [ID!]!
+  isPrivate: Boolean! = false
   setDogId: ID!
 }
 
@@ -78,9 +80,12 @@ type DogEvent {
 type DogNote {
   content: String!
   createdAt: DateTimeISO!
+  createdBy: User!
+  createdById: ID!
   dog: Dog!
   dogId: ID!
   id: ID!
+  isPrivate: Boolean!
   setDogNotes: [SetDogNote!]
   setDogs: [SetDog!]!
   updatedAt: DateTimeISO!
@@ -157,7 +162,7 @@ type Mutation {
   createDogNote(input: CreateDogNoteInput!): DogNote!
   createHandler(clubId: ID!, givenName: String!, surname: String!): Handler!
   createLocation(clubId: ID!, isDefault: Boolean, isDoubleLane: Boolean, name: String!): Location!
-  createPractice(clubId: String!, scheduledAt: DateTimeISO!, status: PracticeStatus!): Practice!
+  createPractice(clubId: String!, isPrivate: Boolean! = false, scheduledAt: DateTimeISO!, status: PracticeStatus!): Practice!
   createSetDogNote(input: CreateSetDogNoteInput!): DogNote!
   deleteClub(id: String!): Boolean!
   deleteDog(id: String!): Boolean!
@@ -170,10 +175,10 @@ type Mutation {
   updateAttendances(practiceId: String!, updates: [AttendanceUpdate!]!): [PracticeAttendance!]!
   updateClub(defaultPracticeTime: String, id: String!, idealSetsPerDog: Float, nafaClubNumber: String, name: String): Club
   updateDog(crn: String, id: String!, name: String, ownerId: String, status: DogStatus, trainingLevel: TrainingLevel): Dog
-  updateDogNote(content: String!, id: ID!): DogNote
+  updateDogNote(content: String, id: ID!, isPrivate: Boolean): DogNote
   updateHandler(givenName: String, id: String!, surname: String): Handler
   updateLocation(id: String!, isDefault: Boolean, isDoubleLane: Boolean, name: String): Location
-  updatePractice(id: String!, scheduledAt: DateTimeISO, status: PracticeStatus): Practice
+  updatePractice(id: String!, isPrivate: Boolean, scheduledAt: DateTimeISO, status: PracticeStatus): Practice
   updateSets(updates: [SetUpdate!]!): [Set!]!
   updateUser(email: String, firstName: String, lastName: String): User!
 }
@@ -184,6 +189,7 @@ type Practice {
   clubId: ID!
   createdAt: DateTimeISO!
   id: ID!
+  isPrivate: Boolean!
   plannedBy: User!
   plannedById: ID!
   scheduledAt: DateTimeISO!
@@ -212,8 +218,10 @@ type PracticeAttendanceEvent {
 type PracticeDogNote {
   content: String!
   createdAt: DateTimeISO!
+  createdBy: User!
   dogIds: [String!]!
   id: String!
+  isPrivate: Boolean!
   setId: String!
   updatedAt: DateTimeISO!
 }
@@ -248,6 +256,7 @@ type PracticeSummary {
   clubId: String!
   id: String!
   notAttendingCount: Float!
+  plannedBy: User!
   scheduledAt: DateTimeISO!
   setsCount: Float!
   status: PracticeStatus!

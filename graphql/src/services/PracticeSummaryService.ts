@@ -43,13 +43,14 @@ export class PracticeSummaryService {
       attendingCount,
       notAttendingCount,
       unconfirmedCount,
+      plannedBy: practice.plannedBy,
     };
   }
 
   static async createPracticeSummaryById(practiceId: string): Promise<PracticeSummary | null> {
     const practice = await this.practiceRepository.findOne({
       where: { id: practiceId },
-      relations: ['attendances', 'sets']
+      relations: ['attendances', 'sets', 'plannedBy']
     });
 
     if (!practice) {

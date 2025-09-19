@@ -7,6 +7,7 @@ import { Location } from '../models/Location'
 import { Practice, PracticeStatus } from '../models/Practice'
 import { PracticeAttendance } from '../models/PracticeAttendance'
 import { Set as SetModel } from '../models/Set'
+import { User } from '../models/User'
 
 export enum EventType {
   CREATED = 'CREATED',
@@ -107,6 +108,9 @@ export class PracticeSummary {
 
   @Field(() => Number)
   unconfirmedCount!: number;
+
+  @Field(() => User)
+  plannedBy!: User;
 }
 
 @ObjectType()
@@ -152,6 +156,12 @@ export class PracticeDogNote {
 
   @Field(() => Date)
   updatedAt!: Date;
+
+  @Field(() => Boolean)
+  isPrivate!: boolean;
+
+  @Field(() => User)
+  createdBy!: User;
 
   @Field(() => String)
   setId!: string;
