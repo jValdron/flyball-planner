@@ -11,6 +11,7 @@
 - Permissions (admin: all permission, including user management, planner read/write, viewer)
 - Overview of dogs/checks on the right side on large desktop and/or toggle
 - Archive practices
+- Mobile friendly-ish
 
 ## Major Features
 - Lineups
