@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 
-import { Container, Button, Card, Spinner, Alert, Badge, Form, ListGroup, Breadcrumb } from 'react-bootstrap'
+import { Container, Button, Card, Spinner, Alert, Badge, ListGroup, Breadcrumb } from 'react-bootstrap'
 import { Link, useNavigate } from 'react-router-dom'
 import { CalendarCheck, CalendarX, CheckLg, Pencil, PlusLg, Trash, FileText, XLg, QuestionLg } from 'react-bootstrap-icons'
 import { compareDesc, isAfter, isBefore, compareAsc } from 'date-fns'
@@ -15,6 +15,7 @@ import { useTheme } from '../contexts/ThemeContext'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { usePracticeSummaryChangedSubscription } from '../hooks/useSubscription'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
+import { ToggleButton } from '../components/ToggleButton'
 
 function Practices() {
   const { selectedClub } = useClub()
@@ -163,20 +164,21 @@ function Practices() {
       </Breadcrumb>
 
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1>Practices</h1>
+        <h2 className="mb-0">Practices</h2>
         <Button variant="primary" className="d-flex align-items-center" onClick={() => navigate('/practices/new')}>
           <PlusLg className="me-1" /> Schedule New Practice
         </Button>
       </div>
 
-      <Form.Check
-        type="switch"
-        id="draft-toggle"
-        label="Show Drafts Only"
-        className="mb-4 fs-5"
-        checked={showDraftsOnly}
-        onChange={(e) => setShowDraftsOnly(e.target.checked)}
-      />
+      <div className="d-flex gap-2 mb-4">
+        <ToggleButton
+          id="draft-toggle"
+          checked={showDraftsOnly}
+          onChange={setShowDraftsOnly}
+          label="Show Drafts Only"
+          variant="warning"
+        />
+      </div>
 
       {filteredPractices.length === 0 ? (
         <Alert variant="info">

@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 
 import { Container, Table, Button, Badge, Alert, Form, InputGroup, Breadcrumb } from 'react-bootstrap'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { PlusLg, Trash, PersonPlus, Pencil, CheckSquareFill, Square } from 'react-bootstrap-icons'
+import { PlusLg, Trash, PersonPlus, Pencil } from 'react-bootstrap-icons'
 import { useMutation, useQuery } from '@apollo/client'
 
 import type { DogStatus, Handler, Dog } from '../graphql/generated/graphql'
@@ -15,6 +15,7 @@ import { useDogModal } from '../hooks/useDogModal'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import DogModal from '../components/DogModal'
 import TrainingLevelBadge from '../components/TrainingLevelBadge'
+import { ToggleButton } from '../components/ToggleButton'
 
 const getStatusBadge = (status: DogStatus) => {
   const variants = {
@@ -179,7 +180,7 @@ function Dogs() {
       </Breadcrumb>
 
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1>Handlers & Dogs</h1>
+        <h2 className="mb-0">Handlers & Dogs</h2>
         <div className="d-flex gap-2">
           <Button variant="success" className="me-2 d-flex align-items-center" onClick={() => navigate('/handlers/new')}>
             <PersonPlus className="me-2" />
@@ -202,38 +203,20 @@ function Dogs() {
           />
         </InputGroup>
         <div className="d-flex gap-2">
-          <Button
-            variant={sortByHandlers ? "primary" : "outline-primary"}
-            onClick={() => handleSortByHandlersChange(!sortByHandlers)}
-            className="d-flex align-items-center"
-          >
-            {sortByHandlers ? (
-              <CheckSquareFill className="me-2" size={14} />
-            ) : (
-              <Square className="me-2" size={14} />
-            )}
-            Sort by handlers
-          </Button>
-          <Form.Check
-            type="checkbox"
+          <ToggleButton
+            id="sort-by-handlers"
+            checked={sortByHandlers}
+            onChange={handleSortByHandlersChange}
+            label="Sort by handlers"
+            variant="primary"
+          />
+          <ToggleButton
             id="show-inactive"
             checked={showInactive}
-            onChange={(e) => handleShowInactiveChange(e.target.checked)}
-            className="d-none"
+            onChange={handleShowInactiveChange}
+            label="Show inactive dogs"
+            variant="secondary"
           />
-          <Button
-            as="label"
-            htmlFor="show-inactive"
-            variant={showInactive ? "secondary" : "outline-secondary"}
-            className="d-flex align-items-center"
-          >
-            {showInactive ? (
-              <CheckSquareFill className="me-2" size={14} />
-            ) : (
-              <Square className="me-2" size={14} />
-            )}
-            Show inactive dogs
-          </Button>
         </div>
       </div>
 

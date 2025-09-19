@@ -116,9 +116,9 @@ export default function PublicPracticeView() {
       <Row className="mb-4">
         <Col xs={12} className="position-relative">
           <div className="text-center">
-            <h1 className="mb-2">
+            <h2 className="mb-0">
               {practice.club.name} Practice
-            </h1>
+            </h2>
             <h2 className="text-muted mb-3">
               {formatFullDateTime(practice.scheduledAt, true)}
             </h2>

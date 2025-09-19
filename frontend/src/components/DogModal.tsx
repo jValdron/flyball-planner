@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react'
 
 import { Modal, Form, Button, Alert } from 'react-bootstrap'
-import { Save, PlusLg } from 'react-bootstrap-icons'
+import { Save, PlusLg, X, Pencil } from 'react-bootstrap-icons'
 import { useMutation, useQuery } from '@apollo/client'
 
 import type { Dog } from '../graphql/generated/graphql'
@@ -192,7 +192,7 @@ const DogModal = forwardRef<DogModalRef, DogModalProps>(({ show, onHide, dog, ow
         <Modal.Title className="d-flex align-items-center">
           {currentDog ? (
             <>
-              <Save className="me-2" />
+              <Pencil className="me-2" />
               Edit Dog
             </>
           ) : (
@@ -282,6 +282,7 @@ const DogModal = forwardRef<DogModalRef, DogModalProps>(({ show, onHide, dog, ow
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleClose} disabled={saving}>
+            <X className="me-2" />
             Cancel
           </Button>
           <Button type="submit" variant="success" disabled={saving} className="d-flex align-items-center">

@@ -230,7 +230,7 @@ function DogNotes({
 
       {!notes || notes.length === 0 ? (
         showNoNotesAlert ? (
-          <Alert variant="info text-center">
+          <Alert variant="info text-center mt-3">
             No notes yet{dog ? ` for ${dog.name}` : ''}.
             {showCreateButton && (
               <Link to="#" onClick={handleCreateClick} className="ms-1">Add your first note.</Link>

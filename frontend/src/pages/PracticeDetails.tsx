@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 
 import { Container, Form, Button, Alert, Spinner, Breadcrumb, Tabs, Tab, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap'
 import { useNavigate, useParams, useLocation, useSearchParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Trash, CheckLg, Share, Pencil, FileText, ExclamationTriangle, CheckSquareFill, Square } from 'react-bootstrap-icons'
+import { ChevronLeft, ChevronRight, Trash, CheckLg, Share, Pencil, FileText, ExclamationTriangle } from 'react-bootstrap-icons'
 import { useMutation } from '@apollo/client'
 
 import type { PracticeAttendance as PracticeAttendanceType, CreatePracticeMutation, UpdatePracticeMutation, DeletePracticeMutation } from '../graphql/generated/graphql'
@@ -15,6 +15,7 @@ import { PracticeProvider, usePractice } from '../contexts/PracticeContext'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { SaveSpinner } from '../components/SaveSpinner'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
+import { ToggleButton } from '../components/ToggleButton'
 import { PracticeAttendance } from '../components/PracticeSet/PracticeAttendance'
 import { PracticeValidation } from '../components/PracticeSet/PracticeValidation'
 import { PracticeSet } from '../components/PracticeSet/PracticeSet'
@@ -264,9 +265,9 @@ function PracticeDetailsContent() {
       </Breadcrumb>
 
       <div className="d-flex justify-content-between align-items-start mb-2">
-        <h1>
+        <h2>
           {practice?.scheduledAt ? formatRelativeTime(practice.scheduledAt) : 'New Practice'}
-        </h1>
+        </h2>
         <div className="d-flex align-items-center gap-3">
           {practice && (() => {
             const hasValidationErrors = validationErrors.some(error => error.severity === 'error')
@@ -275,56 +276,25 @@ function PracticeDetailsContent() {
 
             if (isPastPractice) {
               return (
-                <div className="d-flex gap-2">
-                  <Form.Check
-                    type="checkbox"
-                    id="unlock-toggle"
-                    checked={!isLocked}
-                    onChange={(e) => setIsLocked(!e.target.checked)}
-                    className="d-none"
-                  />
-                  <Button
-                    as="label"
-                    htmlFor="unlock-toggle"
-                    variant={!isLocked ? "primary" : "outline-warning"}
-                    className="d-flex align-items-center"
-                  >
-                    {!isLocked ? (
-                      <CheckSquareFill className="me-2" size={14} />
-                    ) : (
-                      <Square className="me-2" size={14} />
-                    )}
-                    {isLocked ? "Locked" : "Unlocked"}
-                  </Button>
-                </div>
+                <ToggleButton
+                  id="unlock-toggle"
+                  checked={!isLocked}
+                  onChange={(checked) => setIsLocked(!checked)}
+                  label={isLocked ? "Locked" : "Unlocked"}
+                  variant="primary"
+                />
               )
             }
 
             const statusButton = (
-              <div className="d-flex gap-2">
-                <Form.Check
-                  type="checkbox"
-                  id="status-toggle"
-                  checked={practice.status === PracticeStatus.Ready}
-                  onChange={(e) => handleStatusChange(e.target.checked ? PracticeStatus.Ready : PracticeStatus.Draft)}
-                  disabled={shouldDisable}
-                  className="d-none"
-                />
-                <Button
-                  as="label"
-                  htmlFor="status-toggle"
-                  variant={practice.status === PracticeStatus.Ready ? "success" : "outline-success"}
-                  className={`d-flex align-items-center ${shouldDisable ? 'disabled' : ''}`}
-                  disabled={shouldDisable}
-                >
-                  {practice.status === PracticeStatus.Ready ? (
-                    <CheckSquareFill className="me-2" size={14} />
-                  ) : (
-                    <Square className="me-2" size={14} />
-                  )}
-                  {practice.status === PracticeStatus.Ready ? "Ready" : "Draft"}
-                </Button>
-              </div>
+              <ToggleButton
+                id="status-toggle"
+                checked={practice.status === PracticeStatus.Ready}
+                onChange={(checked) => handleStatusChange(checked ? PracticeStatus.Ready : PracticeStatus.Draft)}
+                label={practice.status === PracticeStatus.Ready ? "Mark as Draft" : "Mark as Ready"}
+                variant="success"
+                disabled={shouldDisable}
+              />
             )
 
             return shouldDisable ? (

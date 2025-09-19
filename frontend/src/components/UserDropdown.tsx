@@ -51,7 +51,7 @@ export const UserDropdown: React.FC = () => {
 
       <Dropdown.Menu>
         <Dropdown.Header>
-          {user.firstName} {user.lastName}
+          {user.username}
         </Dropdown.Header>
 
         <Dropdown.Item onClick={() => navigate('/account')}>

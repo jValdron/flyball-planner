@@ -11,6 +11,7 @@ import { getFilteredAndSortedDogsByHandlers, getHandlerName } from '../../utils/
 import { useClub } from '../../contexts/ClubContext'
 import { usePractice } from '../../contexts/PracticeContext'
 import { useTheme } from '../../contexts/ThemeContext'
+import { ToggleButton } from '../ToggleButton'
 
 const SAVE_DELAY = 25
 
@@ -172,7 +173,7 @@ export function PracticeAttendance({ practiceId, disabled = false }: PracticeAtt
 
   return (
     <React.Fragment>
-      <div className="d-flex align-items-center gap-3 mb-3">
+      <div className="d-flex justify-content-between align-items-center mb-3">
         <InputGroup style={{ maxWidth: '300px' }}>
           <Form.Control
             type="text"
@@ -181,12 +182,13 @@ export function PracticeAttendance({ practiceId, disabled = false }: PracticeAtt
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </InputGroup>
-        <Form.Check
-          type="switch"
+        <ToggleButton
           id="show-unconfirmed"
-          label="Unconfirmed attendance only"
           checked={showOnlyUnconfirmed}
-          onChange={(e) => handleShowOnlyUnconfirmedChange(e.target.checked)}
+          size="sm"
+          onChange={handleShowOnlyUnconfirmedChange}
+          label="Unconfirmed only"
+          variant="primary"
         />
       </div>
 

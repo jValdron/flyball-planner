@@ -139,7 +139,7 @@ function LocationDetails() {
       </Breadcrumb>
 
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1>{locationId ? locationData?.location?.name : 'Add New Location'}</h1>
+        <h2 className="mb-0">{locationId ? locationData?.location?.name : 'Add New Location'}</h2>
         {locationId && (
           <Button
             variant="danger"

@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 
 import { Button, Form, Card, Spinner, Badge, Alert } from 'react-bootstrap'
-import { GripVertical, PlusLg, Trash, Journal, Arrow90degLeft, CheckSquareFill, Square } from 'react-bootstrap-icons'
+import { GripVertical, PlusLg, Trash, Journal, Arrow90degLeft } from 'react-bootstrap-icons'
 import { DndContext, DragOverlay } from '@dnd-kit/core'
 import type { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
@@ -20,6 +20,7 @@ import { SaveSpinner } from '../SaveSpinner'
 import { DogsPicker } from '../DogsPicker'
 import { SetTypeAutocomplete } from './SetTypeAutocomplete'
 import { LocationSelector } from './LocationSelector'
+import { ToggleButton } from '../ToggleButton'
 
 interface DogWithSetCount extends Dog {
   setCount: number
@@ -388,29 +389,16 @@ function SortableGroup({
           </Card.Body>
           <Card.Footer className="d-flex rounded-start-0">
             <div className="d-flex align-items-center me-auto">
-              <Form.Check
-                type="checkbox"
+              <ToggleButton
                 id={`warmup-${group.index}`}
                 checked={group.sets.some(set => set.isWarmup)}
-                onChange={(e) => onWarmupChange?.(group.index, e.target.checked)}
-                disabled={disabled}
-                className="d-none"
-              />
-              <Button
-                as="label"
-                htmlFor={`warmup-${group.index}`}
-                variant={group.sets.some(set => set.isWarmup) ? "info" : "outline-secondary"}
+                onChange={(checked) => onWarmupChange?.(group.index, checked)}
+                label="Warmup"
                 size="sm"
-                className={`d-flex align-items-center me-3 ${disabled ? 'disabled' : ''}`}
+                variant="info"
                 disabled={disabled}
-              >
-                {group.sets.some(set => set.isWarmup) ? (
-                  <CheckSquareFill className="me-2" size={14} />
-                ) : (
-                  <Square className="me-2" size={14} />
-                )}
-                Warmup
-              </Button>
+                className="me-3"
+              />
             </div>
             {!isLocked && (
               <div className="d-flex gap-2">

@@ -141,7 +141,7 @@ export const AccountDetails: React.FC = () => {
       </Breadcrumb>
 
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1>Account Details</h1>
+        <h2 className="mb-0">{user.username}</h2>
       </div>
 
       <Row>

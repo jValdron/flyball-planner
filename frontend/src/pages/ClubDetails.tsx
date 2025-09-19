@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 
 import { Container, Form, Button, Alert, Table, Breadcrumb } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
-import { Save, PlusLg, Trash, CheckLg, XLg } from 'react-bootstrap-icons'
+import { Save, PlusLg, Trash, CheckLg, XLg, Pencil } from 'react-bootstrap-icons'
 import { useMutation } from '@apollo/client'
 
 import type { Location, Club } from '../graphql/generated/graphql'
@@ -98,7 +98,7 @@ function ClubDetails() {
       </Breadcrumb>
 
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1>{selectedClub?.name}</h1>
+        <h2 className="mb-0">{selectedClub?.name}</h2>
       </div>
 
       {displayError && (
@@ -163,7 +163,7 @@ function ClubDetails() {
       </Form>
 
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Locations</h2>
+        <h2 className="mb-0">Locations</h2>
         <Button variant="primary" onClick={() => navigate('/locations/new')}>
           <PlusLg className="me-2" />
           New Location
@@ -202,7 +202,9 @@ function ClubDetails() {
                       variant="outline-primary"
                       size="sm"
                       onClick={() => navigate(`/locations/${location.id}`)}
+                      className="text-nowrap"
                     >
+                      <Pencil className="me-2" />
                       Edit
                     </Button>
                     <Button

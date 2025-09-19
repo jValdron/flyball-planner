@@ -188,7 +188,7 @@ function HandlerDetails() {
       </Breadcrumb>
 
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1>{isNewHandler ? 'Add New Handler' : 'Edit Handler'}</h1>
+        <h2 className="mb-0">{isNewHandler ? 'Add New Handler' : 'Edit Handler'}</h2>
         <div className="d-flex gap-2">
           {!isNewHandler && handlerData?.handler && (
             <>
@@ -259,7 +259,7 @@ function HandlerDetails() {
               onClick={(e) => handleSubmit(e, true)}
             >
               <PlusLg className="me-2" />
-              Save & New Dog
+              Create and Add Dog
             </Button>
           )}
         </div>
