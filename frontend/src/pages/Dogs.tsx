@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 
 import { Container, Table, Button, Badge, Alert, Form, InputGroup, Breadcrumb } from 'react-bootstrap'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { PlusLg, Trash, PersonPlus, Pencil } from 'react-bootstrap-icons'
+import { PlusLg, Trash, PersonPlus, Pencil, CheckSquareFill, Square } from 'react-bootstrap-icons'
 import { useMutation, useQuery } from '@apollo/client'
 
 import type { DogStatus, Handler, Dog } from '../graphql/generated/graphql'
@@ -38,6 +38,7 @@ function Dogs() {
   const [dogToEdit, setDogToEdit] = useState<Dog | null>(null)
   const [showInactive, setShowInactive] = useState(searchParams.get('showInactive') === 'true')
   const [searchQuery, setSearchQuery] = useState('')
+  const [sortByHandlers, setSortByHandlers] = useState(searchParams.get('sortByHandlers') === 'true')
 
   useDocumentTitle('Handlers & Dogs')
 
@@ -60,6 +61,18 @@ function Dogs() {
         prev.set('showInactive', 'true')
       } else {
         prev.delete('showInactive')
+      }
+      return prev
+    })
+  }
+
+  const handleSortByHandlersChange = (checked: boolean) => {
+    setSortByHandlers(checked)
+    setSearchParams(prev => {
+      if (checked) {
+        prev.set('sortByHandlers', 'true')
+      } else {
+        prev.delete('sortByHandlers')
       }
       return prev
     })
@@ -102,6 +115,52 @@ function Dogs() {
 
   const filteredDogsByHandlers = getFilteredAndSortedDogsByHandlers(dogsByHandlersInSelectedClub, searchQuery, showInactive)
 
+  // Create flat list of dogs for flat view
+  const getFlatDogsList = () => {
+    const allDogs: Array<Dog & { handler: Handler }> = []
+    dogsByHandlersInSelectedClub.forEach(handler => {
+      if (handler.dogs) {
+        handler.dogs.forEach(dog => {
+          if (showInactive || dog.status === 'Active') {
+            allDogs.push({ ...dog, handler })
+          }
+        })
+      }
+    })
+
+    // Filter by search query
+    if (searchQuery) {
+      return allDogs.filter(dog =>
+        dog.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (dog.crn && dog.crn.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        getHandlerName(dog.handler).toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    }
+
+    return allDogs.sort((a, b) => a.name.localeCompare(b.name))
+  }
+
+  const flatDogsList = getFlatDogsList()
+
+  // Create unified data structure for rendering
+  const getTableData = () => {
+    if (sortByHandlers) {
+      return filteredDogsByHandlers.map(handler => ({
+        type: 'handler' as const,
+        data: handler,
+        dogs: handler.dogs || []
+      }))
+    } else {
+      return flatDogsList.map(dogWithHandler => ({
+        type: 'dog' as const,
+        data: dogWithHandler,
+        dogs: []
+      }))
+    }
+  }
+
+  const tableData = getTableData()
+
   if (!selectedClub) {
     return (
       <Container>
@@ -137,18 +196,45 @@ function Dogs() {
         <InputGroup style={{ maxWidth: '300px' }}>
           <Form.Control
             type="text"
-            placeholder="Search handlers or dogs..."
+            placeholder="Filter handlers and dogs..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </InputGroup>
-        <Form.Check
-          type="switch"
-          id="show-inactive"
-          label="Show inactive dogs"
-          checked={showInactive}
-          onChange={(e) => handleShowInactiveChange(e.target.checked)}
-        />
+        <div className="d-flex gap-2">
+          <Button
+            variant={sortByHandlers ? "primary" : "outline-primary"}
+            onClick={() => handleSortByHandlersChange(!sortByHandlers)}
+            className="d-flex align-items-center"
+          >
+            {sortByHandlers ? (
+              <CheckSquareFill className="me-2" size={14} />
+            ) : (
+              <Square className="me-2" size={14} />
+            )}
+            Sort by handlers
+          </Button>
+          <Form.Check
+            type="checkbox"
+            id="show-inactive"
+            checked={showInactive}
+            onChange={(e) => handleShowInactiveChange(e.target.checked)}
+            className="d-none"
+          />
+          <Button
+            as="label"
+            htmlFor="show-inactive"
+            variant={showInactive ? "secondary" : "outline-secondary"}
+            className="d-flex align-items-center"
+          >
+            {showInactive ? (
+              <CheckSquareFill className="me-2" size={14} />
+            ) : (
+              <Square className="me-2" size={14} />
+            )}
+            Show inactive dogs
+          </Button>
+        </div>
       </div>
 
       {(error || clubError) && (
@@ -162,6 +248,7 @@ function Dogs() {
           <tr>
             <th className="col-6 col-md-4">Name</th>
             <th className="col-3 col-md-2">CRN</th>
+            {!sortByHandlers && <th className="col-3 col-md-3">Handler</th>}
             {showInactive && <th className="d-none d-md-table-cell col-md-2">Status</th>}
             <th className="col-2 col-md-2">Level</th>
             <th className="col-1 text-end">
@@ -170,82 +257,122 @@ function Dogs() {
           </tr>
         </thead>
         <tbody>
-          {filteredDogsByHandlers.length === 0 ? (
+          {tableData.length === 0 ? (
             <tr>
-              <td colSpan={5} className="text-center text-muted py-4">
+              <td colSpan={sortByHandlers ? 5 : 6} className="text-center text-muted py-4">
                 No matching handlers or dogs found
               </td>
             </tr>
           ) : (
-            filteredDogsByHandlers.map((handler: Handler) => {
-              const handlerName = getHandlerName(handler)
+            tableData.map((item) => {
+              if (item.type === 'handler') {
+                const handler = item.data as Handler
+                const handlerName = getHandlerName(handler)
 
-              return (
-                <React.Fragment key={handler.id}>
-                  <tr
-                    className={`${isDark ? '' : 'table-secondary'} cur-point`}
-                    onClick={() => navigate(`/handlers/${handler.id}`)}
-                  >
-                    <td colSpan={5}>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <strong>{handlerName}</strong>
-                        <Button
-                          variant="outline-primary"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            openCreateModal(handler.id)
-                          }}
+                return (
+                  <React.Fragment key={handler.id}>
+                    <tr
+                      className={`${isDark ? '' : 'table-secondary'} cur-point`}
+                      onClick={() => navigate(`/handlers/${handler.id}`)}
+                    >
+                      <td colSpan={5}>
+                        <div className="d-flex justify-content-between align-items-center">
+                          <strong>{handlerName}</strong>
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              openCreateModal(handler.id)
+                            }}
+                          >
+                            <PlusLg className="me-1" />
+                            New Dog
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                    {item.dogs.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="ps-4 text-muted">
+                          No active dogs
+                        </td>
+                      </tr>
+                    ) : (
+                      item.dogs.map((dog: Dog) => (
+                        <tr
+                          key={dog.id}
+                          onClick={() => handleRowClick(dog.id)}
+                          className={`align-middle cur-point`}
                         >
-                          <PlusLg className="me-1" />
-                          New Dog
+                          <td className={`ps-4 ${dog.status === 'Inactive' ? 'text-muted' : ''} col-6 col-md-4`}>{dog.name}</td>
+                          <td className="font-monospace col-3 col-md-2">{dog.crn}</td>
+                          {showInactive && <td className="d-none d-md-table-cell col-md-2">{getStatusBadge(dog.status)}</td>}
+                          <td className="col-2 col-md-2">
+                            <TrainingLevelBadge level={dog.trainingLevel} />
+                          </td>
+                          <td className="col-1 text-nowrap text-end">
+                            <div className="d-flex gap-1 justify-content-end">
+                              <Button
+                                variant="outline-secondary"
+                                size="sm"
+                                onClick={(e) => handleEdit(e, dog)}
+                              >
+                                <Pencil className="me-md-1" />
+                                <span className="d-none d-md-inline">Edit</span>
+                              </Button>
+                              <Button
+                                variant="outline-danger"
+                                size="sm"
+                                onClick={(e) => handleDelete(e, dog)}
+                              >
+                                <Trash />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </React.Fragment>
+                )
+              } else {
+                const dogWithHandler = item.data as Dog & { handler: Handler }
+
+                return (
+                  <tr
+                    key={dogWithHandler.id}
+                    onClick={() => handleRowClick(dogWithHandler.id)}
+                    className={`align-middle cur-point`}
+                  >
+                    <td className={`${dogWithHandler.status === 'Inactive' ? 'text-muted' : ''} col-6 col-md-4`}>{dogWithHandler.name}</td>
+                    <td className="font-monospace col-3 col-md-2">{dogWithHandler.crn}</td>
+                    <td className="col-3 col-md-3">{getHandlerName(dogWithHandler.handler)}</td>
+                    {showInactive && <td className="d-none d-md-table-cell col-md-2">{getStatusBadge(dogWithHandler.status)}</td>}
+                    <td className="col-2 col-md-2">
+                      <TrainingLevelBadge level={dogWithHandler.trainingLevel} />
+                    </td>
+                    <td className="col-1 text-nowrap text-end">
+                      <div className="d-flex gap-1 justify-content-end">
+                        <Button
+                          variant="outline-secondary"
+                          size="sm"
+                          onClick={(e) => handleEdit(e, dogWithHandler)}
+                        >
+                          <Pencil className="me-md-1" />
+                          <span className="d-none d-md-inline">Edit</span>
+                        </Button>
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          onClick={(e) => handleDelete(e, dogWithHandler)}
+                        >
+                          <Trash />
                         </Button>
                       </div>
                     </td>
                   </tr>
-                  {handler.dogs?.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="ps-4 text-muted">
-                        No active dogs
-                      </td>
-                    </tr>
-                  ) : (
-                    handler.dogs?.map((dog: Dog) => (
-                      <tr
-                        key={dog.id}
-                        onClick={() => handleRowClick(dog.id)}
-                        className={`align-middle cur-point`}
-                      >
-                        <td className={`ps-4 ${dog.status === 'Inactive' ? 'text-muted' : ''} col-6 col-md-4`}>{dog.name}</td>
-                        <td className="font-monospace col-3 col-md-2">{dog.crn}</td>
-                        {showInactive && <td className="d-none d-md-table-cell col-md-2">{getStatusBadge(dog.status)}</td>}
-                        <td className="col-2 col-md-2">
-                          <TrainingLevelBadge level={dog.trainingLevel} />
-                        </td>
-                        <td className="col-1 text-nowrap text-end">
-                          <div className="d-flex gap-1 justify-content-end">
-                            <Button
-                              variant="outline-secondary"
-                              size="sm"
-                              onClick={(e) => handleEdit(e, dog)}
-                            >
-                              <Pencil className="me-md-1" />
-                              <span className="d-none d-md-inline">Edit</span>
-                            </Button>
-                            <Button
-                              variant="outline-danger"
-                              size="sm"
-                              onClick={(e) => handleDelete(e, dog)}
-                            >
-                              <Trash />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </React.Fragment>
-              )
+                )
+              }
             })
           )}
         </tbody>

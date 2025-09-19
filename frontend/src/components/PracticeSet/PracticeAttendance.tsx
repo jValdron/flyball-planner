@@ -176,7 +176,7 @@ export function PracticeAttendance({ practiceId, disabled = false }: PracticeAtt
         <InputGroup style={{ maxWidth: '300px' }}>
           <Form.Control
             type="text"
-            placeholder="Search handlers or dogs..."
+            placeholder="Filter handlers and dogs..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
