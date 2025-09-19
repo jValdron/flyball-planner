@@ -89,24 +89,6 @@ export const GetPublicPractice = graphql(`
           isDoubleLane
         }
       }
-      attendances {
-        id
-        attending
-        dogId
-        dog {
-          id
-          name
-          crn
-          trainingLevel
-          owner {
-            id
-            givenName
-            surname
-          }
-        }
-        createdAt
-        updatedAt
-      }
       sets {
         id
         index
@@ -119,6 +101,7 @@ export const GetPublicPractice = graphql(`
         location {
           id
           name
+          isDefault
           isDoubleLane
         }
         dogs {
@@ -129,13 +112,6 @@ export const GetPublicPractice = graphql(`
           dog {
             id
             name
-            crn
-            trainingLevel
-            owner {
-              id
-              givenName
-              surname
-            }
           }
         }
       }

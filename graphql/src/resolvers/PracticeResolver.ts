@@ -73,7 +73,15 @@ export class PracticeResolver {
         'sets.location',
         'club',
         'club.locations'
-      ]
+      ],
+      order: {
+        sets: {
+          index: 'ASC',
+          dogs: {
+            index: 'ASC'
+          }
+        }
+      }
     });
   }
 

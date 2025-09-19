@@ -30,24 +30,6 @@ const GET_PUBLIC_PRACTICE = gql`
           isDoubleLane
         }
       }
-      attendances {
-        id
-        attending
-        dogId
-        dog {
-          id
-          name
-          crn
-          trainingLevel
-          owner {
-            id
-            givenName
-            surname
-          }
-        }
-        createdAt
-        updatedAt
-      }
       sets {
         id
         index
@@ -60,6 +42,7 @@ const GET_PUBLIC_PRACTICE = gql`
         location {
           id
           name
+          isDefault
           isDoubleLane
         }
         dogs {
@@ -70,13 +53,6 @@ const GET_PUBLIC_PRACTICE = gql`
           dog {
             id
             name
-            crn
-            trainingLevel
-            owner {
-              id
-              givenName
-              surname
-            }
           }
         }
       }
