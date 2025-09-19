@@ -1,0 +1,46 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "flyball-planner.fullname" . }}-migration-{{ now | date "20060102-150405" }}
+  labels:
+    {{- include "flyball-planner.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migration
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "flyball-planner.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migration
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: wait-for-db
+          image: busybox
+          command: ["sh", "-c", "until nc -z {{ .Values.graphql.env.DB_HOST | default (printf "%s-postgresql" (include "flyball-planner.fullname" .)) }} {{ .Values.graphql.env.DB_PORT }}; do echo waiting for database; sleep 2; done;"]
+      containers:
+        - name: migration
+          image: {{ .Values.graphql.image.repository }}:{{ .Values.graphql.image.tag | default .Chart.AppVersion }}
+          imagePullPolicy: {{ .Values.graphql.image.pullPolicy }}
+          command: ["npm", "run", "migrate"]
+          env:
+            - name: NODE_ENV
+              value: {{ .Values.graphql.env.NODE_ENV }}
+            - name: DB_USER
+              value: {{ .Values.graphql.env.DB_USER }}
+            - name: DB_NAME
+              value: {{ .Values.graphql.env.DB_NAME }}
+            - name: DB_HOST
+              value: {{ .Values.graphql.env.DB_HOST | default (printf "%s-postgresql" (include "flyball-planner.fullname" .)) }}
+            - name: DB_PORT
+              value: "{{ .Values.graphql.env.DB_PORT }}"
+            - name: DB_SSLMODE
+              value: {{ .Values.graphql.env.DB_SSLMODE }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.graphql.databasePassword.existingSecret | default (printf "%s-postgresql-secret" (include "flyball-planner.fullname" .)) }}
+                  key: password
