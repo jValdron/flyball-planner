@@ -1,9 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm'
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToMany, JoinTable } from 'typeorm'
 import { ObjectType, Field, ID } from 'type-graphql'
 
 import { Dog } from './Dog'
 import { Handler } from './Handler'
 import { Location } from './Location'
+import { User } from './User'
+import { UserInvite } from './UserInvite'
 
 @ObjectType()
 @Entity()
@@ -47,4 +49,13 @@ export class Club {
   @Field(() => [Location])
   @OneToMany(() => Location, location => location.club)
   locations: Location[];
+
+  @Field(() => [User])
+  @ManyToMany(() => User, user => user.clubs)
+  @JoinTable({ name: 'user_clubs_club' })
+  users: User[];
+
+  @Field(() => [UserInvite])
+  @OneToMany(() => UserInvite, invite => invite.club)
+  userInvites: UserInvite[];
 }

@@ -25,6 +25,7 @@ const ClubDetails = lazy(() => import('./pages/ClubDetails'))
 const AccountDetails = lazy(() => import('./pages/AccountDetails').then(module => ({ default: module.AccountDetails })))
 const LocationDetails = lazy(() => import('./pages/LocationDetails'))
 const PublicPracticeView = lazy(() => import('./pages/PublicPracticeView'))
+const InviteRegistration = lazy(() => import('./pages/InviteRegistration').then(module => ({ default: module.InviteRegistration })))
 
 function Header() {
   const { user } = useAuth();
@@ -127,6 +128,11 @@ function AppWithTitle({ isAuthenticated }: { isAuthenticated: boolean }) {
             <PublicPracticeView />
           </Suspense>
         )
+      } />
+      <Route path="/invite/:code" element={
+        <Suspense fallback={<div className="text-center p-4">Loading...</div>}>
+          <InviteRegistration />
+        </Suspense>
       } />
       <Route path="/*" element={
         isAuthenticated ? (

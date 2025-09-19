@@ -26,6 +26,7 @@ import { DogNoteResolver } from './resolvers/DogNoteResolver'
 import { ClubSubscriptionResolver } from './resolvers/ClubSubscriptionResolver'
 import { PracticeSubscriptionResolver } from './resolvers/PracticeSubscriptionResolver'
 import { UserResolver } from './resolvers/UserResolver'
+import { UserInviteResolver } from './resolvers/UserInviteResolver'
 
 config();
 
@@ -50,6 +51,7 @@ async function startServer() {
         ClubSubscriptionResolver,
         PracticeSubscriptionResolver,
         UserResolver,
+        UserInviteResolver,
       ],
       emitSchemaFile: true,
       validate: false,

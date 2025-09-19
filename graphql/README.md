@@ -4,8 +4,6 @@
 This is the GraphQL API server for the Flyball Planner application. It provides a modern, type-safe API for managing flyball practices, dogs, owners, and clubs.
 
 ## TODO
-- Fix up subscriptions (filtering by club filters out 100%?)
-- Finish up auth
 - Redis caching (mostly for subscriptions with multiple instances)
 
 
@@ -46,6 +44,7 @@ DB_USER=flyball_user
 DB_PASSWORD=flyball_password
 DB_NAME=flyball_practice_planner
 DB_SSLMODE=disable
+USER_INVITE_EXPIRATION_DAYS=7
 
 4. Seed the initial data:
 ```bash
@@ -67,6 +66,12 @@ The server will start at http://localhost:4000 with the GraphQL playground avail
 - `npm start` - Start production server
 - `npm test` - Run tests
 
+## Configuration
+
+### Environment Variables
+
+- `USER_INVITE_EXPIRATION_DAYS` - Number of days user invites remain valid (default: 7)
+
 ## API Documentation
 
 The GraphQL API provides the following main types:
@@ -79,5 +84,6 @@ The GraphQL API provides the following main types:
 - Set
 - SetDog
 - Auth/Users
+- UserInvite
 
 Each type has corresponding queries and mutations for CRUD operations. Visit the GraphQL playground at http://localhost:4000/graphql for the full schema documentation and to test queries.

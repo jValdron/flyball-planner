@@ -30,6 +30,8 @@ type Club {
   nafaClubNumber: String!
   name: String!
   updatedAt: DateTimeISO!
+  userInvites: [UserInvite!]!
+  users: [User!]!
 }
 
 type ClubEvent {
@@ -157,6 +159,7 @@ type LoginResponse {
 }
 
 type Mutation {
+  acceptUserInvite(code: String!, firstName: String!, lastName: String!, password: String!, username: String!): User!
   changePassword(currentPassword: String!, newPassword: String!): Boolean!
   createDog(clubId: String!, crn: String, name: String!, ownerId: String!, status: DogStatus!, trainingLevel: TrainingLevel!): Dog!
   createDogNote(input: CreateDogNoteInput!): DogNote!
@@ -164,6 +167,7 @@ type Mutation {
   createLocation(clubId: ID!, isDefault: Boolean, isDoubleLane: Boolean, name: String!): Location!
   createPractice(clubId: String!, isPrivate: Boolean! = false, scheduledAt: DateTimeISO!, status: PracticeStatus!): Practice!
   createSetDogNote(input: CreateSetDogNoteInput!): DogNote!
+  createUserInvite(clubId: String!, email: String!): UserInvite!
   deleteClub(id: String!): Boolean!
   deleteDog(id: String!): Boolean!
   deleteDogNote(id: ID!): Boolean!
@@ -172,6 +176,7 @@ type Mutation {
   deletePractice(id: String!): Boolean!
   deleteSets(ids: [String!]!): Boolean!
   loginUser(password: String!, username: String!): LoginResponse!
+  removeUserFromClub(clubId: String!, userId: String!): Boolean!
   updateAttendances(practiceId: String!, updates: [AttendanceUpdate!]!): [PracticeAttendance!]!
   updateClub(defaultPracticeTime: String, id: String!, idealSetsPerDog: Float, nafaClubNumber: String, name: String): Club
   updateDog(crn: String, id: String!, name: String, ownerId: String, status: DogStatus, trainingLevel: TrainingLevel): Dog
@@ -299,7 +304,10 @@ type Query {
   set(id: String!): Set
   sets(practiceId: String!): [Set!]!
   user(id: String!): User
+  userInviteByCode(code: String!): UserInvite
+  userInvitesByClub(clubId: String!): [UserInvite!]!
   users: [User!]!
+  usersByClub(clubId: String!): [User!]!
 }
 
 type Set {
@@ -414,4 +422,23 @@ type User {
   lastName: String!
   updatedAt: DateTimeISO!
   username: String!
+}
+
+type UserInvite {
+  club: Club!
+  clubId: String!
+  code: String!
+  createdAt: DateTimeISO!
+  email: String!
+  expiresAt: DateTimeISO!
+  id: ID!
+  invitedBy: User
+  invitedById: String
+  isExpired: Boolean!
+  isUsed: Boolean!
+  isValid: Boolean!
+  updatedAt: DateTimeISO!
+  usedAt: DateTimeISO
+  usedBy: User
+  usedById: String
 }

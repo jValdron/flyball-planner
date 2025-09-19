@@ -39,6 +39,6 @@ export class User {
 
   @Field(() => [Club])
   @ManyToMany(() => Club)
-  @JoinTable()
+  @JoinTable({ name: 'user_clubs_club' })
   clubs: Club[];
 }
