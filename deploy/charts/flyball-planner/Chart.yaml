@@ -1,6 +1,6 @@
 apiVersion: v2
 name: flyball-planner
-version: 1.3.2
+version: 1.3.3
 appVersion: "v1.1.3"
 description: Flyball Planner - A web application for managing flyball practices
 type: application

@@ -26,7 +26,7 @@ spec:
         - name: migration
           image: {{ .Values.graphql.image.repository }}:{{ .Values.graphql.image.tag | default .Chart.AppVersion }}
           imagePullPolicy: {{ .Values.graphql.image.pullPolicy }}
-          command: ["node", "dist/migrate.js"]
+          command: ["/nodejs/bin/node", "dist/migrate.js"]
           env:
             - name: NODE_ENV
               value: {{ .Values.graphql.env.NODE_ENV }}
