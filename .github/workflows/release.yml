@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       message:
-        description: 'Optional release message for annotated tag'
+        description: 'Optional release message for annotated tag (supports multi-line text)'
         required: false
         type: string
         default: 'Release version'
@@ -87,8 +87,12 @@ jobs:
 
           if [ -n "$MESSAGE" ] && [ "$MESSAGE" != "Release version" ]; then
             # Create annotated tag with custom message
-            git tag -a "v$VERSION" -m "$MESSAGE"
-            echo "✅ Created annotated tag v$VERSION with message: $MESSAGE"
+            # Write message to temp file to preserve newlines
+            echo "$MESSAGE" > /tmp/tag_message.txt
+            git tag -a "v$VERSION" -F /tmp/tag_message.txt
+            echo "✅ Created annotated tag v$VERSION with message:"
+            echo "$MESSAGE"
+            rm /tmp/tag_message.txt
           else
             # Create lightweight tag
             git tag "v$VERSION"
@@ -113,26 +117,35 @@ jobs:
           client-payload: '{"ref":"v${{ github.event.inputs.version }}"}'
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ github.event.inputs.version }}
-          name: v${{ github.event.inputs.version }}
-          body: |
-            ## What's Changed
-            - Updated frontend to version ${{ github.event.inputs.version }}
-            - Updated graphql to version ${{ github.event.inputs.version }}
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          MESSAGE="${{ github.event.inputs.message }}"
 
-            ## Docker Images
-            - `ghcr.io/${{ github.repository }}/frontend:v${{ github.event.inputs.version }}`
-            - `ghcr.io/${{ github.repository }}/graphql:v${{ github.event.inputs.version }}`
+          # Create release body with proper multi-line handling
+          cat > /tmp/release_body.md << EOF
+          ## What's Changed
+          - Updated frontend to version $VERSION
+          - Updated graphql to version $VERSION
 
-            ## Helm Chart
-            - Chart version updated with appVersion v${{ github.event.inputs.version }}
+          ## Docker Images
+          - \`ghcr.io/${{ github.repository }}/frontend:v$VERSION\`
+          - \`ghcr.io/${{ github.repository }}/graphql:v$VERSION\`
 
-            ## Release Notes
-            ${{ github.event.inputs.message }}
-          draft: false
-          prerelease: false
+          ## Helm Chart
+          - Chart version updated with appVersion v$VERSION
+
+          ## Release Notes
+          $MESSAGE
+          EOF
+
+          # Create the release using GitHub CLI
+          gh release create "v$VERSION" \
+            --title "v$VERSION" \
+            --notes-file /tmp/release_body.md \
+            --draft=false \
+            --prerelease=false
+
+          rm /tmp/release_body.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
