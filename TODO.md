@@ -1,6 +1,7 @@
 # TODO (in no particular order)
 
 ## Bugs
+- Recap default location should be at the top/sort locations
 
 ## Small QoLs
 - Figure out better colors for training levels
