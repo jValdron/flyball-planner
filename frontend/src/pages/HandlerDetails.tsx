@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useClub } from '../contexts/ClubContext'
 import { Trash, PlusLg, ChevronLeft, Save } from 'react-bootstrap-icons'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
+import { useDogModal } from '../hooks/useDogModal'
 import { useQuery, useMutation } from '@apollo/client'
 import { GetHandlerById, CreateHandler, UpdateHandler, DeleteHandler } from '../graphql/handlers'
 import { formatFullDateTime } from '../utils/dateUtils'
@@ -19,8 +20,10 @@ function HandlerDetails() {
   const navigate = useNavigate()
   const { handlerId } = useParams<{ handlerId: string }>()
   const { selectedClub } = useClub()
+  const { openCreateModal, DogModalComponent } = useDogModal()
   const [error, setError] = useState<string | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [shouldOpenDogModal, setShouldOpenDogModal] = useState(false)
   const [formData, setFormData] = useState<HandlerFormData>({
     givenName: '',
     surname: ''
@@ -52,8 +55,13 @@ function HandlerDetails() {
   // Mutations
   const [createHandler] = useMutation(CreateHandler, {
     onCompleted: (data) => {
-      if (data.createHandler) {
-        navigate('/dogs')
+      if (data.createHandler?.id) {
+        if (shouldOpenDogModal) {
+          openCreateModal(data.createHandler.id)
+          setShouldOpenDogModal(false)
+        } else {
+          navigate('/dogs')
+        }
       }
     },
     onError: (error) => {
@@ -64,7 +72,7 @@ function HandlerDetails() {
 
   const [updateHandler] = useMutation(UpdateHandler, {
     onCompleted: (data) => {
-      if (data.updateHandler) {
+      if (data.updateHandler?.id) {
         navigate('/dogs')
       }
     },
@@ -90,7 +98,7 @@ function HandlerDetails() {
     }))
   }
 
-  const handleSubmit = async (e: React.FormEvent, redirectToNewDog: boolean = false) => {
+  const handleSubmit = async (e: React.FormEvent, openDogModal: boolean = false) => {
     e.preventDefault()
     try {
       setError(null)
@@ -101,19 +109,22 @@ function HandlerDetails() {
             ...formData
           }
         })
-        if (redirectToNewDog) {
-          navigate(`/dogs/new?ownerId=${handlerId}`)
+        if (openDogModal) {
+          openCreateModal(handlerId)
+        } else {
+          navigate('/dogs')
         }
       } else {
-        const result = await createHandler({
+        // Set the flag before creating the handler
+        if (openDogModal) {
+          setShouldOpenDogModal(true)
+        }
+        await createHandler({
           variables: {
             ...formData,
             clubId: selectedClub?.id || ''
           }
         })
-        if (result.data?.createHandler && redirectToNewDog) {
-          navigate(`/dogs/new?ownerId=${result.data.createHandler.id}`)
-        }
       }
     } catch (err) {
       // Error handling is done in onError callbacks
@@ -179,7 +190,7 @@ function HandlerDetails() {
         <div className="d-flex gap-2">
           {!isNewHandler && handlerData?.handler && (
             <>
-              <Button variant="success" className="d-flex align-items-center" onClick={() => handlerData.handler && navigate(`/dogs/new?handlerId=${handlerData.handler.id}`)}>
+              <Button variant="success" className="d-flex align-items-center" onClick={() => openCreateModal(handlerId)}>
                 <PlusLg className="me-2" />
                 Add Dog
               </Button>
@@ -224,7 +235,7 @@ function HandlerDetails() {
         <div className="d-flex gap-2 mt-4 justify-content-end">
           <Button
             type="button"
-            variant="secondary"
+            variant="outline-secondary"
             onClick={() => navigate('/dogs')}
           >
             <ChevronLeft className="me-2" />
@@ -232,7 +243,7 @@ function HandlerDetails() {
           </Button>
           <Button
             type="submit"
-            variant="primary"
+            variant="outline-primary"
             className="d-flex align-items-center"
           >
             <Save className="me-2" />
@@ -245,8 +256,8 @@ function HandlerDetails() {
               className="d-flex align-items-center"
               onClick={(e) => handleSubmit(e, true)}
             >
-              <Save className="me-2" />
-              Save & Add Dog
+              <PlusLg className="me-2" />
+              Save & New Dog
             </Button>
           )}
         </div>
@@ -258,6 +269,8 @@ function HandlerDetails() {
           </div>
         )}
       </Form>
+
+      <DogModalComponent onSuccess={() => navigate('/dogs')} />
     </Container>
   )
 }

@@ -138,7 +138,6 @@ function AppWithTitle({ isAuthenticated }: { isAuthenticated: boolean }) {
                       <Route path="/" element={<Practices />} />
                       <Route path="/account" element={<AccountDetails />} />
                       <Route path="/dogs" element={<Dogs />} />
-                      <Route path="/dogs/new" element={<DogDetails />} />
                       <Route path="/dogs/:dogId" element={<DogDetails />} />
                       <Route path="/handlers/:handlerId" element={<HandlerDetails />} />
                       <Route path="/club" element={<ClubDetails />} />

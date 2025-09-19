@@ -9,6 +9,7 @@ import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import { PlusLg, Trash, PersonPlus, Pencil } from 'react-bootstrap-icons'
 import { DeleteDog } from '../graphql/dogs'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { useDogModal } from '../hooks/useDogModal'
 import type { DogStatus, Handler, Dog } from '../graphql/generated/graphql'
 import { getFilteredAndSortedDogsByHandlers, getHandlerName } from '../utils/dogsUtils'
 import DogModal from '../components/DogModal'
@@ -29,6 +30,7 @@ function Dogs() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { selectedClub, dogsByHandlersInSelectedClub, error: clubError } = useClub()
   const { isDark } = useTheme()
+  const { openCreateModal, DogModalComponent } = useDogModal()
   const [error, setError] = useState<string | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -124,7 +126,7 @@ function Dogs() {
             <PersonPlus className="me-2" />
             New Handler
           </Button>
-          <Button variant="primary" className="d-flex align-items-center" onClick={() => navigate('/dogs/new')}>
+          <Button variant="primary" className="d-flex align-items-center" onClick={() => openCreateModal()}>
             <PlusLg className="me-2" />
             New Dog
           </Button>
@@ -192,7 +194,7 @@ function Dogs() {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation()
-                            navigate(`/dogs/new?ownerId=${handler.id}`)
+                            openCreateModal(handler.id)
                           }}
                         >
                           <PlusLg className="me-1" />
@@ -223,7 +225,7 @@ function Dogs() {
                         <td className="col-1 text-nowrap text-end">
                           <div className="d-flex gap-1 justify-content-end">
                             <Button
-                              variant="outline-primary"
+                              variant="outline-secondary"
                               size="sm"
                               onClick={(e) => handleEdit(e, dog)}
                             >
@@ -270,6 +272,8 @@ function Dogs() {
         dog={dogData?.dog || null}
         onSuccess={handleEditSuccess}
       />
+
+      <DogModalComponent />
     </Container>
   )
 }

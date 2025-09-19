@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react'
 import { Modal, Form, Button, Alert } from 'react-bootstrap'
 import { useMutation, useQuery } from '@apollo/client'
 import { CreateDog, UpdateDog, GetDogsByHandlersInClub } from '../graphql/dogs'
@@ -10,14 +10,23 @@ import { useClub } from '../contexts/ClubContext'
 import { Save, PlusLg } from 'react-bootstrap-icons'
 
 interface DogModalProps {
-  show: boolean
-  onHide: () => void
+  show?: boolean
+  onHide?: () => void
   dog?: DogForModal | null
+  ownerId?: string
   onSuccess?: () => void
 }
 
-function DogModal({ show, onHide, dog, onSuccess }: DogModalProps) {
+export interface DogModalRef {
+  open: (options?: { dog?: DogForModal | null; ownerId?: string }) => void
+  close: () => void
+}
+
+const DogModal = forwardRef<DogModalRef, DogModalProps>(({ show, onHide, dog, ownerId, onSuccess }, ref) => {
   const { selectedClub } = useClub()
+  const [isOpen, setIsOpen] = useState(show || false)
+  const [currentDog, setCurrentDog] = useState<DogForModal | null>(dog || null)
+  const [currentOwnerId, setCurrentOwnerId] = useState<string | undefined>(ownerId)
   const [formData, setFormData] = useState<Partial<Dog>>({
     name: '',
     trainingLevel: TrainingLevel.Beginner,
@@ -27,9 +36,28 @@ function DogModal({ show, onHide, dog, onSuccess }: DogModalProps) {
   })
   const [error, setError] = useState<string | null>(null)
 
+  useImperativeHandle(ref, () => ({
+    open: (options?: { dog?: DogForModal | null; ownerId?: string }) => {
+      if (options?.dog) {
+        setCurrentDog(options.dog)
+      } else {
+        setCurrentDog(null)
+      }
+      if (options?.ownerId !== undefined) {
+        setCurrentOwnerId(options.ownerId)
+      } else {
+        setCurrentOwnerId(undefined)
+      }
+      setIsOpen(true)
+    },
+    close: () => {
+      setIsOpen(false)
+    }
+  }))
+
   const { data: ownersData, loading: loadingOwners } = useQuery(GetDogsByHandlersInClub, {
     variables: { clubId: selectedClub?.id || '' },
-    skip: !selectedClub?.id,
+    skip: !selectedClub?.id || !isOpen,
     onError: (error) => {
       console.error('Error loading owners:', error)
     }
@@ -58,24 +86,56 @@ function DogModal({ show, onHide, dog, onSuccess }: DogModalProps) {
   })
 
   useEffect(() => {
-    if (dog) {
+    if (show !== undefined) {
+      setIsOpen(show)
+      if (show) {
+        if (dog) {
+          setCurrentDog(dog)
+          setFormData({
+            name: dog.name,
+            crn: dog.crn,
+            trainingLevel: dog.trainingLevel,
+            ownerId: dog.ownerId,
+            status: dog.status
+          })
+        } else {
+          setCurrentDog(null)
+          setFormData({
+            name: '',
+            trainingLevel: TrainingLevel.Beginner,
+            clubId: selectedClub?.id || '',
+            ownerId: ownerId || '',
+            status: DogStatus.Active
+          })
+        }
+        if (ownerId !== undefined) {
+          setCurrentOwnerId(ownerId)
+        }
+      }
+    }
+  }, [show, dog, ownerId, selectedClub?.id])
+
+
+  // Update form data when current dog or owner changes (for programmatic updates)
+  useEffect(() => {
+    if (currentDog && !show) {
       setFormData({
-        name: dog.name,
-        crn: dog.crn,
-        trainingLevel: dog.trainingLevel,
-        ownerId: dog.ownerId,
-        status: dog.status
+        name: currentDog.name,
+        crn: currentDog.crn,
+        trainingLevel: currentDog.trainingLevel,
+        ownerId: currentDog.ownerId,
+        status: currentDog.status
       })
-    } else {
+    } else if (!currentDog && !show) {
       setFormData({
         name: '',
         trainingLevel: TrainingLevel.Beginner,
         clubId: selectedClub?.id || '',
-        ownerId: '',
+        ownerId: currentOwnerId || '',
         status: DogStatus.Active
       })
     }
-  }, [dog, selectedClub?.id])
+  }, [currentDog, currentOwnerId, selectedClub?.id, show])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -89,10 +149,10 @@ function DogModal({ show, onHide, dog, onSuccess }: DogModalProps) {
     e.preventDefault()
     try {
       setError(null)
-      if (dog) {
+      if (currentDog) {
         await updateDog({
           variables: {
-            id: dog.id,
+            id: currentDog.id,
             ...formData
           }
         })
@@ -114,20 +174,21 @@ function DogModal({ show, onHide, dog, onSuccess }: DogModalProps) {
       name: '',
       trainingLevel: TrainingLevel.Beginner,
       clubId: selectedClub?.id || '',
-      ownerId: '',
+      ownerId: currentOwnerId || '',
       status: DogStatus.Active
     })
     setError(null)
-    onHide()
+    setIsOpen(false)
+    onHide?.()
   }
 
   const saving = creating || updating
 
   return (
-    <Modal show={show} onHide={handleClose} size="lg">
+    <Modal show={isOpen} onHide={handleClose} size="lg">
       <Modal.Header closeButton>
         <Modal.Title className="d-flex align-items-center">
-          {dog ? (
+          {currentDog ? (
             <>
               <Save className="me-2" />
               Edit Dog
@@ -223,12 +284,14 @@ function DogModal({ show, onHide, dog, onSuccess }: DogModalProps) {
           </Button>
           <Button type="submit" variant="success" disabled={saving} className="d-flex align-items-center">
             <Save className="me-2" />
-            {dog ? 'Save Changes' : 'Create Dog'}
+            {currentDog ? 'Save Changes' : 'Create Dog'}
           </Button>
         </Modal.Footer>
       </Form>
     </Modal>
   )
-}
+})
+
+DogModal.displayName = 'DogModal'
 
 export default DogModal
