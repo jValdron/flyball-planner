@@ -61,7 +61,7 @@ jobs:
             echo "No chart publishing needed (version already exists in gh-pages)"
           fi
 
-      - name: Update app version for tags
+      - name: Update app version and bump chart version for tags
         if: env.IS_TAG_OR_DISPATCH == 'true' && steps.should-publish.outputs.publish == 'true'
         run: |
           if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
@@ -75,14 +75,33 @@ jobs:
           sed -i "s/^appVersion: .*/appVersion: \"$TAG_VERSION\"/" deploy/charts/flyball-planner/Chart.yaml
           echo "Updated app version to $TAG_VERSION"
 
+          CURRENT_VERSION=$(grep '^version:' deploy/charts/flyball-planner/Chart.yaml | awk '{print $2}')
+          echo "Current chart version: $CURRENT_VERSION"
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+
+          NEW_MINOR=$((MINOR + 1))
+          NEW_VERSION="$MAJOR.$NEW_MINOR.0"
+
+          sed -i "s/^version: .*/version: $NEW_VERSION/" deploy/charts/flyball-planner/Chart.yaml
+          echo "Updated chart version from $CURRENT_VERSION to $NEW_VERSION"
+
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
           git fetch origin main
           git checkout main
           git add deploy/charts/flyball-planner/Chart.yaml
-          git commit -m "Update appVersion to $TAG_VERSION for chart version ${{ env.CHART_VERSION }}"
+          git commit -m "Update appVersion to $TAG_VERSION and bump chart version to $NEW_VERSION"
           git push origin main
-          echo "✅ Committed appVersion update to $TAG_VERSION"
+          echo "✅ Committed appVersion update to $TAG_VERSION and chart version bump to $NEW_VERSION"
+
+      - name: Update chart version environment variable
+        if: env.IS_TAG_OR_DISPATCH == 'true' && steps.should-publish.outputs.publish == 'true'
+        run: |
+          # Get the updated chart version after the bump
+          UPDATED_CHART_VERSION=$(helm show chart deploy/charts/flyball-planner | grep '^version:' | awk '{print $2}')
+          echo "CHART_VERSION=$UPDATED_CHART_VERSION" >> $GITHUB_ENV
+          echo "Updated chart version to: $UPDATED_CHART_VERSION"
 
       - name: Package Helm chart
         if: steps.should-publish.outputs.publish == 'true'
