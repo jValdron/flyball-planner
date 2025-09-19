@@ -289,10 +289,10 @@ function PracticeDetailsContent() {
             const statusButton = (
               <ToggleButton
                 id="status-toggle"
-                checked={practice.status === PracticeStatus.Ready}
-                onChange={(checked) => handleStatusChange(checked ? PracticeStatus.Ready : PracticeStatus.Draft)}
+                checked={practice.status !== PracticeStatus.Ready}
+                onChange={(checked) => handleStatusChange(checked ? PracticeStatus.Draft : PracticeStatus.Ready)}
                 label={practice.status === PracticeStatus.Ready ? "Mark as Draft" : "Mark as Ready"}
-                variant="success"
+                variant={practice.status === PracticeStatus.Ready ? "warning" : "success"}
                 disabled={shouldDisable}
               />
             )

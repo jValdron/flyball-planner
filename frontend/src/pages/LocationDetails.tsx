@@ -142,7 +142,7 @@ function LocationDetails() {
         <h2 className="mb-0">{locationId ? locationData?.location?.name : 'Add New Location'}</h2>
         {locationId && (
           <Button
-            variant="danger"
+            variant="outline-danger"
             onClick={() => setShowDeleteModal(true)}
             disabled={saving}
           >
@@ -194,7 +194,7 @@ function LocationDetails() {
         <div className="d-flex gap-2 mt-4 justify-content-end">
           <Button
             type="button"
-            variant="secondary"
+            variant="outline-secondary"
             onClick={() => navigate('/club')}
             disabled={saving}
           >
