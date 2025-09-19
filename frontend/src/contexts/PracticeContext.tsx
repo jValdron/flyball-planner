@@ -1,12 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useReducer } from 'react'
+
 import { useSubscription, useQuery } from '@apollo/client'
-import {
-  PRACTICE_CHANGED_SUBSCRIPTION,
-  PRACTICE_ATTENDANCE_CHANGED_SUBSCRIPTION,
-  PRACTICE_SET_CHANGED_SUBSCRIPTION
-} from '../graphql/subscriptions'
-import { GetPractice } from '../graphql/practice'
-import { AttendanceStatus } from '../graphql/generated/graphql'
+
 import type {
   PracticeChangedSubscription,
   PracticeAttendanceChangedSubscription,
@@ -15,9 +10,16 @@ import type {
   Set,
   PracticeAttendance
 } from '../graphql/generated/graphql'
-import { useClub } from './ClubContext'
+import { AttendanceStatus } from '../graphql/generated/graphql'
+import {
+  PRACTICE_CHANGED_SUBSCRIPTION,
+  PRACTICE_ATTENDANCE_CHANGED_SUBSCRIPTION,
+  PRACTICE_SET_CHANGED_SUBSCRIPTION
+} from '../graphql/subscriptions'
+import { GetPractice } from '../graphql/practice'
 import type { VirtualAttendanceData, MergedAttendanceData } from '../types/attendance'
 import { enrichDogs } from '../utils/dogsUtils'
+import { useClub } from './ClubContext'
 
 
 interface PracticeContextType {

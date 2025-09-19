@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react'
+
 import { Button, Table, Form, InputGroup } from 'react-bootstrap'
 import { CheckLg, XLg } from 'react-bootstrap-icons'
+import { useMutation } from '@apollo/client'
+
+import type { UpdateAttendancesMutation } from '../../graphql/generated/graphql'
+import { AttendanceStatus, DogStatus } from '../../graphql/generated/graphql'
+import { UpdateAttendances } from '../../graphql/attendance'
+import { getFilteredAndSortedDogsByHandlers, getHandlerName } from '../../utils/dogsUtils'
 import { useClub } from '../../contexts/ClubContext'
 import { usePractice } from '../../contexts/PracticeContext'
-import { useMutation } from '@apollo/client'
-import { UpdateAttendances } from '../../graphql/attendance'
-import { AttendanceStatus, DogStatus } from '../../graphql/generated/graphql'
-import type { UpdateAttendancesMutation } from '../../graphql/generated/graphql'
 import { useTheme } from '../../contexts/ThemeContext'
-import { getFilteredAndSortedDogsByHandlers, getHandlerName } from '../../utils/dogsUtils'
 
 const SAVE_DELAY = 25
 

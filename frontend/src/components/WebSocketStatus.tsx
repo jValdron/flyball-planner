@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
-import { Toast, ToastContainer } from 'react-bootstrap';
-import { wsClient } from '../apollo/client';
-import { useTheme } from '../contexts/ThemeContext';
+import React, { useEffect, useState } from 'react'
+
+import { Toast, ToastContainer } from 'react-bootstrap'
+
+import { wsClient } from '../apollo/client'
+import { useTheme } from '../contexts/ThemeContext'
 
 export const WebSocketStatus: React.FC = () => {
   const [showToast, setShowToast] = useState(false);

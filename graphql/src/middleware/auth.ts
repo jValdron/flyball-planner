@@ -1,7 +1,8 @@
-import { MiddlewareFn } from 'type-graphql';
-import { AuthService } from '../services/AuthService';
-import { Request } from 'express';
-import { In } from 'typeorm';
+import { MiddlewareFn } from 'type-graphql'
+import { Request } from 'express'
+import { In } from 'typeorm'
+
+import { AuthService } from '../services/AuthService'
 
 export interface AuthContext {
   req: Request;

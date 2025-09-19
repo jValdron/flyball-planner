@@ -1,13 +1,15 @@
 import React from 'react'
+
 import { Dropdown } from 'react-bootstrap'
 import { Check } from 'react-bootstrap-icons'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@apollo/client'
+
+import type { GetClubsQuery, Club } from '../graphql/generated/graphql'
+import { GetClubs } from '../graphql/clubs'
 import { useAuth } from '../contexts/AuthContext'
 import { useClub } from '../contexts/ClubContext'
-import { useQuery } from '@apollo/client'
-import { GetClubs } from '../graphql/clubs'
 import { ThemeToggle } from './ThemeToggle'
-import type { GetClubsQuery, Club } from '../graphql/generated/graphql'
 
 export const UserDropdown: React.FC = () => {
   const navigate = useNavigate()

@@ -1,5 +1,6 @@
-import { createPubSub } from '@graphql-yoga/subscription';
-import { EventType } from '../types/SubscriptionTypes';
+import { createPubSub } from '@graphql-yoga/subscription'
+
+import { EventType } from '../types/SubscriptionTypes'
 
 export enum SubscriptionEvents {
   CLUB_CREATED = 'CLUB_CREATED',

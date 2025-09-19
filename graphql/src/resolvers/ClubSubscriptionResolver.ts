@@ -1,7 +1,8 @@
-import { Resolver, Subscription, Root, Arg, UseMiddleware, Ctx } from 'type-graphql';
-import { ClubEvent, DogEvent, HandlerEvent, LocationEvent } from '../types/SubscriptionTypes';
-import { pubsub, SubscriptionEvents } from '../services/PubSubService';
-import { AuthContext, isAuth } from '../middleware/auth';
+import { Resolver, Subscription, Root, Arg, UseMiddleware, Ctx } from 'type-graphql'
+
+import { ClubEvent, DogEvent, HandlerEvent, LocationEvent } from '../types/SubscriptionTypes'
+import { isAuth } from '../middleware/auth'
+import { SubscriptionEvents } from '../services/PubSubService'
 
 // Helper functions for subscription filters
 const createClubFilter = (user: any, clubId: string) => {

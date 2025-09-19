@@ -1,5 +1,7 @@
 import React from 'react'
+
 import { Badge } from 'react-bootstrap'
+
 import { TrainingLevel } from '../graphql/generated/graphql'
 import { getTrainingLevelInfo } from '../utils/trainingLevels'
 import { useTheme } from '../contexts/ThemeContext'

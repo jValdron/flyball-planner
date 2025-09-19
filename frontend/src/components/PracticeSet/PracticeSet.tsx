@@ -1,23 +1,25 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
+
 import { Button, Form, Card, Spinner, Badge, Alert } from 'react-bootstrap'
+import { GripVertical, PlusLg, Trash, Journal, Arrow90degLeft, CheckSquareFill, Square } from 'react-bootstrap-icons'
 import { DndContext, DragOverlay } from '@dnd-kit/core'
 import type { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { DragProvider, useDrag } from '../../contexts/DragContext'
 import { useMutation } from '@apollo/client'
-import { UpdateSets, DeleteSets } from '../../graphql/sets'
+
+import type { UpdateSetsMutation, DeleteSetsMutation, Dog, SetDog, Location } from '../../graphql/generated/graphql'
 import { SetType, AttendanceStatus, Lane, DogStatus } from '../../graphql/generated/graphql'
-import { GripVertical, PlusLg, Trash, Journal, Arrow90degLeft, CheckSquareFill, Square } from 'react-bootstrap-icons'
-import { SaveSpinner } from '../SaveSpinner'
+import { UpdateSets, DeleteSets } from '../../graphql/sets'
+import type { ValidationError } from '../../services/practiceValidation'
+import { DragProvider, useDrag } from '../../contexts/DragContext'
 import { useClub } from '../../contexts/ClubContext'
 import { usePractice } from '../../contexts/PracticeContext'
-import type { UpdateSetsMutation, DeleteSetsMutation, Dog, SetDog, Location } from '../../graphql/generated/graphql'
+import { useTheme } from '../../contexts/ThemeContext'
+import { SaveSpinner } from '../SaveSpinner'
 import { DogsPicker } from '../DogsPicker'
 import { SetTypeAutocomplete } from './SetTypeAutocomplete'
 import { LocationSelector } from './LocationSelector'
-import { useTheme } from '../../contexts/ThemeContext'
-import type { ValidationError } from '../../services/practiceValidation'
 
 interface DogWithSetCount extends Dog {
   setCount: number

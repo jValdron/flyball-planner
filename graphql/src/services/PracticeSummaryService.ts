@@ -1,8 +1,8 @@
-import { AppDataSource } from '../db';
-import { Practice } from '../models/Practice';
-import { PracticeSummary } from '../types/SubscriptionTypes';
-import { AttendanceStatus } from '../models/PracticeAttendance';
-import { Dog, DogStatus } from '../models/Dog';
+import { AppDataSource } from '../db'
+import { Practice } from '../models/Practice'
+import { AttendanceStatus } from '../models/PracticeAttendance'
+import { Dog, DogStatus } from '../models/Dog'
+import { PracticeSummary } from '../types/SubscriptionTypes'
 
 export class PracticeSummaryService {
   private static practiceRepository = AppDataSource.getRepository(Practice);

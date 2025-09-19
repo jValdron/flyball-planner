@@ -1,6 +1,7 @@
 import { useRef, useMemo } from 'react'
-import DogModal, { type DogModalRef } from '../components/DogModal'
+
 import type { Dog } from '../graphql/generated/graphql'
+import DogModal, { type DogModalRef } from '../components/DogModal'
 
 type DogForModal = Pick<Dog, 'id' | 'name' | 'crn' | 'trainingLevel' | 'ownerId' | 'status'>
 

@@ -1,10 +1,12 @@
 import { useState } from 'react'
+
 import { Container, Alert, Spinner, Button, Badge, OverlayTrigger, Tooltip, Row, Col } from 'react-bootstrap'
 import { useParams, useSearchParams } from 'react-router-dom'
-import { useQuery, gql } from '@apollo/client'
-import { formatFullDateTime } from '../utils/dateUtils'
 import { Printer, Globe } from 'react-bootstrap-icons'
+import { useQuery, gql } from '@apollo/client'
+
 import { PracticeStatus } from '../graphql/generated/graphql'
+import { formatFullDateTime } from '../utils/dateUtils'
 import { SetViewOnly } from '../components/PracticeSet/SetViewOnly'
 import './PublicPracticeView.css'
 

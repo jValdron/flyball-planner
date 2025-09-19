@@ -1,9 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
-import { ObjectType, Field, ID, registerEnumType } from 'type-graphql';
-import { Practice } from './Practice';
-import { SetDog } from './SetDog';
-import { Location } from './Location';
-import { Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm'
+import { ObjectType, Field, ID, registerEnumType } from 'type-graphql'
+
+import { Practice } from './Practice'
+import { SetDog } from './SetDog'
+import { Location } from './Location'
 
 export enum SetType {
   Custom = 'Custom',

@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react';
-import { useClub } from '../contexts/ClubContext';
-import { LoadingSpinner } from './LoadingSpinner';
+import type { ReactNode } from 'react'
+
+import { useClub } from '../contexts/ClubContext'
+import { LoadingSpinner } from './LoadingSpinner'
 
 interface ClubLoadingWrapperProps {
   children: ReactNode;

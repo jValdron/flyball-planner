@@ -1,13 +1,15 @@
 import { useState, useMemo } from 'react'
+
 import { Button, Spinner } from 'react-bootstrap'
 import { DashCircle, HandThumbsUpFill, HandThumbsDownFill } from 'react-bootstrap-icons'
-import { SetRating } from '../../graphql/generated/graphql'
 import { useMutation, useQuery } from '@apollo/client'
+
+import type { Set, DogNote, PracticeDogNote } from '../../graphql/generated/graphql'
+import { SetRating } from '../../graphql/generated/graphql'
 import { UPDATE_SET_RATING } from '../../graphql/sets'
 import { GET_DOG_NOTES_BY_PRACTICE, CREATE_SET_DOG_NOTE, UPDATE_DOG_NOTE, DELETE_DOG_NOTE } from '../../graphql/dogNotes'
 import { SetDisplayBase } from './SetDisplayBase'
 import DogNotes from '../DogNotes'
-import type { Set, DogNote, PracticeDogNote } from '../../graphql/generated/graphql'
 
 interface SetRecapViewProps {
   sets: Set[]

@@ -1,11 +1,12 @@
-import { ObjectType, Field, registerEnumType } from 'type-graphql';
-import { Club } from '../models/Club';
-import { Dog } from '../models/Dog';
-import { Handler } from '../models/Handler';
-import { Location } from '../models/Location';
-import { Practice, PracticeStatus } from '../models/Practice';
-import { PracticeAttendance } from '../models/PracticeAttendance';
-import { Set as SetModel } from '../models/Set';
+import { ObjectType, Field, registerEnumType } from 'type-graphql'
+
+import { Club } from '../models/Club'
+import { Dog } from '../models/Dog'
+import { Handler } from '../models/Handler'
+import { Location } from '../models/Location'
+import { Practice, PracticeStatus } from '../models/Practice'
+import { PracticeAttendance } from '../models/PracticeAttendance'
+import { Set as SetModel } from '../models/Set'
 
 export enum EventType {
   CREATED = 'CREATED',

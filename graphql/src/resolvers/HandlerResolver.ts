@@ -1,9 +1,9 @@
-import { Resolver, Query, Mutation, Arg, UseMiddleware, Ctx } from 'type-graphql';
-import { Handler } from '../models/Handler';
-import { AppDataSource } from '../db';
-import { ID } from 'type-graphql';
-import { PubSubService, SubscriptionEvents } from '../services/PubSubService';
-import { AuthContext, isAuth, hasClubAccess, createClubFilter } from '../middleware/auth';
+import { Resolver, Query, Mutation, Arg, UseMiddleware, Ctx, ID } from 'type-graphql'
+
+import { Handler } from '../models/Handler'
+import { AppDataSource } from '../db'
+import { AuthContext, isAuth, hasClubAccess, createClubFilter } from '../middleware/auth'
+import { PubSubService, SubscriptionEvents } from '../services/PubSubService'
 
 @Resolver(Handler)
 export class HandlerResolver {

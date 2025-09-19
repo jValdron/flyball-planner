@@ -1,11 +1,13 @@
-import { Resolver, Query, Mutation, Arg, UseMiddleware, Ctx } from 'type-graphql';
-import { Practice, PracticeStatus } from '../models/Practice';
-import { AppDataSource } from '../db';
-import { PubSubService, SubscriptionEvents } from '../services/PubSubService';
-import { PracticeSummaryService } from '../services/PracticeSummaryService';
-import { PracticeSummary } from '../types/SubscriptionTypes';
-import { AuthContext, isAuth, hasClubAccess, createClubFilter } from '../middleware/auth';
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'crypto'
+
+import { Resolver, Query, Mutation, Arg, UseMiddleware, Ctx } from 'type-graphql'
+
+import { Practice, PracticeStatus } from '../models/Practice'
+import { AppDataSource } from '../db'
+import { AuthContext, isAuth, hasClubAccess, createClubFilter } from '../middleware/auth'
+import { PubSubService, SubscriptionEvents } from '../services/PubSubService'
+import { PracticeSummaryService } from '../services/PracticeSummaryService'
+import { PracticeSummary } from '../types/SubscriptionTypes'
 
 @Resolver(Practice)
 export class PracticeResolver {

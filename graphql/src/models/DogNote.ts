@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
-import { ObjectType, Field, ID } from 'type-graphql';
-import { Dog } from './Dog';
-import { SetDogNote } from './SetDogNote';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne, JoinColumn } from 'typeorm'
+import { ObjectType, Field, ID } from 'type-graphql'
+
+import { Dog } from './Dog'
+import { SetDogNote } from './SetDogNote'
 
 @ObjectType()
 @Entity()

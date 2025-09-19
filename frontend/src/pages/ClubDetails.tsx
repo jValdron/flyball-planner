@@ -1,14 +1,16 @@
+import { useState, useEffect } from 'react'
+
 import { Container, Form, Button, Alert, Table, Breadcrumb } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
-import { useClub } from '../contexts/ClubContext'
 import { Save, PlusLg, Trash, CheckLg, XLg } from 'react-bootstrap-icons'
+import { useMutation } from '@apollo/client'
+
+import type { Location, Club } from '../graphql/generated/graphql'
+import { UpdateClub, DeleteLocation } from '../graphql/clubs'
+import { useClub } from '../contexts/ClubContext'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import { SaveSpinner } from '../components/SaveSpinner'
-import { useMutation } from '@apollo/client'
-import { UpdateClub, DeleteLocation } from '../graphql/clubs'
-import { useDocumentTitle } from '../hooks/useDocumentTitle'
-import type { Location, Club } from '../graphql/generated/graphql'
 
 function ClubDetails() {
   const navigate = useNavigate()

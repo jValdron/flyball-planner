@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { ObjectType, Field, ID } from 'type-graphql';
-import { Club } from './Club';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm'
+import { ObjectType, Field, ID } from 'type-graphql'
+
+import { Club } from './Club'
 
 @ObjectType()
 @Entity()

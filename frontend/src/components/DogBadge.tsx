@@ -1,9 +1,11 @@
 import React from 'react'
+
 import { Badge } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
-import { useTheme } from '../contexts/ThemeContext'
-import { getTrainingLevelInfo } from '../utils/trainingLevels'
+
 import type { Dog } from '../graphql/generated/graphql'
+import { getTrainingLevelInfo } from '../utils/trainingLevels'
+import { useTheme } from '../contexts/ThemeContext'
 
 interface DogBadgeProps {
   dog: Dog

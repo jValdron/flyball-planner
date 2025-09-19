@@ -1,11 +1,13 @@
-import { useState } from 'react';
-import { Form, Button, Alert, Container, Card } from 'react-bootstrap';
-import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
-import { useNavigate } from 'react-router-dom';
-import { useDocumentTitle } from '../hooks/useDocumentTitle';
-import logoLight from '../assets/logo-full-light.svg';
-import logoDark from '../assets/logo-full-dark.svg';
+import { useState } from 'react'
+
+import { Form, Button, Alert, Container, Card } from 'react-bootstrap'
+import { useNavigate } from 'react-router-dom'
+
+import logoLight from '../assets/logo-full-light.svg'
+import logoDark from '../assets/logo-full-dark.svg'
+import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 export function LoginForm() {
   const [username, setUsername] = useState('');

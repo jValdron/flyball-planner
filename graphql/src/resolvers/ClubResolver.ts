@@ -1,9 +1,10 @@
-import { Resolver, Query, Mutation, Arg, Ctx, UseMiddleware } from 'type-graphql';
-import { Club } from '../models/Club';
-import { AppDataSource } from '../db';
-import { In } from 'typeorm';
-import { PubSubService, SubscriptionEvents } from '../services/PubSubService';
-import { AuthContext, isAuth, hasClubAccess, createClubFilter } from '../middleware/auth';
+import { Resolver, Query, Mutation, Arg, Ctx, UseMiddleware } from 'type-graphql'
+import { In } from 'typeorm'
+
+import { Club } from '../models/Club'
+import { AppDataSource } from '../db'
+import { AuthContext, isAuth, hasClubAccess, createClubFilter } from '../middleware/auth'
+import { PubSubService, SubscriptionEvents } from '../services/PubSubService'
 
 @Resolver(Club)
 export class ClubResolver {

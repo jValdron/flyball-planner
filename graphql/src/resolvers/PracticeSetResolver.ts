@@ -1,14 +1,14 @@
-import { Resolver, Query, Mutation, Arg, UseMiddleware, Ctx } from 'type-graphql';
-import { SetDog, Lane } from '../models/SetDog';
-import { AppDataSource } from '../db';
-import { InputType, Field, ID } from 'type-graphql';
-import { Set as SetModel, SetType, SetRating } from '../models/Set';
-import { Location } from '../models/Location';
-import { Practice } from '../models/Practice';
-import { In } from 'typeorm';
-import { PubSubService, SubscriptionEvents } from '../services/PubSubService';
-import { PracticeSummaryService } from '../services/PracticeSummaryService';
-import { AuthContext, isAuth, createClubFilter } from '../middleware/auth';
+import { Resolver, Query, Mutation, Arg, UseMiddleware, Ctx, InputType, Field, ID } from 'type-graphql'
+import { In } from 'typeorm'
+
+import { SetDog, Lane } from '../models/SetDog'
+import { Set as SetModel, SetType, SetRating } from '../models/Set'
+import { Location } from '../models/Location'
+import { Practice } from '../models/Practice'
+import { AppDataSource } from '../db'
+import { AuthContext, isAuth, createClubFilter } from '../middleware/auth'
+import { PubSubService, SubscriptionEvents } from '../services/PubSubService'
+import { PracticeSummaryService } from '../services/PracticeSummaryService'
 
 @InputType()
 class SetDogUpdate {

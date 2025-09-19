@@ -1,14 +1,16 @@
+import { useState } from 'react'
+
 import { Container, Form, Button, Alert, Spinner, Breadcrumb } from 'react-bootstrap'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useState } from 'react'
-import { useClub } from '../contexts/ClubContext'
 import { ChevronLeft, Save, Trash } from 'react-bootstrap-icons'
-import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import { useQuery, useMutation } from '@apollo/client'
-import { GetLocationById, CreateLocation, UpdateLocation, DeleteLocation } from '../graphql/clubs'
+
 import type { Location } from '../graphql/generated/graphql'
+import { GetLocationById, CreateLocation, UpdateLocation, DeleteLocation } from '../graphql/clubs'
 import { formatFullDateTime } from '../utils/dateUtils'
+import { useClub } from '../contexts/ClubContext'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 
 function LocationDetails() {
   const navigate = useNavigate()

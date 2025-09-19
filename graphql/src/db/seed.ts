@@ -1,10 +1,11 @@
-import { DataSource } from 'typeorm';
-import { Club } from '../models/Club';
-import { Handler } from '../models/Handler';
-import { Dog, DogStatus, TrainingLevel } from '../models/Dog';
-import { Location } from '../models/Location';
-import { User } from '../models/User';
-import { AuthService } from '../services/AuthService';
+import { DataSource } from 'typeorm'
+
+import { Club } from '../models/Club'
+import { Handler } from '../models/Handler'
+import { Dog, DogStatus, TrainingLevel } from '../models/Dog'
+import { Location } from '../models/Location'
+import { User } from '../models/User'
+import { AuthService } from '../services/AuthService'
 
 const ownersData = [
   { givenName: 'Amanda', surname: 'Baker' },

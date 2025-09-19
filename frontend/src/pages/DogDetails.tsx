@@ -1,19 +1,21 @@
+import { useState } from 'react'
+
 import { Container, Button, Alert, Spinner, Breadcrumb, Card, Badge, ListGroup } from 'react-bootstrap'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useState } from 'react'
 import { Trash, Pencil } from 'react-bootstrap-icons'
+import { useQuery, useMutation } from '@apollo/client'
+
+import type { DogNote } from '../graphql/generated/graphql'
+import { GetDogById, DeleteDog } from '../graphql/dogs'
+import { GET_DOG_NOTES, CREATE_DOG_NOTE, UPDATE_DOG_NOTE, DELETE_DOG_NOTE } from '../graphql/dogNotes'
+import { formatFullDateTime } from '../utils/dateUtils'
+import { enrichDogs } from '../utils/dogsUtils'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { useClub } from '../contexts/ClubContext'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import DogNotes from '../components/DogNotes'
 import DogModal from '../components/DogModal'
-import { useQuery, useMutation } from '@apollo/client'
-import { GetDogById, DeleteDog } from '../graphql/dogs'
-import { GET_DOG_NOTES, CREATE_DOG_NOTE, UPDATE_DOG_NOTE, DELETE_DOG_NOTE } from '../graphql/dogNotes'
-import type { DogNote } from '../graphql/generated/graphql'
-import { formatFullDateTime } from '../utils/dateUtils'
-import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import TrainingLevelBadge from '../components/TrainingLevelBadge'
-import { useClub } from '../contexts/ClubContext'
-import { enrichDogs } from '../utils/dogsUtils'
 
 function DogDetails() {
   const navigate = useNavigate()

@@ -1,19 +1,19 @@
-import React from 'react'
+import React, { useState } from 'react'
+
 import { Container, Table, Button, Badge, Alert, Form, InputGroup, Breadcrumb } from 'react-bootstrap'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useState } from 'react'
+import { PlusLg, Trash, PersonPlus, Pencil } from 'react-bootstrap-icons'
 import { useMutation, useQuery } from '@apollo/client'
+
+import type { DogStatus, Handler, Dog } from '../graphql/generated/graphql'
+import { DeleteDog, GetDogById } from '../graphql/dogs'
+import { getFilteredAndSortedDogsByHandlers, getHandlerName } from '../utils/dogsUtils'
 import { useClub } from '../contexts/ClubContext'
 import { useTheme } from '../contexts/ThemeContext'
-import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
-import { PlusLg, Trash, PersonPlus, Pencil } from 'react-bootstrap-icons'
-import { DeleteDog } from '../graphql/dogs'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { useDogModal } from '../hooks/useDogModal'
-import type { DogStatus, Handler, Dog } from '../graphql/generated/graphql'
-import { getFilteredAndSortedDogsByHandlers, getHandlerName } from '../utils/dogsUtils'
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import DogModal from '../components/DogModal'
-import { GetDogById } from '../graphql/dogs'
 import TrainingLevelBadge from '../components/TrainingLevelBadge'
 
 const getStatusBadge = (status: DogStatus) => {

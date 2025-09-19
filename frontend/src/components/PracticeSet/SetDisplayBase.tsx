@@ -1,11 +1,12 @@
+import React from 'react'
 import { Card, Badge } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
+
+import type { Set, SetDog, Dog } from '../../graphql/generated/graphql'
+import { Lane } from '../../graphql/generated/graphql'
 import { getSetTypeDisplayName } from '../../utils/setTypeUtils'
 import { formatRelativeTime } from '../../utils/dateUtils'
-import { Lane } from '../../graphql/generated/graphql'
-import type { Set, SetDog, Dog } from '../../graphql/generated/graphql'
 import DogBadge from '../DogBadge'
-import './SetViewOnly.css'
 
 interface SetDisplayBaseProps {
   sets: Set[]

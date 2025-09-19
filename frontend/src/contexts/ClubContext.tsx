@@ -1,7 +1,9 @@
 import { createContext, useContext, useState, useEffect, useMemo } from 'react'
 import type { ReactNode } from 'react'
-import type { Club, Dog, Handler, Location } from '../graphql/generated/graphql'
+
 import { useQuery } from '@apollo/client'
+
+import type { Club, Dog, Handler, Location } from '../graphql/generated/graphql'
 import { GetClubById, GetLocationsByClub } from '../graphql/clubs'
 import { GetDogsByHandlersInClub } from '../graphql/dogs'
 import {

@@ -1,8 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
-import { ObjectType, Field, ID, Int, registerEnumType } from 'type-graphql';
-import { Handler } from './Handler';
-import { Club } from './Club';
-import { DogNote } from './DogNote';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm'
+import { ObjectType, Field, ID, registerEnumType } from 'type-graphql'
+
+import { Handler } from './Handler'
+import { Club } from './Club'
+import { DogNote } from './DogNote'
 
 export enum DogStatus {
   Active = 'Active',

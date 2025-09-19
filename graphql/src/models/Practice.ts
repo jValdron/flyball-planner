@@ -1,9 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
-import { ObjectType, Field, ID, registerEnumType } from 'type-graphql';
-import { Club } from './Club';
-import { PracticeAttendance } from './PracticeAttendance';
-import { Set } from './Set';
-import { User } from './User';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm'
+import { ObjectType, Field, ID, registerEnumType } from 'type-graphql'
+
+import { Club } from './Club'
+import { PracticeAttendance } from './PracticeAttendance'
+import { Set } from './Set'
+import { User } from './User'
 
 export enum PracticeStatus {
   Draft = 'Draft',

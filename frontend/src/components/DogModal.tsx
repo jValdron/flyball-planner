@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react'
+
 import { Modal, Form, Button, Alert } from 'react-bootstrap'
+import { Save, PlusLg } from 'react-bootstrap-icons'
 import { useMutation, useQuery } from '@apollo/client'
-import { CreateDog, UpdateDog, GetDogsByHandlersInClub } from '../graphql/dogs'
-import { DogStatus, TrainingLevel } from '../graphql/generated/graphql'
+
 import type { Dog } from '../graphql/generated/graphql'
+import { DogStatus, TrainingLevel } from '../graphql/generated/graphql'
+import { CreateDog, UpdateDog, GetDogsByHandlersInClub } from '../graphql/dogs'
+import { useClub } from '../contexts/ClubContext'
 
 type DogForModal = Pick<Dog, 'id' | 'name' | 'crn' | 'trainingLevel' | 'ownerId' | 'status'>
-import { useClub } from '../contexts/ClubContext'
-import { Save, PlusLg } from 'react-bootstrap-icons'
 
 interface DogModalProps {
   show?: boolean

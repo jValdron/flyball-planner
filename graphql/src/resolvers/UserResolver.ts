@@ -1,9 +1,9 @@
-import { Resolver, Query, Mutation, Arg, Ctx, UseMiddleware } from 'type-graphql';
-import { User } from '../models/User';
-import { AuthService, LoginCredentials } from '../services/AuthService';
-import { isAuth } from '../middleware/auth';
-import { AppDataSource } from '../db';
-import { ObjectType, Field } from 'type-graphql';
+import { Resolver, Query, Mutation, Arg, Ctx, UseMiddleware, ObjectType, Field } from 'type-graphql'
+
+import { User } from '../models/User'
+import { AppDataSource } from '../db'
+import { isAuth } from '../middleware/auth'
+import { AuthService, LoginCredentials } from '../services/AuthService'
 
 @ObjectType()
 class LoginResponse {

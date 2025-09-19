@@ -1,8 +1,11 @@
+import { Suspense, lazy } from 'react'
+
 import { Container, Navbar, Nav } from 'react-bootstrap'
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useParams, useNavigate } from 'react-router-dom'
 import { ApolloProvider } from '@apollo/client'
+
 import { client } from './apollo/client'
-import { Suspense, lazy } from 'react'
+import logo from './assets/logo-full-dark.svg'
 import { ClubProvider } from './contexts/ClubContext'
 import { PracticeProvider } from './contexts/PracticeContext'
 import { ThemeProvider } from './contexts/ThemeContext'
@@ -11,7 +14,6 @@ import { ClubLoadingWrapper } from './components/ClubLoadingWrapper'
 import { WebSocketStatus } from './components/WebSocketStatus'
 import { UserDropdown } from './components/UserDropdown'
 import { LoginForm } from './components/LoginForm'
-import logo from './assets/logo-full-dark.svg'
 
 // Lazy load page components
 const HandlerDetails = lazy(() => import('./pages/HandlerDetails'))

@@ -1,8 +1,10 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import type { ReactNode } from 'react';
-import { useLazyQuery, useMutation } from '@apollo/client';
-import { recreateWsClient } from '../apollo/client';
-import { LoginUser, GetCurrentUser } from '../graphql/auth';
+import { createContext, useContext, useState, useEffect, useMemo } from 'react'
+import type { ReactNode } from 'react'
+
+import { useLazyQuery, useMutation } from '@apollo/client'
+
+import { recreateWsClient } from '../apollo/client'
+import { LoginUser, GetCurrentUser } from '../graphql/auth'
 
 interface User {
   id: string;

@@ -1,16 +1,18 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
+
 import { Form, Badge, Overlay, Popover, Button, CloseButton, OverlayTrigger, Tooltip } from 'react-bootstrap'
 import { GripVertical, ExclamationTriangle, ClockHistory, QuestionCircle } from 'react-bootstrap-icons'
 import { useDroppable, useDndMonitor } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import TrainingLevelBadge from './TrainingLevelBadge'
-import { getTrainingLevelInfo } from '../utils/trainingLevels'
-import { useTheme } from '../contexts/ThemeContext'
-import { useClub } from '../contexts/ClubContext'
+
 import type { Dog, SetDog } from '../graphql/generated/graphql'
 import { AttendanceStatus } from '../graphql/generated/graphql'
 import type { ValidationError } from '../services/practiceValidation'
+import { getTrainingLevelInfo } from '../utils/trainingLevels'
+import { useTheme } from '../contexts/ThemeContext'
+import { useClub } from '../contexts/ClubContext'
+import TrainingLevelBadge from './TrainingLevelBadge'
 
 interface DogWithSetCount extends Dog {
   setCount: number

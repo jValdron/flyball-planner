@@ -1,29 +1,32 @@
-import { ApolloServer } from '@apollo/server';
-import { expressMiddleware } from '@as-integrations/express5';
-import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
-import { config } from 'dotenv';
-import { buildSchema } from 'type-graphql';
-import { createServer } from 'http';
-import { WebSocketServer } from 'ws';
-import { useServer } from 'graphql-ws/lib/use/ws';
-import express from 'express';
-import cors from 'cors';
-import packageJson from '../package.json';
-import { AppDataSource } from './db';
-import { DogResolver } from './resolvers/DogResolver';
-import { HandlerResolver } from './resolvers/HandlerResolver';
-import { ClubResolver } from './resolvers/ClubResolver';
-import { PracticeResolver } from './resolvers/PracticeResolver';
-import { PracticeAttendanceResolver } from './resolvers/PracticeAttendanceResolver';
-import { LocationResolver } from './resolvers/LocationResolver';
-import { PracticeSetResolver } from './resolvers/PracticeSetResolver';
-import { DogNoteResolver } from './resolvers/DogNoteResolver';
-import { ClubSubscriptionResolver } from './resolvers/ClubSubscriptionResolver';
-import { PracticeSubscriptionResolver } from './resolvers/PracticeSubscriptionResolver';
-import { UserResolver } from './resolvers/UserResolver';
-import { pubsub } from './services/PubSubService';
-import { AuthService } from './services/AuthService';
-import { AuthContext, isAuth } from './middleware/auth';
+import { createServer } from 'http'
+import { config } from 'dotenv'
+import path from 'path'
+
+import { ApolloServer } from '@apollo/server'
+import { expressMiddleware } from '@as-integrations/express5'
+import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer'
+import { buildSchema } from 'type-graphql'
+import { WebSocketServer } from 'ws'
+import { useServer } from 'graphql-ws/lib/use/ws'
+import express from 'express'
+import cors from 'cors'
+
+import packageJson from '../package.json'
+import { AppDataSource } from './db'
+import { AuthContext, isAuth } from './middleware/auth'
+import { AuthService } from './services/AuthService'
+import { pubsub } from './services/PubSubService'
+import { ClubResolver } from './resolvers/ClubResolver'
+import { DogResolver } from './resolvers/DogResolver'
+import { HandlerResolver } from './resolvers/HandlerResolver'
+import { PracticeResolver } from './resolvers/PracticeResolver'
+import { PracticeAttendanceResolver } from './resolvers/PracticeAttendanceResolver'
+import { LocationResolver } from './resolvers/LocationResolver'
+import { PracticeSetResolver } from './resolvers/PracticeSetResolver'
+import { DogNoteResolver } from './resolvers/DogNoteResolver'
+import { ClubSubscriptionResolver } from './resolvers/ClubSubscriptionResolver'
+import { PracticeSubscriptionResolver } from './resolvers/PracticeSubscriptionResolver'
+import { UserResolver } from './resolvers/UserResolver'
 
 config();
 

@@ -1,15 +1,17 @@
 import React, { useState } from 'react'
+
 import { Container, Button, Alert, Spinner, Form, Breadcrumb } from 'react-bootstrap'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useClub } from '../contexts/ClubContext'
 import { Trash, PlusLg, ChevronLeft, Save } from 'react-bootstrap-icons'
-import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
-import { useDogModal } from '../hooks/useDogModal'
 import { useQuery, useMutation } from '@apollo/client'
+
+import type { GetHandlerByIdQuery, GetHandlerByIdQueryVariables } from '../graphql/generated/graphql'
 import { GetHandlerById, CreateHandler, UpdateHandler, DeleteHandler } from '../graphql/handlers'
 import { formatFullDateTime } from '../utils/dateUtils'
+import { useClub } from '../contexts/ClubContext'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
-import type { GetHandlerByIdQuery, GetHandlerByIdQueryVariables } from '../graphql/generated/graphql'
+import { useDogModal } from '../hooks/useDogModal'
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 
 type HandlerFormData = {
   givenName: string

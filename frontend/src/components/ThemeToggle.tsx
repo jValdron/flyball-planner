@@ -1,11 +1,13 @@
 import React from 'react'
+
 import { Dropdown } from 'react-bootstrap'
-import { useTheme } from '../contexts/ThemeContext'
 import {
   SunFill,
   MoonFill,
   CircleHalf
 } from 'react-bootstrap-icons'
+
+import { useTheme } from '../contexts/ThemeContext'
 
 export const ThemeToggle: React.FC = () => {
   const { theme, setTheme, isDark } = useTheme()

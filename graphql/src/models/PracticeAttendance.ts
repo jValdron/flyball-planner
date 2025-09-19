@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { ObjectType, Field, ID, registerEnumType } from 'type-graphql';
-import { Practice } from './Practice';
-import { Dog } from './Dog';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm'
+import { ObjectType, Field, ID, registerEnumType } from 'type-graphql'
+
+import { Practice } from './Practice'
+import { Dog } from './Dog'
 
 export enum AttendanceStatus {
   Attending = 'Attending',

@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react'
+
 import { Container, Button, Card, Spinner, Alert, Badge, Form, ListGroup, Breadcrumb } from 'react-bootstrap'
-import { useClub } from '../contexts/ClubContext'
-import { useTheme } from '../contexts/ThemeContext'
 import { Link, useNavigate } from 'react-router-dom'
-import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import { CalendarCheck, CalendarX, CheckLg, Pencil, PlusLg, Trash, FileText, XLg, QuestionLg } from 'react-bootstrap-icons'
+import { compareDesc, isAfter, isBefore, compareAsc } from 'date-fns'
+import { useQuery, useMutation } from '@apollo/client'
+
+import type { PracticeSummary } from '../graphql/generated/graphql'
+import { GetPracticesByClub, DeletePractice} from '../graphql/practice'
 import { formatRelativeTime, isPastDay } from '../utils/dateUtils'
 import { getPracticeCompletionStatus, getNextIncompleteStepUrl } from '../utils/practiceCompletion'
-import { useQuery, useMutation } from '@apollo/client'
-import { GetPracticesByClub, DeletePractice} from '../graphql/practice'
-import { compareDesc, isAfter, isBefore } from 'date-fns'
-import { compareAsc } from 'date-fns'
-import { usePracticeSummaryChangedSubscription } from '../hooks/useSubscription'
+import { useClub } from '../contexts/ClubContext'
+import { useTheme } from '../contexts/ThemeContext'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
-import type { PracticeSummary } from '../graphql/generated/graphql'
+import { usePracticeSummaryChangedSubscription } from '../hooks/useSubscription'
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 
 function Practices() {
   const { selectedClub } = useClub()

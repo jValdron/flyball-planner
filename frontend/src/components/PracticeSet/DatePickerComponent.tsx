@@ -1,10 +1,11 @@
-import { Form } from 'react-bootstrap'
-import Calendar from 'react-calendar'
-import { Calendar as CalendarIcon, CalendarCheck, CalendarX, ChevronLeft, ChevronRight } from 'react-bootstrap-icons'
-import { Badge } from 'react-bootstrap'
-import { CALENDAR_TYPES } from 'react-calendar/dist/shared/const.js'
-import { useClub } from '../../contexts/ClubContext'
 import { useEffect, useState } from 'react'
+
+import { Form, Badge } from 'react-bootstrap'
+import { Calendar as CalendarIcon, CalendarCheck, CalendarX, ChevronLeft, ChevronRight } from 'react-bootstrap-icons'
+import Calendar from 'react-calendar'
+import { CALENDAR_TYPES } from 'react-calendar/dist/shared/const.js'
+
+import { useClub } from '../../contexts/ClubContext'
 
 interface DatePickerComponentProps {
   initialScheduledAt: Date | null

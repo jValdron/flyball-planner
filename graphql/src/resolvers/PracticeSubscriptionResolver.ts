@@ -1,7 +1,8 @@
-import { Resolver, Subscription, Root, Arg, UseMiddleware } from 'type-graphql';
-import { PracticeEvent, PracticeSummaryEvent, PracticeAttendanceEvent, PracticeSetEvent, PracticeDogNoteEvent } from '../types/SubscriptionTypes';
-import { SubscriptionEvents } from '../services/PubSubService';
-import { AuthContext, isAuth } from '../middleware/auth';
+import { Resolver, Subscription, Root, Arg, UseMiddleware } from 'type-graphql'
+
+import { PracticeEvent, PracticeSummaryEvent, PracticeAttendanceEvent, PracticeSetEvent, PracticeDogNoteEvent } from '../types/SubscriptionTypes'
+import { isAuth } from '../middleware/auth'
+import { SubscriptionEvents } from '../services/PubSubService'
 
 // Helper functions for subscription filters
 const createPracticeClubFilter = (user: any, practiceClubId: string, specifiedClubId?: string) => {

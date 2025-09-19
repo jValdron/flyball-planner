@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
+
 import { Form, Dropdown, InputGroup, Button } from 'react-bootstrap'
 import { ChevronDown } from 'react-bootstrap-icons'
+
 import { SetType } from '../../graphql/generated/graphql'
 import { getSetTypeDisplayName, findSetTypeByDisplayName, findSetTypeByPartialMatch } from '../../utils/setTypeUtils'
 

@@ -1,7 +1,8 @@
-import 'reflect-metadata';
-import * as dotenv from 'dotenv';
-import { seedDatabase } from './db/seed';
-import { AppDataSource } from './db';
+import 'reflect-metadata'
+import * as dotenv from 'dotenv'
+
+import { AppDataSource } from './db'
+import { seedDatabase } from './db/seed'
 
 dotenv.config();
 

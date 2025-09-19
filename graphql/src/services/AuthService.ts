@@ -1,7 +1,8 @@
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { AppDataSource } from '../db';
-import { User } from '../models/User';
+import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
+
+import { AppDataSource } from '../db'
+import { User } from '../models/User'
 
 function getJwtSecret(): string {
   const env = process.env.NODE_ENV;

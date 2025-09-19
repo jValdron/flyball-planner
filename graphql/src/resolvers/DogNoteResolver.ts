@@ -1,11 +1,12 @@
-import { Resolver, Query, Mutation, Arg, ID, UseMiddleware, Ctx, InputType, Field, FieldResolver, Root, Subscription } from 'type-graphql';
-import { DogNote } from '../models/DogNote';
-import { SetDogNote } from '../models/SetDogNote';
-import { SetDog } from '../models/SetDog';
-import { AppDataSource } from '../db';
-import { AuthContext, isAuth, hasClubAccess, createClubFilter } from '../middleware/auth';
-import { PubSubService, SubscriptionEvents } from '../services/PubSubService';
-import { PracticeDogNote, DogNoteEvent } from '../types/SubscriptionTypes';
+import { Resolver, Query, Mutation, Arg, ID, UseMiddleware, Ctx, InputType, Field, FieldResolver, Root, Subscription } from 'type-graphql'
+
+import { DogNote } from '../models/DogNote'
+import { SetDogNote } from '../models/SetDogNote'
+import { SetDog } from '../models/SetDog'
+import { AppDataSource } from '../db'
+import { AuthContext, isAuth, hasClubAccess, createClubFilter } from '../middleware/auth'
+import { PubSubService, SubscriptionEvents } from '../services/PubSubService'
+import { PracticeDogNote, DogNoteEvent } from '../types/SubscriptionTypes'
 
 @InputType()
 export class CreateDogNoteInput {

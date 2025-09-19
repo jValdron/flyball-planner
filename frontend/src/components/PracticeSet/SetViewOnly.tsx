@@ -1,5 +1,6 @@
-import { SetDisplayBase } from './SetDisplayBase'
 import type { Set } from '../../graphql/generated/graphql'
+
+import { SetDisplayBase } from './SetDisplayBase'
 
 interface SetViewOnlyProps {
   sets: Set[]

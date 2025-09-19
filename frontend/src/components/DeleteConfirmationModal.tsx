@@ -1,5 +1,6 @@
-import { Modal, Button } from 'react-bootstrap'
 import { useEffect, useRef } from 'react'
+
+import { Modal, Button } from 'react-bootstrap'
 
 interface DeleteConfirmationModalProps {
   show: boolean

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
+
 import { Container, Form, Button, Alert, Breadcrumb, Card, Row, Col } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
-import { useMutation } from '@apollo/client'
-import { UpdateUser, ChangePassword } from '../graphql/auth'
 import { Save, Key, Person } from 'react-bootstrap-icons'
+import { useMutation } from '@apollo/client'
+
+import { UpdateUser, ChangePassword } from '../graphql/auth'
+import { useAuth } from '../contexts/AuthContext'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 export const AccountDetails: React.FC = () => {

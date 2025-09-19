@@ -1,7 +1,9 @@
 import React from 'react'
+
 import { ListGroup, Alert } from 'react-bootstrap'
-import type { ValidationError } from '../../services/practiceValidation'
+
 import type { AttendanceStatus, Dog } from '../../graphql/generated/graphql'
+import type { ValidationError } from '../../services/practiceValidation'
 
 interface PracticeValidationProps {
   validationErrors: ValidationError[]

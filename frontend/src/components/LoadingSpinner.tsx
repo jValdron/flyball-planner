@@ -1,4 +1,4 @@
-import { Spinner, Container } from 'react-bootstrap';
+import { Spinner, Container } from 'react-bootstrap'
 
 interface LoadingSpinnerProps {
   message?: string;

@@ -1,16 +1,18 @@
 import { useState } from 'react'
+
 import { Button, Form, Alert, Modal, Card, CardGroup } from 'react-bootstrap'
 import { PlusLg, Calendar3, ChevronRight, Pencil, Trash, CheckSquareFill, Square } from 'react-bootstrap-icons'
 import { useSubscription } from '@apollo/client'
+import { Link } from 'react-router-dom'
+
 import type { Dog, SetDog, Set, DogNote } from '../graphql/generated/graphql'
 import { Lane, TrainingLevel } from '../graphql/generated/graphql'
 import { formatFullDateTime } from '../utils/dateUtils'
 import { getTrainingLevelInfo } from '../utils/trainingLevels'
-import { Link } from 'react-router-dom'
+import { DOG_NOTE_CHANGED, PRACTICE_DOG_NOTE_CHANGED } from '../graphql/dogNotes'
 import { SetViewOnly } from './PracticeSet/SetViewOnly'
 import DogBadge from './DogBadge'
 import DeleteConfirmationModal from './DeleteConfirmationModal'
-import { DOG_NOTE_CHANGED, PRACTICE_DOG_NOTE_CHANGED } from '../graphql/dogNotes'
 
 interface DogNotesProps {
   notes: DogNote[]
@@ -280,7 +282,7 @@ function DogNotes({
                 </Card.Header>
 
                 <Card.Body>
-                  <p className="mb-0">{note.content}</p>
+                  <p className="mb-0" style={{ whiteSpace: 'pre-wrap' }}>{note.content}</p>
 
                   {!isDogMode && note.setDogs && note.setDogs.length > 0 && (
                     <div className="mt-3 d-flex flex-wrap gap-1">
