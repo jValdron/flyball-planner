@@ -190,18 +190,23 @@ function LocationDetails() {
           />
         </Form.Group>
 
-
         <div className="d-flex gap-2 mt-4 justify-content-end">
           <Button
             type="button"
             variant="outline-secondary"
             onClick={() => navigate('/club')}
             disabled={saving}
+            className="d-flex align-items-center"
           >
             <ChevronLeft className="me-2" />
             Cancel
           </Button>
-          <Button type="submit" variant="success" disabled={saving}>
+          <Button
+            type="submit"
+            variant="success"
+            disabled={saving}
+            className="d-flex align-items-center"
+          >
             <Save className="me-2" />
             {locationId ? 'Save Changes' : 'Create Location'}
           </Button>

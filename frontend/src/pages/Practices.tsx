@@ -223,9 +223,9 @@ function Practices() {
                           {formatRelativeTime(practice.scheduledAt)}
                         </Card.Title>
                         <Card.Text>
-                          {practice.status === 'Ready' && <Badge bg="primary" className="d-inline-block me-2"><CalendarCheck /> Ready</Badge>}
-                          {practice.status === 'Draft' && <Badge bg="warning" className="d-inline-block me-2 text-dark"><Pencil /> Draft</Badge>}
-                          {practiceIsPast && <Badge bg="past" className="d-inline-block me-2 text-dark"><CalendarX /> Past</Badge>}
+                          {practice.status === 'Ready' && <Badge bg="primary" className="d-inline-flex align-items-center me-2"><CalendarCheck className="me-1" /> Ready</Badge>}
+                          {practice.status === 'Draft' && <Badge bg="warning" className="d-inline-flex align-items-center me-2 text-dark"><Pencil className="me-1" /> Draft</Badge>}
+                          {practiceIsPast && <Badge bg="past" className="d-inline-flex align-items-center me-2 text-dark"><CalendarX className="me-1" /> Past</Badge>}
                         </Card.Text>
                       </Card.Body>
                       <ListGroup className="list-group-flush">

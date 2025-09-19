@@ -12,6 +12,7 @@ interface ToggleButtonProps {
   disabled?: boolean
   className?: string
   showIcon?: boolean
+  icon?: React.ReactNode
 }
 
 export function ToggleButton({
@@ -23,7 +24,8 @@ export function ToggleButton({
   size,
   disabled = false,
   className = '',
-  showIcon = true
+  showIcon = true,
+  icon
 }: ToggleButtonProps) {
   const buttonVariant = checked ? variant : `outline-${variant}`
   const iconSize = size === 'lg' ? 16 : 14
@@ -47,10 +49,14 @@ export function ToggleButton({
         disabled={disabled}
       >
         {showIcon && (
-          checked ? (
-            <CheckSquareFill className="me-2" size={iconSize} />
+          icon ? (
+            icon
           ) : (
-            <Square className="me-2" size={iconSize} />
+            checked ? (
+              <CheckSquareFill className="me-2" size={iconSize} />
+            ) : (
+              <Square className="me-2" size={iconSize} />
+            )
           )
         )}
         {label}

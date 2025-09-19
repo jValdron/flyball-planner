@@ -300,14 +300,16 @@ function Dogs() {
                                 variant="outline-secondary"
                                 size="sm"
                                 onClick={(e) => handleEdit(e, dog)}
+                                className="text-nowrap d-flex align-items-center"
                               >
-                                <Pencil className="me-md-1" />
-                                <span className="d-none d-md-inline">Edit</span>
+                                <Pencil className="me-2" />
+                                Edit
                               </Button>
                               <Button
                                 variant="outline-danger"
                                 size="sm"
                                 onClick={(e) => handleDelete(e, dog)}
+                                className="d-flex align-items-center"
                               >
                                 <Trash />
                               </Button>
@@ -340,14 +342,16 @@ function Dogs() {
                           variant="outline-secondary"
                           size="sm"
                           onClick={(e) => handleEdit(e, dogWithHandler)}
+                          className="d-flex align-items-center"
                         >
-                          <Pencil className="me-md-1" />
-                          <span className="d-none d-md-inline">Edit</span>
+                          <Pencil className="me-2" />
+                          Edit
                         </Button>
                         <Button
                           variant="outline-danger"
                           size="sm"
                           onClick={(e) => handleDelete(e, dogWithHandler)}
+                          className="d-flex align-items-center"
                         >
                           <Trash />
                         </Button>

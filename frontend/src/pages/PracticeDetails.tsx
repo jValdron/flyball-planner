@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 
-import { Container, Form, Button, Alert, Spinner, Breadcrumb, Tabs, Tab, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap'
+import { Container, Form, Button, Alert, Spinner, Breadcrumb, Tabs, Tab, Badge, OverlayTrigger, Tooltip, Card, ListGroup } from 'react-bootstrap'
 import { useNavigate, useParams, useLocation, useSearchParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Trash, CheckLg, Share, Pencil, FileText, ExclamationTriangle } from 'react-bootstrap-icons'
+import { ChevronLeft, ChevronRight, Trash, CheckLg, Share, Pencil, FileText, ExclamationTriangle, CalendarCheck, CalendarX, Lock, Unlock } from 'react-bootstrap-icons'
 import { useMutation } from '@apollo/client'
 
 import type { PracticeAttendance as PracticeAttendanceType, CreatePracticeMutation, UpdatePracticeMutation, DeletePracticeMutation } from '../graphql/generated/graphql'
 import { AttendanceStatus, PracticeStatus } from '../graphql/generated/graphql'
 import { CreatePractice, UpdatePractice, DeletePractice } from '../graphql/practice'
-import { formatRelativeTime, isPastDay } from '../utils/dateUtils'
+import { formatRelativeTime, isPastDay, formatFullDateTime } from '../utils/dateUtils'
 import { PracticeValidationService, type ValidationError } from '../services/practiceValidation'
 import { useClub } from '../contexts/ClubContext'
 import { PracticeProvider, usePractice } from '../contexts/PracticeContext'
@@ -281,6 +281,7 @@ function PracticeDetailsContent() {
                   checked={!isLocked}
                   onChange={(checked) => setIsLocked(!checked)}
                   label={isLocked ? "Locked" : "Unlocked"}
+                  icon={isLocked ? <Lock className="me-1" /> : <Unlock className="me-1" />}
                   variant="primary"
                 />
               )
@@ -350,6 +351,43 @@ function PracticeDetailsContent() {
           {error}
         </Alert>
       )}
+
+      <div className="row mb-4">
+        <div className="col-md-6">
+          <Card>
+            <Card.Header>
+              <h5 className="mb-0">Practice Information</h5>
+            </Card.Header>
+            <ListGroup variant="flush">
+              <ListGroup.Item className="d-flex justify-content-between align-items-center">
+                <strong>Status</strong>
+                <div className="d-flex gap-2">
+                  {practice?.status === 'Ready' && <Badge bg="primary" className="d-flex align-items-center"><CalendarCheck className="me-1" /> Ready</Badge>}
+                  {practice?.status === 'Draft' && <Badge bg="warning" className="text-dark d-flex align-items-center"><Pencil className="me-1" /> Draft</Badge>}
+                  {isPastPractice && <Badge bg="secondary" className="text-dark d-flex align-items-center"><CalendarX className="me-1" /> Past</Badge>}
+                </div>
+              </ListGroup.Item>
+            </ListGroup>
+          </Card>
+        </div>
+        <div className="col-md-6">
+          <Card>
+            <Card.Header>
+              <h5 className="mb-0">Timestamps</h5>
+            </Card.Header>
+            <ListGroup variant="flush">
+              <ListGroup.Item className="d-flex justify-content-between align-items-center">
+                <strong>Created</strong>
+                <span className="text-muted">{practice?.createdAt ? formatFullDateTime(practice.createdAt) : 'N/A'}</span>
+              </ListGroup.Item>
+              <ListGroup.Item className="d-flex justify-content-between align-items-center">
+                <strong>Last Updated</strong>
+                <span className="text-muted">{practice?.updatedAt ? formatFullDateTime(practice.updatedAt) : 'N/A'}</span>
+              </ListGroup.Item>
+            </ListGroup>
+          </Card>
+        </div>
+      </div>
 
       <Tabs activeKey={getCurrentTab()} onSelect={(k) => handleTabChange(k || 'date')}>
         <Tab eventKey="date" title={

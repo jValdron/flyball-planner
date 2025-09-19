@@ -202,7 +202,7 @@ function ClubDetails() {
                       variant="outline-primary"
                       size="sm"
                       onClick={() => navigate(`/locations/${location.id}`)}
-                      className="text-nowrap"
+                      className="text-nowrap d-flex align-items-center"
                     >
                       <Pencil className="me-2" />
                       Edit
