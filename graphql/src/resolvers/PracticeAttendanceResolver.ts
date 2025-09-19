@@ -93,8 +93,14 @@ export class PracticeAttendanceResolver {
 
       await queryRunner.commitTransaction();
 
+      // Fetch practice info for privacy filtering
+      const practice = await this.practiceRepository.findOne({
+        where: { id: practiceId },
+        select: ['id', 'clubId', 'isPrivate', 'plannedById']
+      });
+
       for (const attendance of updatedAttendances) {
-        await PubSubService.publishPracticeAttendanceEvent(SubscriptionEvents.PRACTICE_ATTENDANCE_UPDATED, attendance);
+        await PubSubService.publishPracticeAttendanceEvent(SubscriptionEvents.PRACTICE_ATTENDANCE_UPDATED, attendance, practice);
       }
 
       const summary = await PracticeSummaryService.createPracticeSummaryById(practiceId);

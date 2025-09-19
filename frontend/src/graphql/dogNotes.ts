@@ -104,6 +104,7 @@ export const CREATE_SET_DOG_NOTE = graphql(`
       content
       createdAt
       updatedAt
+      isPrivate
       setDogNotes {
         id
         setDog {

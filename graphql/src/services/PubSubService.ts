@@ -1,6 +1,7 @@
 import { createPubSub } from '@graphql-yoga/subscription'
 
 import { EventType } from '../types/SubscriptionTypes'
+import { SetRating } from '../models/Set';
 
 export enum SubscriptionEvents {
   CLUB_CREATED = 'CLUB_CREATED',
@@ -94,17 +95,35 @@ export class PubSubService {
     }
   }
 
-  static async publishPracticeAttendanceEvent(event: SubscriptionEvents, attendance: any): Promise<void> {
+  static async publishPracticeAttendanceEvent(event: SubscriptionEvents, attendance: any, practice?: any): Promise<void> {
     try {
-      await this.publish(event, { attendance, eventType: getEventType(event) });
+      const payload: any = { attendance, eventType: getEventType(event) };
+      if (practice) {
+        payload.practice = {
+          id: practice.id,
+          clubId: practice.clubId,
+          isPrivate: practice.isPrivate,
+          plannedById: practice.plannedById
+        };
+      }
+      await this.publish(event, payload);
     } catch (error) {
       console.error(`Error publishing practice attendance event ${event}:`, error);
     }
   }
 
-  static async publishPracticeSetEvent(event: SubscriptionEvents, set: any): Promise<void> {
+  static async publishPracticeSetEvent(event: SubscriptionEvents, set: any, practice?: any): Promise<void> {
     try {
-      await this.publish(event, { set, eventType: getEventType(event) });
+      const payload: any = { set, eventType: getEventType(event) };
+      if (practice) {
+        payload.practice = {
+          id: practice.id,
+          clubId: practice.clubId,
+          isPrivate: practice.isPrivate,
+          plannedById: practice.plannedById
+        };
+      }
+      await this.publish(event, payload);
     } catch (error) {
       console.error(`Error publishing practice set event ${event}:`, error);
     }
@@ -151,13 +170,13 @@ export class PubSubService {
     }
   }
 
-  static async publishPracticeDogNoteEvent(event: SubscriptionEvents, dogNote: any, practiceId: string): Promise<void> {
+  static async publishPracticeDogNoteEvent(event: SubscriptionEvents, dogNote: any, practiceId: string, practice?: any): Promise<void> {
     try {
       // Extract setId and dogIds from setDogNotes
       const setId = dogNote.setDogNotes?.[0]?.setDog?.set?.id;
       const dogIds = dogNote.setDogNotes?.map((setDogNote: any) => setDogNote.setDog?.dogId).filter(Boolean) || [];
 
-      const payload = {
+      const payload: any = {
         id: dogNote.id,
         content: dogNote.content,
         practiceId,
@@ -166,13 +185,22 @@ export class PubSubService {
         eventType: getEventType(event)
       };
 
+      if (practice) {
+        payload.practice = {
+          id: practice.id,
+          clubId: practice.clubId,
+          isPrivate: practice.isPrivate,
+          plannedById: practice.plannedById
+        };
+      }
+
       await this.publish(event, payload);
     } catch (error) {
       console.error(`Error publishing practice dog note event ${event}:`, error);
     }
   }
 
-  static async publishPracticeSetRatingEvent(event: SubscriptionEvents, setId: string, practiceId: string, rating: string | null): Promise<void> {
+  static async publishPracticeSetRatingEvent(event: SubscriptionEvents, setId: string, practiceId: string, rating: SetRating | null): Promise<void> {
     try {
       const payload = {
         setId,

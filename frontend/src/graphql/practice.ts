@@ -6,6 +6,7 @@ export const GetPracticesByClub = graphql(`
         id
         scheduledAt
         status
+        isPrivate
         setsCount
         attendingCount
         notAttendingCount

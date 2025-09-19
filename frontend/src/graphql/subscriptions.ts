@@ -172,6 +172,7 @@ export const PRACTICE_SUMMARY_CHANGED_SUBSCRIPTION = graphql(`
         id
         scheduledAt
         status
+        isPrivate
         setsCount
         attendingCount
         notAttendingCount

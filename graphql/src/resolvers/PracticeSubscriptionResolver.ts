@@ -22,13 +22,26 @@ const createPracticeFilter = (user: any, practiceId: string, practiceClubId: str
   return user.clubIds.includes(practiceClubId);
 };
 
+const canUserSeePractice = (user: any, practice: any) => {
+  if (!user || !user.clubIds) return false;
+
+  if (!user.clubIds.includes(practice.clubId)) return false;
+
+  if (practice.isPrivate) {
+    return user.id === practice.plannedById;
+  }
+
+  return true;
+};
+
 @Resolver()
 export class PracticeSubscriptionResolver {
   @Subscription(() => PracticeSummaryEvent, {
     topics: [SubscriptionEvents.PRACTICE_SUMMARY_CREATED, SubscriptionEvents.PRACTICE_SUMMARY_UPDATED, SubscriptionEvents.PRACTICE_SUMMARY_DELETED, SubscriptionEvents.PRACTICE_ATTENDANCE_UPDATED, SubscriptionEvents.PRACTICE_SET_UPDATED, SubscriptionEvents.PRACTICE_SET_DELETED],
     filter: ({ payload, context, args }) => {
       if (!payload?.practice?.clubId) return false;
-      return createPracticeClubFilter(context.user, payload.practice.clubId, args.clubId);
+      if (!createPracticeClubFilter(context.user, payload.practice.clubId, args.clubId)) return false;
+      return canUserSeePractice(context.user, payload.practice);
     }
   })
   @UseMiddleware(isAuth)
@@ -46,8 +59,8 @@ export class PracticeSubscriptionResolver {
     topics: [SubscriptionEvents.PRACTICE_UPDATED],
     filter: ({ payload, context, args }) => {
       if (!payload?.practice?.id || !payload?.practice?.clubId) return false;
-      return payload.practice.id === args.practiceId &&
-             createPracticeFilter(context.user, args.practiceId, payload.practice.clubId);
+      if (payload.practice.id !== args.practiceId || !createPracticeFilter(context.user, args.practiceId, payload.practice.clubId)) return false;
+      return canUserSeePractice(context.user, payload.practice);
     }
   })
   @UseMiddleware(isAuth)
@@ -62,7 +75,11 @@ export class PracticeSubscriptionResolver {
     topics: [SubscriptionEvents.PRACTICE_ATTENDANCE_UPDATED],
     filter: ({ payload, context, args }) => {
       if (!payload?.attendance?.practiceId) return false;
-      return payload.attendance.practiceId === args.practiceId;
+      if (payload.attendance.practiceId !== args.practiceId) return false;
+      if (payload.practice) {
+        return canUserSeePractice(context.user, payload.practice);
+      }
+      return createPracticeFilter(context.user, args.practiceId, payload.attendance.practiceId);
     }
   })
   @UseMiddleware(isAuth)
@@ -77,7 +94,11 @@ export class PracticeSubscriptionResolver {
     topics: [SubscriptionEvents.PRACTICE_SET_UPDATED, SubscriptionEvents.PRACTICE_SET_DELETED],
     filter: ({ payload, context, args }) => {
       if (!payload?.set?.practiceId) return false;
-      return payload.set.practiceId === args.practiceId;
+      if (payload.set.practiceId !== args.practiceId) return false;
+      if (payload.practice) {
+        return canUserSeePractice(context.user, payload.practice);
+      }
+      return createPracticeFilter(context.user, args.practiceId, payload.set.practiceId);
     }
   })
   @UseMiddleware(isAuth)
@@ -92,7 +113,11 @@ export class PracticeSubscriptionResolver {
     topics: [SubscriptionEvents.PRACTICE_DOG_NOTE_CREATED, SubscriptionEvents.PRACTICE_DOG_NOTE_UPDATED, SubscriptionEvents.PRACTICE_DOG_NOTE_DELETED],
     filter: ({ payload, context, args }) => {
       if (!payload?.practiceId) return false;
-      return payload.practiceId === args.practiceId;
+      if (payload.practiceId !== args.practiceId) return false;
+      if (payload.practice) {
+        return canUserSeePractice(context.user, payload.practice);
+      }
+      return createPracticeFilter(context.user, args.practiceId, payload.practiceId);
     }
   })
   @UseMiddleware(isAuth)

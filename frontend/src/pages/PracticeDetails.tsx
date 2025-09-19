@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 
 import { Container, Form, Button, Alert, Spinner, Breadcrumb, Tabs, Tab, Badge, OverlayTrigger, Tooltip, Card, ListGroup } from 'react-bootstrap'
 import { useNavigate, useParams, useLocation, useSearchParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Trash, CheckLg, Share, Pencil, FileText, ExclamationTriangle, CalendarCheck, CalendarX, Lock, Unlock } from 'react-bootstrap-icons'
+import { ChevronLeft, ChevronRight, Trash, CheckLg, Share, Pencil, FileText, ExclamationTriangle, CalendarCheck, CalendarX, Lock, Unlock, PersonFillLock, PeopleFill } from 'react-bootstrap-icons'
 import { useMutation } from '@apollo/client'
 
 import type { PracticeAttendance as PracticeAttendanceType, CreatePracticeMutation, UpdatePracticeMutation, DeletePracticeMutation } from '../graphql/generated/graphql'
@@ -43,6 +43,7 @@ function PracticeDetailsContent() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([])
   const [isLocked, setIsLocked] = useState(true) // Start locked for past practices
+  const [isPrivate, setIsPrivate] = useState(false)
 
   const title = practiceId
     ? (practice?.scheduledAt ? formatRelativeTime(practice.scheduledAt) : 'Practice Details')
@@ -121,12 +122,20 @@ function PracticeDetailsContent() {
     setIsDirty(true)
   }
 
+  const handleIsPrivateChange = (newIsPrivate: boolean) => {
+    setIsPrivate(newIsPrivate)
+    setIsDirty(true)
+  }
+
   useEffect(() => {
     if (practice?.scheduledAt) {
       const newDate = new Date(practice.scheduledAt)
       setScheduledAt(newDate)
     }
-  }, [practice?.scheduledAt])
+    if (practice?.isPrivate !== undefined) {
+      setIsPrivate(practice.isPrivate)
+    }
+  }, [practice?.scheduledAt, practice?.isPrivate])
 
   useEffect(() => {
     if (practice) {
@@ -153,7 +162,8 @@ function PracticeDetailsContent() {
           variables: {
             id: practiceId,
             clubId: selectedClub.id,
-            scheduledAt
+            scheduledAt,
+            isPrivate
           }
         })
         setIsDirty(false)
@@ -162,7 +172,8 @@ function PracticeDetailsContent() {
           variables: {
             clubId: selectedClub.id,
             scheduledAt,
-            status: PracticeStatus.Draft
+            status: PracticeStatus.Draft,
+            isPrivate
           }
         })
         setIsDirty(false)
@@ -271,9 +282,27 @@ function PracticeDetailsContent() {
       </Breadcrumb>
 
       <div className="d-flex justify-content-between align-items-start mb-2">
-        <h2>
-          {practice?.scheduledAt ? formatRelativeTime(practice.scheduledAt) : 'New Practice'}
-        </h2>
+        <div className="d-flex align-items-center gap-3 mb-2">
+          <h2 className="mb-0">
+            {practice?.scheduledAt ? formatRelativeTime(practice.scheduledAt) : 'New Practice'}
+          </h2>
+          {!practiceId && (
+            <ToggleButton
+              id="practice-private-switch"
+              checked={isPrivate}
+              onChange={handleIsPrivateChange}
+              label={isPrivate ? 'Private' : 'Visible to Planners'}
+              variant={isPrivate ? 'warning' : 'primary'}
+              icon={
+                isPrivate ? (
+                  <PersonFillLock size={16} className="me-2" />
+                ) : (
+                  <PeopleFill size={16} className="me-2" />
+                )
+              }
+            />
+          )}
+        </div>
         <div className="d-flex align-items-center gap-3">
           {practice && (() => {
             const hasValidationErrors = validationErrors.some(error => error.severity === 'error')
@@ -395,6 +424,7 @@ function PracticeDetailsContent() {
                     {practice?.status === 'Ready' && <Badge bg="primary" className="d-flex align-items-center"><CalendarCheck className="me-1" /> Ready</Badge>}
                     {practice?.status === 'Draft' && <Badge bg="warning" className="text-dark d-flex align-items-center"><Pencil className="me-1" /> Draft</Badge>}
                     {isPastPractice && <Badge bg="secondary" className="text-dark d-flex align-items-center"><CalendarX className="me-1" /> Past</Badge>}
+                    {practice?.isPrivate && <Badge bg="warning" className="text-dark d-flex align-items-center"><PersonFillLock className="me-1" /> Private</Badge>}
                   </div>
                 </ListGroup.Item>
                 <ListGroup.Item className="d-flex justify-content-between align-items-center">

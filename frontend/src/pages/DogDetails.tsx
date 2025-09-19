@@ -65,14 +65,15 @@ function DogDetails() {
     }
   })
 
-  const handleCreateNote = async (content: string, clubId: string) => {
+  const handleCreateNote = async (content: string, clubId: string, _setDogId?: string, _dogIds?: string[], isPrivate?: boolean) => {
     try {
       await createNote({
         variables: {
           input: {
             content: content.trim(),
             dogId: dogId || '',
-            clubId
+            clubId,
+            isPrivate: isPrivate || false
           }
         }
       })
@@ -81,12 +82,13 @@ function DogDetails() {
     }
   }
 
-  const handleUpdateNote = async (id: string, content: string) => {
+  const handleUpdateNote = async (id: string, content: string, isPrivate?: boolean) => {
     try {
       await updateNote({
         variables: {
           id,
-          content: content.trim()
+          content: content.trim(),
+          isPrivate
         }
       })
     } catch (err) {
@@ -247,8 +249,8 @@ function DogDetails() {
       <DogNotes
         notes={notes}
         dog={dog}
-        onCreateNote={(content, clubId) => handleCreateNote(content, clubId)}
-        onEditNote={(note) => handleUpdateNote(note.id, note.content)}
+        onCreateNote={(content, clubId, setDogId, dogIds, isPrivate) => handleCreateNote(content, clubId, setDogId, dogIds, isPrivate)}
+        onEditNote={(note) => handleUpdateNote(note.id, note.content, note.isPrivate)}
         onDeleteNote={handleDeleteNote}
         onNoteChanged={() => refetchNotes()}
         loading={notesLoading}

@@ -6,7 +6,7 @@ import { Handler } from '../models/Handler'
 import { Location } from '../models/Location'
 import { Practice, PracticeStatus } from '../models/Practice'
 import { PracticeAttendance } from '../models/PracticeAttendance'
-import { Set as SetModel } from '../models/Set'
+import { Set as SetModel, SetRating } from '../models/Set'
 import { User } from '../models/User'
 
 export enum EventType {
@@ -91,8 +91,8 @@ export class PracticeSetRatingEvent {
   @Field(() => String)
   practiceId!: string;
 
-  @Field(() => String, { nullable: true })
-  rating!: string | null;
+  @Field(() => SetRating, { nullable: true })
+  rating!: SetRating | null;
 
   @Field(() => EventType)
   eventType!: EventType;
@@ -111,6 +111,9 @@ export class PracticeSummary {
 
   @Field(() => PracticeStatus)
   status!: PracticeStatus;
+
+  @Field(() => Boolean)
+  isPrivate!: boolean;
 
   @Field(() => Number)
   setsCount!: number;

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
-import { Button, Form, Alert, Modal, Card, CardGroup } from 'react-bootstrap'
-import { PlusLg, Calendar3, ChevronRight, Pencil, Trash, CheckSquareFill, Square } from 'react-bootstrap-icons'
+import { Button, Form, Alert, Modal, Card, CardGroup, Badge } from 'react-bootstrap'
+import { PlusLg, Calendar3, ChevronRight, Pencil, Trash, CheckSquareFill, Square, PersonFillLock, PeopleFill, Lock, XLg } from 'react-bootstrap-icons'
 import { useSubscription } from '@apollo/client'
 import { Link } from 'react-router-dom'
 
@@ -14,6 +14,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { SetViewOnly } from './PracticeSet/SetViewOnly'
 import DogBadge from './DogBadge'
 import DeleteConfirmationModal from './DeleteConfirmationModal'
+import { ToggleButton } from './ToggleButton'
 
 interface DogNotesProps {
   notes: DogNote[]
@@ -22,9 +23,9 @@ interface DogNotesProps {
   isDoubleLane?: boolean
   practiceId?: string
 
-  onEditNote?: (note: { id: string, content: string }) => void
+  onEditNote?: (note: { id: string, content: string, isPrivate?: boolean }) => void
   onDeleteNote?: (noteId: string) => void
-  onCreateNote?: (content: string, clubId: string, setDogId?: string, dogIds?: string[]) => void
+  onCreateNote?: (content: string, clubId: string, setDogId?: string, dogIds?: string[], isPrivate?: boolean) => void
   onNoteChanged?: () => void
 
   showCreateButton?: boolean
@@ -57,9 +58,10 @@ function DogNotes({
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [noteContent, setNoteContent] = useState('')
-  const [editingNote, setEditingNote] = useState<{ id: string, content: string } | null>(null)
+  const [editingNote, setEditingNote] = useState<{ id: string, content: string, isPrivate?: boolean } | null>(null)
   const [createError, setCreateError] = useState<string | null>(null)
   const [selectedDogs, setSelectedDogs] = useState<string[]>([])
+  const [isPrivate, setIsPrivate] = useState(false)
 
   const isPracticeMode = setDogs.length > 0
   const isDogMode = !!dog
@@ -95,9 +97,10 @@ function DogNotes({
     }
   })
 
-  const handleEditClick = (note: { id: string, content: string }) => {
+  const handleEditClick = (note: { id: string, content: string, isPrivate?: boolean }) => {
     setEditingNote(note)
     setNoteContent(note.content)
+    setIsPrivate(note.isPrivate || false)
     setShowEditModal(true)
   }
 
@@ -107,11 +110,13 @@ function DogNotes({
     try {
       onEditNote?.({
         id: editingNote.id,
-        content: noteContent.trim()
+        content: noteContent.trim(),
+        isPrivate
       })
       setShowEditModal(false)
       setEditingNote(null)
       setNoteContent('')
+      setIsPrivate(false)
     } catch (err) {
       console.error('Error updating note:', err)
     }
@@ -138,6 +143,7 @@ function DogNotes({
     setShowEditModal(false)
     setEditingNote(null)
     setNoteContent('')
+    setIsPrivate(false)
   }
 
   const handleDeleteModalClose = () => {
@@ -147,6 +153,7 @@ function DogNotes({
 
   const handleCreateClick = () => {
     setSelectedDogs([])
+    setIsPrivate(false)
     setShowCreateModal(true)
   }
 
@@ -165,7 +172,7 @@ function DogNotes({
       setCreateError(null)
 
       if (isDogMode && dog) {
-        await onCreateNote(noteContent.trim(), dog.clubId || '')
+        await onCreateNote(noteContent.trim(), dog.clubId || '', undefined, undefined, isPrivate)
       } else if (isPracticeMode && selectedDogs.length > 0) {
         const firstSetDog = setDogs.find(d => selectedDogs.includes(d.dogId || ''))
         if (!firstSetDog) return
@@ -174,7 +181,8 @@ function DogNotes({
           noteContent.trim(),
           firstSetDog.set?.practice?.clubId || '',
           firstSetDog.id,
-          selectedDogs
+          selectedDogs,
+          isPrivate
         )
       }
 
@@ -191,6 +199,7 @@ function DogNotes({
     setShowCreateModal(false)
     setNoteContent('')
     setSelectedDogs([])
+    setIsPrivate(false)
     setCreateError(null)
   }
 
@@ -262,6 +271,12 @@ function DogNotes({
                         <span className="ms-2">(edited)</span>
                       )}
                     </small>
+                    {note.isPrivate && (
+                      <Badge bg="secondary" className="ms-2 d-flex align-items-center">
+                        <Lock size={12} className="me-1" />
+                        Private
+                      </Badge>
+                    )}
                   </div>
                   <div className="d-flex gap-2">
                     {canManageNote(note) && (
@@ -270,9 +285,9 @@ function DogNotes({
                           variant="outline-secondary"
                           size="sm"
                           className="d-flex align-items-center"
-                          onClick={() => handleEditClick({ id: note.id, content: note.content })}
+                          onClick={() => handleEditClick({ id: note.id, content: note.content, isPrivate: note.isPrivate })}
                         >
-                          <Pencil className="me-1" size={12} />
+                          <Pencil className="me-2" size={12} />
                           Edit
                         </Button>
                         <Button
@@ -344,7 +359,7 @@ function DogNotes({
             </small>
           </div>
           <Form>
-            <Form.Group>
+            <Form.Group className="mb-3">
               <Form.Control
                 as="textarea"
                 rows={4}
@@ -357,6 +372,23 @@ function DogNotes({
                   }
                 }}
                 placeholder="Enter your note..."
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <ToggleButton
+                id="edit-private-switch"
+                checked={isPrivate}
+                onChange={setIsPrivate}
+                label={isPrivate ? 'Private' : 'Visible to Planners'}
+                variant={isPrivate ? 'warning' : 'primary'}
+                size="sm"
+                icon={
+                  isPrivate ? (
+                    <PersonFillLock size={16} className="me-2" />
+                  ) : (
+                    <PeopleFill size={16} className="me-2" />
+                  )
+                }
               />
             </Form.Group>
           </Form>
@@ -375,6 +407,7 @@ function DogNotes({
         </Modal.Body>
         <Modal.Footer>
           <Button variant="outline-secondary" onClick={handleEditModalClose}>
+            <XLg className="me-2" />
             Cancel
           </Button>
           <Button
@@ -487,7 +520,7 @@ function DogNotes({
 
             <div className={isPracticeMode && setDogs.length > 0 ? "col-8" : "col-12"}>
               <Form>
-                <Form.Group>
+                <Form.Group className="mb-3">
                   <Form.Control
                     as="textarea"
                     className="mh-125-expand"
@@ -503,12 +536,30 @@ function DogNotes({
                     placeholder={isDogMode ? "Enter your note about this dog..." : "Enter your note about the selected dogs..."}
                   />
                 </Form.Group>
+                <Form.Group className="mb-3">
+                  <ToggleButton
+                    id="create-private-switch"
+                    checked={isPrivate}
+                    onChange={setIsPrivate}
+                    label={isPrivate ? 'Private' : 'Visible to Planners'}
+                    variant={isPrivate ? 'warning' : 'primary'}
+                    size="sm"
+                    icon={
+                      isPrivate ? (
+                        <PersonFillLock size={16} className="me-2" />
+                      ) : (
+                        <PeopleFill size={16} className="me-2" />
+                      )
+                    }
+                  />
+                </Form.Group>
               </Form>
             </div>
           </div>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleCreateModalClose}>
+            <XLg className="me-2" />
             Cancel
           </Button>
           <Button

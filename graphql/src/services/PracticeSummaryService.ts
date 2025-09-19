@@ -39,6 +39,7 @@ export class PracticeSummaryService {
       clubId: practice.clubId,
       scheduledAt: practice.scheduledAt,
       status: practice.status,
+      isPrivate: practice.isPrivate,
       setsCount: sets.length,
       attendingCount,
       notAttendingCount,

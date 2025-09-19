@@ -162,6 +162,25 @@ export class PracticeSetResolver {
       const results: SetModel[] = [];
       const affectedPracticeIds = new Set<string>();
 
+      // First pass: collect all affected practice IDs
+      for (const update of updates) {
+        if (update.practiceId) {
+          affectedPracticeIds.add(update.practiceId);
+        }
+      }
+
+      // Fetch practice info for privacy filtering
+      const practiceMap = new Map<string, any>();
+      for (const practiceId of affectedPracticeIds) {
+        const practice = await this.practiceRepository.findOne({
+          where: { id: practiceId },
+          select: ['id', 'clubId', 'isPrivate', 'plannedById']
+        });
+        if (practice) {
+          practiceMap.set(practiceId, practice);
+        }
+      }
+
       for (const update of updates) {
         let set: SetModel;
         let id = update.id;
@@ -288,17 +307,39 @@ export class PracticeSetResolver {
       await queryRunner.commitTransaction();
 
       for (const result of results) {
-        const eventType = SubscriptionEvents.PRACTICE_SET_UPDATED;
-        await PubSubService.publishPracticeSetEvent(eventType, result);
-
         const update = updates.find(u => u.id === result.id);
-        if (update && update.rating !== undefined && result.practiceId) {
+
+        // If only rating was updated, only publish rating event
+        if (update && update.rating !== undefined &&
+            update.locationId === undefined &&
+            update.index === undefined &&
+            update.type === undefined &&
+            update.typeCustom === undefined &&
+            update.notes === undefined &&
+            update.isWarmup === undefined &&
+            update.dogs === undefined &&
+            result.practiceId) {
           await PubSubService.publishPracticeSetRatingEvent(
             SubscriptionEvents.PRACTICE_SET_RATING_UPDATED,
             result.id,
             result.practiceId,
             result.rating
           );
+        } else {
+          // For other updates, publish the general set updated event
+          const eventType = SubscriptionEvents.PRACTICE_SET_UPDATED;
+          const practice = result.practiceId ? practiceMap.get(result.practiceId) : undefined;
+          await PubSubService.publishPracticeSetEvent(eventType, result, practice);
+
+          // Also publish rating event if rating was updated
+          if (update && update.rating !== undefined && result.practiceId) {
+            await PubSubService.publishPracticeSetRatingEvent(
+              SubscriptionEvents.PRACTICE_SET_RATING_UPDATED,
+              result.id,
+              result.practiceId,
+              result.rating
+            );
+          }
         }
       }
 
@@ -385,7 +426,7 @@ export class PracticeSetResolver {
 
     if (deleted) {
       for (const set of sets) {
-        await PubSubService.publishPracticeSetEvent(SubscriptionEvents.PRACTICE_SET_DELETED, set);
+        await PubSubService.publishPracticeSetEvent(SubscriptionEvents.PRACTICE_SET_DELETED, set, practice);
       }
 
       // Reorder indices only when an entire index was removed across all locations
@@ -432,7 +473,7 @@ export class PracticeSetResolver {
           });
 
           for (const set of fullUpdatedSets) {
-            await PubSubService.publishPracticeSetEvent(SubscriptionEvents.PRACTICE_SET_UPDATED, set);
+            await PubSubService.publishPracticeSetEvent(SubscriptionEvents.PRACTICE_SET_UPDATED, set, practice);
           }
         }
       }

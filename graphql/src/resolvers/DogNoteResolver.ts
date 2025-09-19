@@ -3,6 +3,7 @@ import { Resolver, Query, Mutation, Arg, ID, UseMiddleware, Ctx, InputType, Fiel
 import { DogNote } from '../models/DogNote'
 import { SetDogNote } from '../models/SetDogNote'
 import { SetDog } from '../models/SetDog'
+import { Practice } from '../models/Practice'
 import { AppDataSource } from '../db'
 import { AuthContext, isAuth, hasClubAccess, createClubFilter } from '../middleware/auth'
 import { PubSubService, SubscriptionEvents } from '../services/PubSubService'
@@ -45,6 +46,7 @@ export class CreateSetDogNoteInput {
 export class DogNoteResolver {
   private dogNoteRepository = AppDataSource.getRepository(DogNote);
   private setDogNoteRepository = AppDataSource.getRepository(SetDogNote);
+  private practiceRepository = AppDataSource.getRepository(Practice);
 
   @Query(() => [DogNote])
   @UseMiddleware(isAuth)
@@ -160,7 +162,12 @@ export class DogNoteResolver {
 
       const practiceId = dogNoteWithRelations.setDogNotes?.[0]?.setDog?.set?.practiceId;
       if (practiceId) {
-        await PubSubService.publishPracticeDogNoteEvent(SubscriptionEvents.PRACTICE_DOG_NOTE_CREATED, dogNoteWithRelations, practiceId);
+        // Fetch practice info for privacy filtering
+        const practice = await this.practiceRepository.findOne({
+          where: { id: practiceId },
+          select: ['id', 'clubId', 'isPrivate', 'plannedById']
+        });
+        await PubSubService.publishPracticeDogNoteEvent(SubscriptionEvents.PRACTICE_DOG_NOTE_CREATED, dogNoteWithRelations, practiceId, practice);
       }
     }
 
@@ -222,7 +229,12 @@ export class DogNoteResolver {
 
       const practiceId = dogNoteWithRelations.setDogNotes?.[0]?.setDog?.set?.practiceId;
       if (practiceId) {
-        await PubSubService.publishPracticeDogNoteEvent(SubscriptionEvents.PRACTICE_DOG_NOTE_CREATED, dogNoteWithRelations, practiceId);
+        // Fetch practice info for privacy filtering
+        const practice = await this.practiceRepository.findOne({
+          where: { id: practiceId },
+          select: ['id', 'clubId', 'isPrivate', 'plannedById']
+        });
+        await PubSubService.publishPracticeDogNoteEvent(SubscriptionEvents.PRACTICE_DOG_NOTE_CREATED, dogNoteWithRelations, practiceId, practice);
       }
     }
 
@@ -271,7 +283,12 @@ export class DogNoteResolver {
 
       const practiceId = dogNoteWithRelations.setDogNotes?.[0]?.setDog?.set?.practiceId;
       if (practiceId) {
-        await PubSubService.publishPracticeDogNoteEvent(SubscriptionEvents.PRACTICE_DOG_NOTE_UPDATED, dogNoteWithRelations, practiceId);
+        // Fetch practice info for privacy filtering
+        const practice = await this.practiceRepository.findOne({
+          where: { id: practiceId },
+          select: ['id', 'clubId', 'isPrivate', 'plannedById']
+        });
+        await PubSubService.publishPracticeDogNoteEvent(SubscriptionEvents.PRACTICE_DOG_NOTE_UPDATED, dogNoteWithRelations, practiceId, practice);
       }
     }
 
@@ -305,7 +322,12 @@ export class DogNoteResolver {
 
       const practiceId = dogNote.setDogNotes?.[0]?.setDog?.set?.practiceId;
       if (practiceId) {
-        await PubSubService.publishPracticeDogNoteEvent(SubscriptionEvents.PRACTICE_DOG_NOTE_DELETED, dogNote, practiceId);
+        // Fetch practice info for privacy filtering
+        const practice = await this.practiceRepository.findOne({
+          where: { id: practiceId },
+          select: ['id', 'clubId', 'isPrivate', 'plannedById']
+        });
+        await PubSubService.publishPracticeDogNoteEvent(SubscriptionEvents.PRACTICE_DOG_NOTE_DELETED, dogNote, practiceId, practice);
       }
     }
 

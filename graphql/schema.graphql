@@ -248,7 +248,7 @@ type PracticeSetEvent {
 type PracticeSetRatingEvent {
   eventType: EventType!
   practiceId: String!
-  rating: String
+  rating: SetRating
   setId: String!
 }
 
@@ -262,6 +262,7 @@ type PracticeSummary {
   attendingCount: Float!
   clubId: String!
   id: String!
+  isPrivate: Boolean!
   notAttendingCount: Float!
   plannedBy: User!
   scheduledAt: DateTimeISO!

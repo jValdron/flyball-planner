@@ -39,10 +39,11 @@ export function SetRecapView({ sets, practiceId, clubId, onRatingChange }: SetRe
     if (ratingData?.practiceSetRatingChanged) {
       const { setId, rating } = ratingData.practiceSetRatingChanged
       setLocalSets(prevSets =>
-        prevSets.map(set =>
-          set.id === setId
+        prevSets.map(set => {
+          return set.id === setId
             ? { ...set, rating: rating as SetRating | null }
             : set
+        }
         )
       )
     }
@@ -115,7 +116,7 @@ export function SetRecapView({ sets, practiceId, clubId, onRatingChange }: SetRe
     }
   })
 
-  const handleCreateNote = async (content: string, setDogId: string, dogIds: string[]) => {
+  const handleCreateNote = async (content: string, setDogId: string, dogIds: string[], isPrivate?: boolean) => {
     try {
       await createNote({
         variables: {
@@ -123,7 +124,8 @@ export function SetRecapView({ sets, practiceId, clubId, onRatingChange }: SetRe
             content: content.trim(),
             setDogId,
             dogIds,
-            clubId
+            clubId,
+            isPrivate: isPrivate || false
           }
         }
       })
@@ -132,12 +134,13 @@ export function SetRecapView({ sets, practiceId, clubId, onRatingChange }: SetRe
     }
   }
 
-  const handleUpdateNote = async (id: string, content: string) => {
+  const handleUpdateNote = async (id: string, content: string, isPrivate?: boolean) => {
     try {
       await updateNote({
         variables: {
           id,
-          content: content.trim()
+          content: content.trim(),
+          isPrivate
         }
       })
     } catch (err) {
@@ -254,11 +257,11 @@ export function SetRecapView({ sets, practiceId, clubId, onRatingChange }: SetRe
           setDogs={set.dogs}
           isDoubleLane={set.location?.isDoubleLane || false}
           practiceId={practiceId}
-          onEditNote={(note) => handleUpdateNote(note.id, note.content)}
+          onEditNote={(note) => handleUpdateNote(note.id, note.content, note.isPrivate)}
           onDeleteNote={handleDeleteNote}
-          onCreateNote={(content, _, setDogId, dogIds) => {
+          onCreateNote={(content, _, setDogId, dogIds, isPrivate) => {
             if (setDogId && dogIds) {
-              handleCreateNote(content, setDogId, dogIds)
+              handleCreateNote(content, setDogId, dogIds, isPrivate)
             }
           }}
           onNoteChanged={() => refetchNotes()}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 
 import { Container, Button, Card, Spinner, Alert, Badge, ListGroup, Breadcrumb } from 'react-bootstrap'
 import { Link, useNavigate } from 'react-router-dom'
-import { CalendarCheck, CalendarX, CheckLg, Pencil, PlusLg, Trash, FileText, XLg, QuestionLg, Person } from 'react-bootstrap-icons'
+import { CalendarCheck, CalendarX, CheckLg, Pencil, PlusLg, Trash, FileText, XLg, QuestionLg, Person, PersonFillLock } from 'react-bootstrap-icons'
 import { compareDesc, isAfter, isBefore, compareAsc } from 'date-fns'
 import { useQuery, useMutation } from '@apollo/client'
 
@@ -232,6 +232,7 @@ function Practices() {
                           {practice.status === 'Ready' && <Badge bg="primary" className="d-inline-flex align-items-center me-2"><CalendarCheck className="me-1" /> Ready</Badge>}
                           {practice.status === 'Draft' && <Badge bg="warning" className="d-inline-flex align-items-center me-2 text-dark"><Pencil className="me-1" /> Draft</Badge>}
                           {practiceIsPast && <Badge bg="past" className="d-inline-flex align-items-center me-2 text-dark"><CalendarX className="me-1" /> Past</Badge>}
+                          {practice.isPrivate && <Badge bg="warning" className="d-inline-flex align-items-center me-2 text-dark"><PersonFillLock className="me-1" /> Private</Badge>}
                         </Card.Text>
                       </Card.Body>
                       <ListGroup className="list-group-flush">
