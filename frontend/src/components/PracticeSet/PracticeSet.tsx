@@ -774,39 +774,42 @@ export function PracticeSet({ practiceId, disabled, isLocked = false, validation
 
     const newIndex = currentSet.index
     const updates: Array<{
-      id: string;
+      id?: string;
+      practiceId?: string;
+      locationId?: string;
       index: number;
+      dogs?: any[];
     }> = []
 
     try {
       setIsSaving(true)
 
-      // Reorder existing sets - increment all sets with index >= currentSet.index
       sets.forEach(set => {
         if (set.index >= currentSet.index) {
-          updates.push({ id: set.id, index: set.index + 1 })
+          updates.push({
+            id: set.id,
+            index: set.index + 1
+          })
         }
       })
 
-      // Add the new set at the current set's index (it will take that position)
       updates.push({
-        id: practiceId,
+        practiceId,
+        locationId: currentSet.locationId,
         index: newIndex,
+        dogs: []
       })
 
-      if (updates.length > 0) {
-        const result = await updateSets({
-          variables: {
-            updates: updates
-          }
-        })
+      const result = await updateSets({
+        variables: {
+          updates: updates
+        }
+      })
 
-        // Track the newly created set for focusing
-        if (result.data?.updateSets) {
-          const newSetId = result.data.updateSets[result.data.updateSets.length - 1]?.id
-          if (newSetId) {
-            setNewlyCreatedSetIds(prev => new Set([...prev, newSetId]))
-          }
+      if (result.data?.updateSets) {
+        const newSetId = result.data.updateSets[result.data.updateSets.length - 1]?.id
+        if (newSetId) {
+          setNewlyCreatedSetIds(prev => new Set([...prev, newSetId]))
         }
       }
     } catch (err) {

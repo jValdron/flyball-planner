@@ -117,7 +117,9 @@ export function PracticeProvider({ children, practiceId }: PracticeProviderProps
         sets: sortSetsByIndex(practiceData.practice.sets as Set[])
       }
       setPractice(practiceWithSortedSets as Practice)
-      dispatchSets({ type: 'SET_SETS', sets: practiceData.practice.sets as Set[] })
+      if (sets.length === 0) {
+        dispatchSets({ type: 'SET_SETS', sets: practiceData.practice.sets as Set[] })
+      }
     }
   }, [practiceData])
 

@@ -4,7 +4,7 @@ import { useNavigate, useParams, useLocation, useSearchParams } from 'react-rout
 import { useClub } from '../contexts/ClubContext'
 import { PracticeProvider, usePractice } from '../contexts/PracticeContext'
 import { SaveSpinner } from '../components/SaveSpinner'
-import { ChevronLeft, ChevronRight, Trash, CheckLg, Share, Pencil, FileText, ExclamationTriangle } from 'react-bootstrap-icons'
+import { ChevronLeft, ChevronRight, Trash, CheckLg, Share, Pencil, FileText, ExclamationTriangle, CheckSquareFill, Square } from 'react-bootstrap-icons'
 import { formatRelativeTime, isPastDay } from '../utils/dateUtils'
 import { PracticeAttendance } from '../components/PracticeSet/PracticeAttendance'
 import { useMutation } from '@apollo/client'
@@ -265,28 +265,7 @@ function PracticeDetailsContent() {
         <h1>
           {practice?.scheduledAt ? formatRelativeTime(practice.scheduledAt) : 'New Practice'}
         </h1>
-        <div className="d-flex flex-column align-items-end gap-2">
-          {practiceId && (
-            <div className="d-flex gap-2">
-              <Button
-                variant="outline-primary"
-                size="sm"
-                onMouseDown={handleShareMouseDown}
-                onMouseUp={handleShare}
-                disabled={!practice?.shareCode}
-              >
-                <Share className="me-2" /> Share
-              </Button>
-              <Button
-                variant="outline-danger"
-                size="sm"
-                onClick={() => setShowDeleteModal(true)}
-                disabled={isDeleting || isLocked}
-              >
-                <Trash className="me-2" /> {isPastPractice ? 'Delete' : 'Cancel'}
-              </Button>
-            </div>
-          )}
+        <div className="d-flex align-items-center gap-3">
           {practice && (() => {
             const hasValidationErrors = validationErrors.some(error => error.severity === 'error')
             const isCurrentlyDraft = practice.status === PracticeStatus.Draft
@@ -294,25 +273,56 @@ function PracticeDetailsContent() {
 
             if (isPastPractice) {
               return (
-                <Form.Check
-                  type="switch"
-                  id="unlock-toggle"
-                  label="Unlock for editing"
-                  checked={!isLocked}
-                  onChange={(e) => setIsLocked(!e.target.checked)}
-                />
+                <div className="d-flex gap-2">
+                  <Form.Check
+                    type="checkbox"
+                    id="unlock-toggle"
+                    checked={!isLocked}
+                    onChange={(e) => setIsLocked(!e.target.checked)}
+                    className="d-none"
+                  />
+                  <Button
+                    as="label"
+                    htmlFor="unlock-toggle"
+                    variant={!isLocked ? "primary" : "outline-warning"}
+                    className="d-flex align-items-center"
+                  >
+                    {!isLocked ? (
+                      <CheckSquareFill className="me-2" size={14} />
+                    ) : (
+                      <Square className="me-2" size={14} />
+                    )}
+                    {isLocked ? "Locked" : "Unlocked"}
+                  </Button>
+                </div>
               )
             }
 
-            const formCheck = (
-              <Form.Check
-                type="switch"
-                id="status-toggle"
-                label="Mark as Ready"
-                checked={practice.status === PracticeStatus.Ready}
-                onChange={(e) => handleStatusChange(e.target.checked ? PracticeStatus.Ready : PracticeStatus.Draft)}
-                disabled={shouldDisable}
-              />
+            const statusButton = (
+              <div className="d-flex gap-2">
+                <Form.Check
+                  type="checkbox"
+                  id="status-toggle"
+                  checked={practice.status === PracticeStatus.Ready}
+                  onChange={(e) => handleStatusChange(e.target.checked ? PracticeStatus.Ready : PracticeStatus.Draft)}
+                  disabled={shouldDisable}
+                  className="d-none"
+                />
+                <Button
+                  as="label"
+                  htmlFor="status-toggle"
+                  variant={practice.status === PracticeStatus.Ready ? "success" : "outline-success"}
+                  className={`d-flex align-items-center ${shouldDisable ? 'disabled' : ''}`}
+                  disabled={shouldDisable}
+                >
+                  {practice.status === PracticeStatus.Ready ? (
+                    <CheckSquareFill className="me-2" size={14} />
+                  ) : (
+                    <Square className="me-2" size={14} />
+                  )}
+                  {practice.status === PracticeStatus.Ready ? "Ready" : "Draft"}
+                </Button>
+              </div>
             )
 
             return shouldDisable ? (
@@ -324,10 +334,30 @@ function PracticeDetailsContent() {
                   </Tooltip>
                 }
               >
-                <div>{formCheck}</div>
+                <div>{statusButton}</div>
               </OverlayTrigger>
-            ) : formCheck
+            ) : statusButton
           })()}
+          {practiceId && (
+            <div className="d-flex gap-2">
+              <Button
+                variant="outline-primary"
+                onMouseDown={handleShareMouseDown}
+                onMouseUp={handleShare}
+                disabled={!practice?.shareCode}
+              >
+                <Share className="me-2" /> Share
+              </Button>
+              <Button
+                variant="outline-danger"
+                onClick={() => setShowDeleteModal(true)}
+                disabled={isDeleting || isLocked}
+                title={isPastPractice ? "Delete Practice" : "Cancel Practice"}
+              >
+                <Trash />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
