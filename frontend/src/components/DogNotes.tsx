@@ -2,27 +2,27 @@ import { useState } from 'react'
 import { Button, Form, Alert, Modal } from 'react-bootstrap'
 import { PlusLg, Calendar3, ChevronRight } from 'react-bootstrap-icons'
 import { useQuery, useMutation } from '@apollo/client'
-import { GET_DOG_NOTES, CREATE_DOG_NOTE, type DogNote } from '../graphql/dogNotes'
-import { SetType, Lane, TrainingLevel } from '../graphql/generated/graphql'
+import { GET_DOG_NOTES, CREATE_DOG_NOTE } from '../graphql/dogNotes'
+import type { Dog, SetDog, Set, DogNote } from '../graphql/generated/graphql'
 import { formatFullDateTime } from '../utils/dateUtils'
 import { Link } from 'react-router-dom'
 import { useClub } from '../contexts/ClubContext'
 import { SetViewOnly } from './PracticeSet/SetViewOnly'
 import { NoteEditor } from './NoteEditor'
+import { enrichDogs } from '../utils/dogsUtils'
 
 interface DogNotesProps {
-  dogId: string
-  dogName: string
+  dog: Partial<Dog> & { id: string }
 }
 
-function DogNotes({ dogId, dogName }: DogNotesProps) {
+function DogNotes({ dog }: DogNotesProps) {
   const { selectedClub, dogs } = useClub()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [noteContent, setNoteContent] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   const { data, loading, refetch } = useQuery(GET_DOG_NOTES, {
-    variables: { dogId },
+    variables: { dogId: dog.id },
     onError: (error) => {
       setError('Failed to load notes. Please try again later.')
       console.error('Error loading notes:', error)
@@ -52,7 +52,7 @@ function DogNotes({ dogId, dogName }: DogNotesProps) {
         variables: {
           input: {
             content: noteContent.trim(),
-            dogId,
+            dogId: dog.id,
             clubId: selectedClub?.id || ''
           }
         }
@@ -68,7 +68,7 @@ function DogNotes({ dogId, dogName }: DogNotesProps) {
     setError(null)
   }
 
-  const notes = data?.dogNotes || []
+  const notes = enrichDogs(data?.dogNotes as DogNote[] || [], dogs)
 
   if (loading) {
     return (
@@ -110,11 +110,11 @@ function DogNotes({ dogId, dogName }: DogNotesProps) {
 
       {notes.length === 0 ? (
         <Alert variant="info text-center">
-          No notes yet for {dogName}. <Link to="#" onClick={() => setShowCreateModal(true)}>Add your first note.</Link>
+          No notes yet for {dog.name}. <Link to="#" onClick={() => setShowCreateModal(true)}>Add your first note.</Link>
         </Alert>
       ) : (
         <div>
-          {notes.map((note: DogNote) => (
+          {notes.map((note) => (
             <div key={note.id} className="border rounded p-3 mb-3">
               <div className="d-flex justify-content-between align-items-center mb-2">
                 <div className="flex-grow-1">
@@ -129,20 +129,10 @@ function DogNotes({ dogId, dogName }: DogNotesProps) {
                 <div className="d-flex gap-2">
                   <NoteEditor
                     note={note}
-                    setDogs={note.setDogs && note.setDogs.length > 0 ? note.setDogs.map(setDog => {
-                      const dog = dogs.find(d => d.id === setDog.dogId)
-                      return {
-                        dogId: setDog.dogId,
-                        dog: {
-                          id: dog?.id || '',
-                          name: dog?.name || '',
-                          trainingLevel: dog?.trainingLevel || ''
-                        }
-                      }
-                    }) : undefined}
+                    setDogs={note.setDogs as SetDog[]}
                     onUpdate={refetch}
                   />
-                  {note.setDogNotes.length > 0 && (
+                  {note.setDogNotes && note.setDogNotes.length > 0 && (
                     <Link
                       to={`/practices/${note.setDogNotes[0].setDog.set.practice.id}/sets?focusSet=${note.setDogNotes[0].setDog.set.id}`}
                       className="btn btn-outline-primary btn-sm d-flex align-items-center text-nowrap"
@@ -155,34 +145,10 @@ function DogNotes({ dogId, dogName }: DogNotesProps) {
 
               <p className="m-0 mt-2">{note.content}</p>
 
-              {note.setDogNotes.length > 0 && (
+              {note.setDogNotes && note.setDogNotes.length > 0 && (
                 <div className="mt-3">
                   <SetViewOnly
-                    sets={note.setDogNotes.map(setDogNote => ({
-                      ...setDogNote.setDog.set,
-                      __typename: 'Set' as const,
-                      createdAt: new Date().toISOString(),
-                      updatedAt: new Date().toISOString(),
-                      locationId: setDogNote.setDog.set.location.id,
-                      type: setDogNote.setDog.set.type as SetType | null,
-                      practice: setDogNote.setDog.set.practice,
-                      dogs: setDogNote.setDog.set.dogs
-                        .map(setDog => {
-                          const dog = dogs.find(d => d.id === setDog.dogId)
-                          return dog ? {
-                            ...setDog,
-                            __typename: 'SetDog' as const,
-                            lane: setDog.lane as Lane | null,
-                            dog: {
-                              ...dog,
-                              __typename: 'Dog' as const,
-                              trainingLevel: dog.trainingLevel as TrainingLevel,
-                              owner: dog.owner,
-                            },
-                          } : null
-                        })
-                        .filter((item): item is NonNullable<typeof item> => item !== null),
-                    }))}
+                    sets={note.setDogNotes.map(setDogNote => setDogNote.setDog.set as Set)}
                     defaultLocationName={note.setDogNotes[0].setDog.set.location.name}
                     twoColumns={false}
                     smallHeader={true}

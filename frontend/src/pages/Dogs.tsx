@@ -6,15 +6,14 @@ import { useMutation, useQuery } from '@apollo/client'
 import { useClub } from '../contexts/ClubContext'
 import { useTheme } from '../contexts/ThemeContext'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
-import DogBadge from '../components/DogBadge'
 import { PlusLg, Trash, PersonPlus, Pencil } from 'react-bootstrap-icons'
 import { DeleteDog } from '../graphql/dogs'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
-import type { DogStatus } from '../graphql/generated/graphql'
+import type { DogStatus, Handler, Dog } from '../graphql/generated/graphql'
 import { getFilteredAndSortedDogsByHandlers, getHandlerName } from '../utils/dogsUtils'
-import type { HandlerWithDogs, DogWithBasicInfo } from '../utils/dogsUtils'
 import DogModal from '../components/DogModal'
 import { GetDogById } from '../graphql/dogs'
+import TrainingLevelBadge from '../components/TrainingLevelBadge'
 
 const getStatusBadge = (status: DogStatus) => {
   const variants = {
@@ -33,8 +32,8 @@ function Dogs() {
   const [error, setError] = useState<string | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
-  const [dogToDelete, setDogToDelete] = useState<DogWithBasicInfo | null>(null)
-  const [dogToEdit, setDogToEdit] = useState<DogWithBasicInfo | null>(null)
+  const [dogToDelete, setDogToDelete] = useState<Dog | null>(null)
+  const [dogToEdit, setDogToEdit] = useState<Dog | null>(null)
   const [showInactive, setShowInactive] = useState(searchParams.get('showInactive') === 'true')
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -68,13 +67,13 @@ function Dogs() {
     navigate(`/dogs/${dogId}`)
   }
 
-  const handleDelete = async (e: React.MouseEvent, dog: DogWithBasicInfo) => {
+  const handleDelete = async (e: React.MouseEvent, dog: Dog) => {
     e.stopPropagation()
     setDogToDelete(dog)
     setShowDeleteModal(true)
   }
 
-  const handleEdit = async (e: React.MouseEvent, dog: DogWithBasicInfo) => {
+  const handleEdit = async (e: React.MouseEvent, dog: Dog) => {
     e.stopPropagation()
     setDogToEdit(dog)
     setShowEditModal(true)
@@ -176,7 +175,7 @@ function Dogs() {
               </td>
             </tr>
           ) : (
-            filteredDogsByHandlers.map((handler: HandlerWithDogs) => {
+            filteredDogsByHandlers.map((handler: Handler) => {
               const handlerName = getHandlerName(handler)
 
               return (
@@ -209,7 +208,7 @@ function Dogs() {
                       </td>
                     </tr>
                   ) : (
-                    handler.dogs?.map((dog: DogWithBasicInfo) => (
+                    handler.dogs?.map((dog: Dog) => (
                       <tr
                         key={dog.id}
                         onClick={() => handleRowClick(dog.id)}
@@ -219,7 +218,7 @@ function Dogs() {
                         <td className="font-monospace col-3 col-md-2">{dog.crn}</td>
                         {showInactive && <td className="d-none d-md-table-cell col-md-2">{getStatusBadge(dog.status)}</td>}
                         <td className="col-2 col-md-2">
-                          <DogBadge dog={dog} bgByTrainingLevel={true} />
+                          <TrainingLevelBadge level={dog.trainingLevel} />
                         </td>
                         <td className="col-1 text-nowrap text-end">
                           <div className="d-flex gap-1 justify-content-end">

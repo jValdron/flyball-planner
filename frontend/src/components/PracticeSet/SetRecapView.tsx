@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Button, Form, Row, Col, Badge, Spinner, Modal, Alert } from 'react-bootstrap'
+import { Button, Form, Row, Col, Spinner, Modal, Alert } from 'react-bootstrap'
 import { DashCircle, PlusLg, CheckSquareFill, Square, HandThumbsUpFill, HandThumbsDownFill } from 'react-bootstrap-icons'
 import { useNavigate } from 'react-router-dom'
 import { SetRating, Lane } from '../../graphql/generated/graphql'
@@ -12,21 +12,16 @@ import { getTrainingLevelInfo } from '../../utils/trainingLevels'
 import { useTheme } from '../../contexts/ThemeContext'
 import { NoteEditor } from '../NoteEditor'
 import DogBadge from '../DogBadge'
-import type { GetPracticeQuery } from '../../graphql/generated/graphql'
-
-type SetData = NonNullable<GetPracticeQuery['practice']>['sets'][0]
-type DogData = NonNullable<GetPracticeQuery['practice']>['sets'][0]['dogs'][0]['dog']
+import type { Set, SetDog, PracticeDogNote } from '../../graphql/generated/graphql'
 
 interface SetRecapViewProps {
-  sets: SetData[]
-  dogs: DogData[]
+  sets: Set[]
   practiceId: string
   clubId: string
-  defaultLocationName?: string
   onRatingChange?: (setId: string, rating: SetRating | null) => void
 }
 
-export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationName, onRatingChange }: SetRecapViewProps) {
+export function SetRecapView({ sets, practiceId, clubId, onRatingChange }: SetRecapViewProps) {
   const navigate = useNavigate()
   const { isDark } = useTheme()
   const [updateSetRating] = useMutation(UPDATE_SET_RATING)
@@ -37,8 +32,9 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
   const [modalNoteContent, setModalNoteContent] = useState<Record<string, string>>({})
   const [modalSelectedDogs, setModalSelectedDogs] = useState<Record<string, string[]>>({})
   const [error, setError] = useState<string | null>(null)
+  const [localNotes, setLocalNotes] = useState<Record<string, PracticeDogNote[]>>({})
 
-  const { data: practiceNotesData, refetch: refetchNotes } = useQuery(GET_DOG_NOTES_BY_PRACTICE, {
+  const { data: practiceNotesData } = useQuery(GET_DOG_NOTES_BY_PRACTICE, {
     variables: { practiceId: String(practiceId) },
     skip: !practiceId
   })
@@ -46,77 +42,80 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
   const { data: dogNoteSubscriptionData } = usePracticeDogNoteChangedSubscription(practiceId)
 
   useEffect(() => {
-    if (dogNoteSubscriptionData?.practiceDogNoteChanged) {
-      const { eventType } = dogNoteSubscriptionData.practiceDogNoteChanged;
+    if (practiceNotesData?.dogNotesByPractice) {
+      const notesBySet: Record<string, PracticeDogNote[]> = {}
+      sets.forEach(set => {
+        notesBySet[set.id] = []
+      })
 
-      if (eventType === 'CREATED' || eventType === 'UPDATED' || eventType === 'DELETED') {
-        refetchNotes();
-      }
+      practiceNotesData.dogNotesByPractice.forEach((note: PracticeDogNote) => {
+        const setId = note.setId
+        if (notesBySet[setId]) {
+          notesBySet[setId].push(note)
+        }
+      })
+
+      setLocalNotes(notesBySet)
     }
-  }, [dogNoteSubscriptionData, refetchNotes]);
+  }, [practiceNotesData, sets])
+
+  useEffect(() => {
+    if (dogNoteSubscriptionData?.practiceDogNoteChanged) {
+      const { eventType, id, content, setId, dogIds } = dogNoteSubscriptionData.practiceDogNoteChanged;
+
+      setLocalNotes(prev => {
+        const newNotes = { ...prev }
+
+        if (!newNotes[setId]) {
+          newNotes[setId] = []
+        }
+
+        switch (eventType) {
+          case 'CREATED':
+            newNotes[setId] = [...newNotes[setId], { id, content, dogIds, setId } as PracticeDogNote]
+            break
+          case 'UPDATED':
+            newNotes[setId] = newNotes[setId].map(note =>
+              note.id === id ? { ...note, content, dogIds } : note
+            )
+            break
+          case 'DELETED':
+            newNotes[setId] = newNotes[setId].filter(note => note.id !== id)
+            break
+        }
+
+        return newNotes
+      })
+    }
+  }, [dogNoteSubscriptionData]);
 
   const dogNotes = useMemo(() => {
     const notesBySet: Record<string, Array<{
       id: string
       content: string
-      selectedDogs: string[]
-      createdAt: string
-      updatedAt: string
-      setDogs: Array<{
-        dogId: string
-        dog: {
-          id: string
-          name: string
-          trainingLevel?: string
-        }
-      }>
+      selectedDogs: string[],
+      setDogs: SetDog[]
     }>> = {}
 
     sets.forEach(set => {
       notesBySet[set.id] = []
     })
 
-    if (practiceNotesData?.dogNotesByPractice) {
-      practiceNotesData.dogNotesByPractice.forEach((note: any) => {
-        const setId = note.setId
+    Object.entries(localNotes).forEach(([setId, notes]) => {
+      notes.forEach((note: PracticeDogNote) => {
         if (notesBySet[setId]) {
-          const set = sets.find(s => s.id === setId)
-          const setDogs = note.dogIds.map((dogId: string) => {
-            const setDog = set?.dogs.find((d: any) => d.dogId === dogId)
-            return {
-              dogId,
-              dog: {
-                id: setDog?.dog?.id || dogId,
-                name: setDog?.dog?.name || `Dog ${dogId}`,
-                trainingLevel: setDog?.dog?.trainingLevel
-              }
-            }
-          })
-
           notesBySet[setId].push({
             id: note.id,
             content: note.content,
             selectedDogs: note.dogIds,
-            createdAt: note.createdAt,
-            updatedAt: note.updatedAt || note.createdAt,
-            setDogs
+            setDogs: (sets.find(s => s.id === setId)?.dogs || []).filter(d => note.dogIds.includes(d.dogId || ''))
           })
         }
       })
-    }
+    })
 
     return notesBySet
-  }, [practiceNotesData, sets])
-
-  const enrichedSets = useMemo(() => {
-    return sets.map(set => ({
-      ...set,
-      dogs: set.dogs.map(setDog => ({
-        ...setDog,
-        dog: setDog.dog || dogs.find(dog => dog.id === setDog.dogId) || null
-      }))
-    }))
-  }, [sets, dogs])
+  }, [localNotes, sets])
 
   const handleRatingChange = async (setId: string, rating: SetRating | null) => {
     try {
@@ -213,7 +212,7 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
     navigate(`/dogs/${dogId}`)
   }
 
-  const getRatingButtonVariant = (setId: string, currentRating: SetRating | null, targetRating: SetRating) => {
+  const getRatingButtonVariant = (setId: string, currentRating: SetRating | undefined | null, targetRating: SetRating) => {
     const isSelected = currentRating === targetRating
     const isSaving = savingRatings[setId] === targetRating
 
@@ -274,7 +273,7 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
     )
   }
 
-  const renderSetContent = (set: any) => (
+  const renderSetContent = (set: Set) => (
     <>
       {/* Rating buttons */}
       <div className="mt-3 d-flex justify-content-between gap-2">
@@ -328,7 +327,6 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
                 <NoteEditor
                   note={note}
                   setDogs={note.setDogs}
-                  onUpdate={refetchNotes}
                 />
               </div>
               <p className="mb-0">{note.content}</p>
@@ -370,7 +368,7 @@ export function SetRecapView({ sets, dogs, practiceId, clubId, defaultLocationNa
 
   return (
     <>
-      <SetDisplayBase sets={enrichedSets} twoColumns={false} defaultLocationName={defaultLocationName} showTrainingLevels={true} clickableDogBadges={true}>
+      <SetDisplayBase sets={sets} twoColumns={false} showTrainingLevels={true} clickableDogBadges={true}>
         {renderSetContent}
       </SetDisplayBase>
 

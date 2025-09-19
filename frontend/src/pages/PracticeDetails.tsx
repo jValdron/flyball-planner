@@ -10,7 +10,7 @@ import { PracticeAttendance } from '../components/PracticeSet/PracticeAttendance
 import { useMutation } from '@apollo/client'
 import { CreatePractice, UpdatePractice, DeletePractice } from '../graphql/practice'
 import { AttendanceStatus, PracticeStatus } from '../graphql/generated/graphql'
-import type { CreatePracticeMutation, UpdatePracticeMutation, DeletePracticeMutation } from '../graphql/generated/graphql'
+import type { PracticeAttendance as PracticeAttendanceType, CreatePracticeMutation, UpdatePracticeMutation, DeletePracticeMutation } from '../graphql/generated/graphql'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import { PracticeValidationService, type ValidationError } from '../services/practiceValidation'
 import { PracticeValidation } from '../components/PracticeSet/PracticeValidation'
@@ -24,7 +24,7 @@ function PracticeDetailsContent() {
   const { practiceId } = useParams()
   const location = useLocation()
   const [searchParams] = useSearchParams()
-  const { selectedClub, dogs, handlers, locations } = useClub()
+  const { selectedClub, dogs, handlers } = useClub()
   const {
     practice,
     isPracticeLoading,
@@ -126,8 +126,8 @@ function PracticeDetailsContent() {
         scheduledAt: practice.scheduledAt,
         status: practice.status,
         clubId: practice.clubId,
-        attendances: attendances as any,
-        sets: sets as any
+        attendances: attendances as PracticeAttendanceType[],
+        sets: sets
       }
       const validationContext = { dogs, handlers, idealSetsPerDog: selectedClub?.idealSetsPerDog ?? 2 }
       const validationResult = PracticeValidationService.validatePractice(practiceToValidate, validationContext)
@@ -561,10 +561,8 @@ function PracticeDetailsContent() {
                 ) : (
                   <SetRecapView
                     sets={sets}
-                    dogs={dogs}
                     practiceId={practiceId}
                     clubId={selectedClub?.id || ''}
-                    defaultLocationName={locations?.find(l => l.isDefault)?.name}
                   />
                 )}
               </>

@@ -172,7 +172,7 @@ function DogDetails() {
         </div>
       </div>
 
-      <DogNotes dogId={dog.id} dogName={dog.name} />
+      <DogNotes dog={dog} />
 
       <DeleteConfirmationModal
         show={showDeleteConfirm}

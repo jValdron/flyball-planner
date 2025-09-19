@@ -11,31 +11,30 @@ import type {
   PracticeChangedSubscription,
   PracticeAttendanceChangedSubscription,
   PracticeSetChangedSubscription,
-  GetPracticeQuery
+  Practice,
+  Set,
+  PracticeAttendance
 } from '../graphql/generated/graphql'
 import { useClub } from './ClubContext'
 import type { VirtualAttendanceData, MergedAttendanceData } from '../types/attendance'
+import { enrichDogs } from '../utils/dogsUtils'
 
-// Types for the practice data we're managing
-type PracticeData = NonNullable<GetPracticeQuery['practice']>
-type PracticeAttendanceData = NonNullable<GetPracticeQuery['practice']>['attendances'][0]
-type SetData = NonNullable<GetPracticeQuery['practice']>['sets'][0]
 
 interface PracticeContextType {
   // Practice data
-  practice: PracticeData | null
+  practice: Practice | null
   isPracticeLoading: boolean
   practiceError: string | null
 
   // Attendance management
   attendances: MergedAttendanceData[]
-  updateAttendance: (attendance: PracticeAttendanceData) => void
+  updateAttendance: (attendance: PracticeAttendance) => void
   getAttendance: (dogId: string) => AttendanceStatus | undefined
 
   // Sets management
-  sets: SetData[]
-  addSet: (set: Partial<SetData>) => void
-  updateSet: (setId: string, updates: Partial<SetData>) => void
+  sets: Set[]
+  addSet: (set: Partial<Set>) => void
+  updateSet: (setId: string, updates: Partial<Set>) => void
   removeSet: (setId: string) => void
 
   // Utility functions
@@ -50,18 +49,18 @@ interface PracticeProviderProps {
 }
 
 // Helper function to sort sets by index
-const sortSetsByIndex = (sets: SetData[]): SetData[] => {
+const sortSetsByIndex = (sets: Set[]): Set[] => {
   return [...sets].sort((a, b) => a.index - b.index)
 }
 
 // Sets reducer for race-condition-free updates
 type SetAction =
-  | { type: 'SET_SETS'; sets: SetData[] }
-  | { type: 'ADD_SET'; set: SetData }
-  | { type: 'UPDATE_SET'; setId: string; updates: Partial<SetData> }
+  | { type: 'SET_SETS'; sets: Set[] }
+  | { type: 'ADD_SET'; set: Set }
+  | { type: 'UPDATE_SET'; setId: string; updates: Partial<Set> }
   | { type: 'REMOVE_SET'; setId: string }
 
-function setsReducer(state: SetData[], action: SetAction): SetData[] {
+function setsReducer(state: Set[], action: SetAction): Set[] {
   switch (action.type) {
     case 'SET_SETS':
       return sortSetsByIndex(action.sets)
@@ -80,7 +79,7 @@ function setsReducer(state: SetData[], action: SetAction): SetData[] {
 }
 
 export function PracticeProvider({ children, practiceId }: PracticeProviderProps) {
-  const [practice, setPractice] = useState<PracticeData | null>(null)
+  const [practice, setPractice] = useState<Practice | null>(null)
   const [isPracticeLoading, setIsPracticeLoading] = useState(false)
   const [practiceError, setPracticeError] = useState<string | null>(null)
 
@@ -88,7 +87,7 @@ export function PracticeProvider({ children, practiceId }: PracticeProviderProps
   const { dogs } = useClub()
 
   // Load practice data
-  const { data: practiceData, loading: practiceQueryLoading, error: practiceQueryError, refetch } = useQuery<GetPracticeQuery>(GetPractice, {
+  const { data: practiceData, loading: practiceQueryLoading, error: practiceQueryError, refetch } = useQuery(GetPractice, {
     variables: { id: practiceId! },
     skip: !practiceId,
     onError: (err) => {
@@ -115,11 +114,10 @@ export function PracticeProvider({ children, practiceId }: PracticeProviderProps
     if (practiceData?.practice) {
       const practiceWithSortedSets = {
         ...practiceData.practice,
-        sets: sortSetsByIndex(practiceData.practice.sets)
+        sets: sortSetsByIndex(practiceData.practice.sets as Set[])
       }
-      setPractice(practiceWithSortedSets)
-      // Always update sets when practice data changes
-      dispatchSets({ type: 'SET_SETS', sets: practiceData.practice.sets })
+      setPractice(practiceWithSortedSets as Practice)
+      dispatchSets({ type: 'SET_SETS', sets: practiceData.practice.sets as Set[] })
     }
   }, [practiceData])
 
@@ -130,21 +128,17 @@ export function PracticeProvider({ children, practiceId }: PracticeProviderProps
     const existingAttendances = practice.attendances || []
     const activeDogs = dogs.filter(dog => dog.status === 'Active')
 
-    // Create a map of existing attendance records by dogId
-    const attendanceMap = new Map<string, PracticeAttendanceData>()
+    const attendanceMap = new Map<string, PracticeAttendance>()
     existingAttendances.forEach(attendance => {
       attendanceMap.set(attendance.dogId, attendance)
     })
 
-    // Create merged attendance list
     const merged: MergedAttendanceData[] = []
 
-    // Add existing attendance records
     existingAttendances.forEach(attendance => {
       merged.push(attendance)
     })
 
-    // Add virtual attendance records for active dogs without attendance records
     activeDogs.forEach(dog => {
       if (!attendanceMap.has(dog.id)) {
         const virtualAttendance: VirtualAttendanceData = {
@@ -197,7 +191,7 @@ export function PracticeProvider({ children, practiceId }: PracticeProviderProps
       if (data?.data?.practiceAttendanceChanged) {
         const { attendance: updatedAttendance } = data.data.practiceAttendanceChanged
         if (updatedAttendance.practiceId === practiceId) {
-          updateAttendance(updatedAttendance)
+          updateAttendance(updatedAttendance as PracticeAttendance)
         }
       }
     },
@@ -214,13 +208,15 @@ export function PracticeProvider({ children, practiceId }: PracticeProviderProps
         const { set: updatedSet, eventType } = data.data.practiceSetChanged
 
         if (updatedSet.practiceId === practiceId) {
+          const enrichedSet = enrichDogs(updatedSet, dogs) as Set
+
           switch (eventType) {
             case 'UPDATED':
               const existingSet = sets.find(s => s.id === updatedSet.id)
               if (existingSet) {
-                dispatchSets({ type: 'UPDATE_SET', setId: updatedSet.id, updates: updatedSet as any })
+                dispatchSets({ type: 'UPDATE_SET', setId: updatedSet.id, updates: enrichedSet })
               } else {
-                dispatchSets({ type: 'ADD_SET', set: updatedSet as any })
+                dispatchSets({ type: 'ADD_SET', set: enrichedSet })
               }
               break
 
@@ -243,7 +239,7 @@ export function PracticeProvider({ children, practiceId }: PracticeProviderProps
   }, [practiceId, refetch])
 
   // Attendance management
-  const updateAttendance = useCallback((attendance: PracticeAttendanceData) => {
+  const updateAttendance = useCallback((attendance: PracticeAttendance) => {
     setPractice(prev => {
       if (!prev) return prev
 
@@ -271,11 +267,11 @@ export function PracticeProvider({ children, practiceId }: PracticeProviderProps
   }, [mergedAttendances])
 
   // Sets management - now using reducer
-  const addSet = useCallback((set: Partial<SetData>) => {
-    dispatchSets({ type: 'ADD_SET', set: set as SetData })
+  const addSet = useCallback((set: Partial<Set>) => {
+    dispatchSets({ type: 'ADD_SET', set: set as Set })
   }, [])
 
-  const updateSet = useCallback((setId: string, updates: Partial<SetData>) => {
+  const updateSet = useCallback((setId: string, updates: Partial<Set>) => {
     dispatchSets({ type: 'UPDATE_SET', setId, updates })
   }, [])
 

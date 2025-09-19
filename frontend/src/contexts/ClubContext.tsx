@@ -10,7 +10,6 @@ import {
   useHandlerChangedSubscription,
   useLocationChangedSubscription,
 } from '../hooks/useSubscription'
-import type { HandlerWithDogs } from '../utils/dogsUtils'
 
 interface ClubContextType {
   selectedClub: Club | null
@@ -18,7 +17,7 @@ interface ClubContextType {
   dogs: Dog[]
   handlers: Handler[]
   locations: Location[]
-  dogsByHandlersInSelectedClub: HandlerWithDogs[]
+  dogsByHandlersInSelectedClub: Handler[]
   loading: boolean
   error: string | null
 }
@@ -269,7 +268,7 @@ export function ClubProvider({ children }: { children: ReactNode }) {
     return handlers.map((handler: Handler) => ({
       ...handler,
       dogs: dogs.filter(dog => dog?.ownerId === handler.id)
-    })) as HandlerWithDogs[]
+    }))
   }, [selectedClub?.id, handlers, dogs])
 
   const loading = clubLoading || handlersLoading || locationsLoading

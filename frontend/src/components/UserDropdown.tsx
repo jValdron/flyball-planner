@@ -7,7 +7,7 @@ import { useClub } from '../contexts/ClubContext'
 import { useQuery } from '@apollo/client'
 import { GetClubs } from '../graphql/clubs'
 import { ThemeToggle } from './ThemeToggle'
-import type { GetClubsQuery } from '../graphql/generated/graphql'
+import type { GetClubsQuery, Club } from '../graphql/generated/graphql'
 
 export const UserDropdown: React.FC = () => {
   const navigate = useNavigate()
@@ -17,7 +17,7 @@ export const UserDropdown: React.FC = () => {
 
   React.useEffect(() => {
     if (data?.clubs && !selectedClub && data.clubs.length > 0) {
-      setSelectedClub(data.clubs[0] as any)
+      setSelectedClub(data.clubs[0] as Club)
     }
   }, [data, selectedClub, setSelectedClub])
 
@@ -28,7 +28,7 @@ export const UserDropdown: React.FC = () => {
   const handleClubSelect = (clubId: string) => {
     const club = data?.clubs.find((c) => c.id === clubId)
     if (club) {
-      setSelectedClub(club as any)
+      setSelectedClub(club as Club)
     }
   }
 

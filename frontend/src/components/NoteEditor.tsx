@@ -1,29 +1,18 @@
 import { useState } from 'react'
-import { Button, Form, Modal, Badge } from 'react-bootstrap'
+import { Button, Form, Modal } from 'react-bootstrap'
 import { Pencil, Trash, Calendar3 } from 'react-bootstrap-icons'
 import { useMutation } from '@apollo/client'
 import { UPDATE_DOG_NOTE, DELETE_DOG_NOTE } from '../graphql/dogNotes'
-import { getTrainingLevelInfo } from '../utils/trainingLevels'
 import { formatFullDateTime } from '../utils/dateUtils'
-import { TrainingLevel } from '../graphql/generated/graphql'
+import type { SetDog, DogNote } from '../graphql/generated/graphql'
 import DeleteConfirmationModal from './DeleteConfirmationModal'
-
-interface SetDog {
-  dogId: string
-  dog: {
-    id: string
-    name: string
-    trainingLevel?: string
-  }
-}
+import DogBadge from './DogBadge'
 
 interface NoteEditorProps {
-  note: {
-    id: string
-    content: string
-    createdAt: string
-    updatedAt: string | null
-  }
+  note: Partial<DogNote> & {
+    id: string,
+    content: string,
+  },
   setDogs?: SetDog[]
   onUpdate?: () => void
   buttonVariant?: string
@@ -131,7 +120,7 @@ export function NoteEditor({
           disabled={isUpdating || isDeleting}
         >
           <Pencil className="me-1" size={12} />
-          Update
+          Edit
         </Button>
         <Button
           variant="outline-danger"
@@ -178,19 +167,12 @@ export function NoteEditor({
           </Form>
           {setDogs && setDogs.length > 0 && (
             <div className="mt-3">
-              <p className="mb-2 text-muted">
-                This note is tied to the following dogs:
+              <p className="mb-2 text-muted ">
+                <small className="me-2">{setDogs.length === 1 ? 'This note is tied to a single dog:' : 'This note is tied to the following dogs:'}</small>
+                {setDogs.map((setDog) => (
+                  <DogBadge key={setDog.dogId} dog={setDog.dog} bgByTrainingLevel={true} className="ms-1" />
+                ))}
               </p>
-              <div className="d-flex flex-wrap gap-1">
-                {setDogs.map((setDog) => {
-                const { variant } = getTrainingLevelInfo((setDog.dog.trainingLevel as TrainingLevel) || TrainingLevel.Novice)
-                return (
-                  <Badge key={setDog.dogId} bg={variant} className="me-1">
-                    {setDog.dog.name}
-                  </Badge>
-                )
-                })}
-              </div>
             </div>
           )}
         </Modal.Body>
@@ -205,7 +187,7 @@ export function NoteEditor({
             className="d-flex align-items-center"
           >
             <Pencil className="me-2" />
-            {isUpdating ? 'Updating...' : `Update${setDogs && setDogs.length > 0 ? ` for ${setDogs.length} dog${setDogs.length === 1 ? '' : 's'}` : ''}`}
+            {isUpdating ? 'Updating...' : `Edit${setDogs && setDogs.length > 0 ? ` for ${setDogs.length} dog${setDogs.length === 1 ? '' : 's'}` : ''}`}
           </Button>
         </Modal.Footer>
       </Modal>

@@ -390,7 +390,7 @@ function SortableGroup({
                 type="checkbox"
                 id={`warmup-${group.index}`}
                 label="Warmup"
-                checked={group.sets.some(set => (set as any).isWarmup)}
+                checked={group.sets.some(set => set.isWarmup)}
                 onChange={(e) => onWarmupChange?.(group.index, e.target.checked)}
                 disabled={disabled}
                 className="me-3"
@@ -759,7 +759,10 @@ export function PracticeSet({ practiceId, disabled, isLocked = false, validation
     if (!currentSet) return
 
     const newIndex = currentSet.index
-    const updates: Array<{ id: string; index: number }> = []
+    const updates: Array<{
+      id: string;
+      index: number;
+    }> = []
 
     try {
       setIsSaving(true)
@@ -773,11 +776,9 @@ export function PracticeSet({ practiceId, disabled, isLocked = false, validation
 
       // Add the new set at the current set's index (it will take that position)
       updates.push({
-        practiceId,
-        locationId: currentSet.locationId,
+        id: practiceId,
         index: newIndex,
-        dogs: []
-      } as any)
+      })
 
       if (updates.length > 0) {
         const result = await updateSets({

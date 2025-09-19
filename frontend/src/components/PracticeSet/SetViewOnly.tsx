@@ -1,10 +1,8 @@
 import { SetDisplayBase } from './SetDisplayBase'
-import type { GetPracticeQuery } from '../../graphql/generated/graphql'
-
-type SetData = NonNullable<GetPracticeQuery['practice']>['sets'][0]
+import type { Set } from '../../graphql/generated/graphql'
 
 interface SetViewOnlyProps {
-  sets: SetData[]
+  sets: Set[]
   twoColumns?: boolean
   defaultLocationName?: string
   smallHeader?: boolean

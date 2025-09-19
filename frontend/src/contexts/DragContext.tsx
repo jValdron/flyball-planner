@@ -62,7 +62,7 @@ export function DragProvider({ children, onDogMove }: DragProviderProps) {
         }
       }, 100)
 
-      setStickyTimer(timer as any)
+      setStickyTimer(timer as NodeJS.Timeout)
     }
   }, [])
 

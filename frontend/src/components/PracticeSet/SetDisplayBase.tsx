@@ -1,18 +1,14 @@
 import { Card, Badge } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
 import { getSetTypeDisplayName } from '../../utils/setTypeUtils'
-import { getTrainingLevelInfo } from '../../utils/trainingLevels'
-import { useTheme } from '../../contexts/ThemeContext'
 import { formatRelativeTime } from '../../utils/dateUtils'
 import { Lane } from '../../graphql/generated/graphql'
-import type { GetPracticeQuery } from '../../graphql/generated/graphql'
+import type { Set, SetDog, Dog } from '../../graphql/generated/graphql'
 import DogBadge from '../DogBadge'
 import './SetViewOnly.css'
 
-type SetData = NonNullable<GetPracticeQuery['practice']>['sets'][0]
-
 interface SetDisplayBaseProps {
-  sets: SetData[]
+  sets: Set[]
   twoColumns?: boolean
   defaultLocationName?: string
   showTrainingLevels?: boolean
@@ -22,21 +18,20 @@ interface SetDisplayBaseProps {
   practiceScheduledAt?: string | null
   clickableSets?: boolean
   practiceId?: string
-  children?: (set: SetData, setIndex: number) => React.ReactNode
+  children?: (set: Set, setIndex: number) => React.ReactNode
 }
 
 export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, showTrainingLevels = false, clickableDogBadges = false, smallHeader = false, hideNotes = false, practiceScheduledAt, clickableSets = false, practiceId, children }: SetDisplayBaseProps) {
-  const { isDark } = useTheme()
   const navigate = useNavigate()
 
-  const handleDogBadgeClick = (dogId: string, event: React.MouseEvent) => {
+  const handleDogBadgeClick = (dog: Dog, event: React.MouseEvent) => {
     if (clickableDogBadges) {
       event.stopPropagation()
-      navigate(`/dogs/${dogId}`)
+      navigate(`/dogs/${dog.id}`)
     }
   }
 
-  const handleSetClick = (set: SetData) => {
+  const handleSetClick = (set: Set) => {
     if (clickableSets && practiceId) {
       navigate(`/practices/${practiceId}/sets?focusSet=${set.id}`)
     }
@@ -58,7 +53,7 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
             }
             groups[key].push(set)
             return groups
-          }, {} as Record<string, Array<typeof sets[0]>>)
+          }, {} as Record<string, Array<Set>>)
       ).map(([index, sets]) => (
         <Card
           key={index}
@@ -70,21 +65,21 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
               {practiceScheduledAt && (
                 <span className="text-muted me-3">{formatRelativeTime(practiceScheduledAt)}</span>
               )}
-              <span className="fw-normal">Set {index}{(sets as any[])[0].type ? ' -' : ''}</span>
-              {(sets as any[])[0].type && (
+              <span className="fw-normal">Set {index}{sets[0].type ? ' -' : ''}</span>
+              {sets[0].type && (
                 <span className="ms-2 fw-bold">
-                  {(sets as any[])[0].typeCustom || getSetTypeDisplayName((sets as any[])[0].type as any)}
+                  {sets[0].typeCustom || getSetTypeDisplayName(sets[0].type)}
                 </span>
               )}
             </div>
             <div className="text-end">
-              {(sets as any[]).some((set: any) => set.isWarmup) && (
+              {sets.some((set: Set) => set.isWarmup) && (
                 <Badge bg="info">Warmup</Badge>
               )}
             </div>
           </Card.Header>
           <Card.Body>
-            {(sets as any[]).map((set: any, setIndex: number) => (
+            {sets.map((set: any, setIndex: number) => (
               <div key={set.id}>
                 {setIndex > 0 && <hr className="my-3" />}
                 {set.location && set.location.name !== defaultLocationName && (
@@ -96,13 +91,13 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
                   <div className="lane-container">
                     {(() => {
                       const isDoubleLane = set.location?.isDoubleLane || false
-                      const hasDogsInLeftLane = set.dogs.some((d: any) => d.lane === Lane.Left)
-                      const hasDogsInRightLane = set.dogs.some((d: any) => d.lane === Lane.Right)
+                      const hasDogsInLeftLane = set.dogs.some((d: SetDog) => d.lane === Lane.Left)
+                      const hasDogsInRightLane = set.dogs.some((d: SetDog) => d.lane === Lane.Right)
                       const hasDogsInBothLanes = hasDogsInLeftLane && hasDogsInRightLane
 
                       if (isDoubleLane && hasDogsInBothLanes) {
                         return [Lane.Left, Lane.Right].map(lane => {
-                          const laneDogs = set.dogs.filter((d: any) => d.lane === lane)
+                          const laneDogs = set.dogs.filter((d: SetDog) => d.lane === lane)
 
                           return (
                             <div key={lane} className={`lane-column ${lane === Lane.Left ? 'left' : 'right'}`}>
@@ -127,7 +122,7 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
                           )
                         })
                       } else {
-                        const allDogs = set.dogs.filter((d: any) => d.lane === null || d.lane === Lane.Left || d.lane === Lane.Right)
+                        const allDogs = set.dogs.filter((d: SetDog) => d.lane === null || d.lane === Lane.Left || d.lane === Lane.Right)
                         return (
                           <div key="single" className="single-lane">
                             <div className={`lane-dogs ${allDogs.length < 5 ? 'force-wrap' : ''}`}>
