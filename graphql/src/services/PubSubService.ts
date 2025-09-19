@@ -26,6 +26,7 @@ export enum SubscriptionEvents {
   PRACTICE_ATTENDANCE_UPDATED = 'PRACTICE_ATTENDANCE_UPDATED',
   PRACTICE_SET_UPDATED = 'PRACTICE_SET_UPDATED',
   PRACTICE_SET_DELETED = 'PRACTICE_SET_DELETED',
+  PRACTICE_SET_RATING_UPDATED = 'PRACTICE_SET_RATING_UPDATED',
   PRACTICE_DOG_NOTE_CREATED = 'PRACTICE_DOG_NOTE_CREATED',
   PRACTICE_DOG_NOTE_UPDATED = 'PRACTICE_DOG_NOTE_UPDATED',
   PRACTICE_DOG_NOTE_DELETED = 'PRACTICE_DOG_NOTE_DELETED',
@@ -168,6 +169,21 @@ export class PubSubService {
       await this.publish(event, payload);
     } catch (error) {
       console.error(`Error publishing practice dog note event ${event}:`, error);
+    }
+  }
+
+  static async publishPracticeSetRatingEvent(event: SubscriptionEvents, setId: string, practiceId: string, rating: string | null): Promise<void> {
+    try {
+      const payload = {
+        setId,
+        practiceId,
+        rating,
+        eventType: getEventType(event)
+      };
+
+      await this.publish(event, payload);
+    } catch (error) {
+      console.error(`Error publishing practice set rating event ${event}:`, error);
     }
   }
 }

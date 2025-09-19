@@ -4,6 +4,7 @@ import {
   CLUB_BY_ID_SUBSCRIPTION,
   DOG_CHANGED_SUBSCRIPTION,
   PRACTICE_DOG_NOTE_CHANGED_SUBSCRIPTION,
+  PRACTICE_SET_RATING_CHANGED_SUBSCRIPTION,
   HANDLER_CHANGED_SUBSCRIPTION,
   LOCATION_CHANGED_SUBSCRIPTION,
   PRACTICE_SUMMARY_CHANGED_SUBSCRIPTION,
@@ -149,6 +150,25 @@ export function usePracticeDogNoteChangedSubscription(
       skip: options?.skip ?? !practiceId,
       onError: options?.onError || ((error: Error) => {
         console.error('Practice dog note subscription error:', error);
+      }),
+    }
+  );
+}
+
+export function usePracticeSetRatingChangedSubscription(
+  practiceId?: string,
+  options?: {
+    onError?: (error: Error) => void;
+    skip?: boolean;
+  }
+) {
+  return useSubscription(
+    PRACTICE_SET_RATING_CHANGED_SUBSCRIPTION,
+    {
+      variables: practiceId ? { practiceId } : undefined,
+      skip: options?.skip ?? !practiceId,
+      onError: options?.onError || ((error: Error) => {
+        console.error('Practice set rating subscription error:', error);
       }),
     }
   );

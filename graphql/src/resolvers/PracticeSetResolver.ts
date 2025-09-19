@@ -290,6 +290,16 @@ export class PracticeSetResolver {
       for (const result of results) {
         const eventType = SubscriptionEvents.PRACTICE_SET_UPDATED;
         await PubSubService.publishPracticeSetEvent(eventType, result);
+
+        const update = updates.find(u => u.id === result.id);
+        if (update && update.rating !== undefined && result.practiceId) {
+          await PubSubService.publishPracticeSetRatingEvent(
+            SubscriptionEvents.PRACTICE_SET_RATING_UPDATED,
+            result.id,
+            result.practiceId,
+            result.rating
+          );
+        }
       }
 
       for (const practiceId of affectedPracticeIds) {

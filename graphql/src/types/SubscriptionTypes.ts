@@ -84,6 +84,21 @@ export class PracticeSetEvent {
 }
 
 @ObjectType()
+export class PracticeSetRatingEvent {
+  @Field(() => String)
+  setId!: string;
+
+  @Field(() => String)
+  practiceId!: string;
+
+  @Field(() => String, { nullable: true })
+  rating!: string | null;
+
+  @Field(() => EventType)
+  eventType!: EventType;
+}
+
+@ObjectType()
 export class PracticeSummary {
   @Field(() => String)
   id!: string;

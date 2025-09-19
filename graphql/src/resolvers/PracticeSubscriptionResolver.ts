@@ -1,6 +1,6 @@
 import { Resolver, Subscription, Root, Arg, UseMiddleware } from 'type-graphql'
 
-import { PracticeEvent, PracticeSummaryEvent, PracticeAttendanceEvent, PracticeSetEvent, PracticeDogNoteEvent } from '../types/SubscriptionTypes'
+import { PracticeEvent, PracticeSummaryEvent, PracticeAttendanceEvent, PracticeSetEvent, PracticeDogNoteEvent, PracticeSetRatingEvent } from '../types/SubscriptionTypes'
 import { isAuth } from '../middleware/auth'
 import { SubscriptionEvents } from '../services/PubSubService'
 
@@ -100,6 +100,21 @@ export class PracticeSubscriptionResolver {
     @Root() payload: PracticeDogNoteEvent,
     @Arg('practiceId') practiceId: string
   ): PracticeDogNoteEvent {
+    return payload;
+  }
+
+  @Subscription(() => PracticeSetRatingEvent, {
+    topics: [SubscriptionEvents.PRACTICE_SET_RATING_UPDATED],
+    filter: ({ payload, context, args }) => {
+      if (!payload?.practiceId) return false;
+      return payload.practiceId === args.practiceId;
+    }
+  })
+  @UseMiddleware(isAuth)
+  practiceSetRatingChanged(
+    @Root() payload: PracticeSetRatingEvent,
+    @Arg('practiceId') practiceId: string
+  ): PracticeSetRatingEvent {
     return payload;
   }
 }

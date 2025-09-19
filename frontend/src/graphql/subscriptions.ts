@@ -200,3 +200,14 @@ export const PRACTICE_DOG_NOTE_CHANGED_SUBSCRIPTION = graphql(`
     }
   }
 `);
+
+export const PRACTICE_SET_RATING_CHANGED_SUBSCRIPTION = graphql(`
+  subscription PracticeSetRatingChanged($practiceId: String!) {
+    practiceSetRatingChanged(practiceId: $practiceId) {
+      setId
+      practiceId
+      rating
+      eventType
+    }
+  }
+`);

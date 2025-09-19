@@ -245,6 +245,13 @@ type PracticeSetEvent {
   set: Set!
 }
 
+type PracticeSetRatingEvent {
+  eventType: EventType!
+  practiceId: String!
+  rating: String
+  setId: String!
+}
+
 """The status of a practice"""
 enum PracticeStatus {
   Draft
@@ -384,6 +391,7 @@ type Subscription {
   practiceChanged(practiceId: String!): PracticeEvent!
   practiceDogNoteChanged(practiceId: String!): PracticeDogNoteEvent!
   practiceSetChanged(practiceId: String!): PracticeSetEvent!
+  practiceSetRatingChanged(practiceId: String!): PracticeSetRatingEvent!
   practiceSummaryChanged(clubId: String!): PracticeSummaryEvent!
 }
 

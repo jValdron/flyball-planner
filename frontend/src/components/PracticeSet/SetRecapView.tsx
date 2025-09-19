@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 
 import { Button, Spinner } from 'react-bootstrap'
 import { DashCircle, HandThumbsUpFill, HandThumbsDownFill } from 'react-bootstrap-icons'
@@ -8,6 +8,7 @@ import type { Set, DogNote } from '../../graphql/generated/graphql'
 import { SetRating } from '../../graphql/generated/graphql'
 import { UPDATE_SET_RATING } from '../../graphql/sets'
 import { GET_DOG_NOTES_BY_PRACTICE, CREATE_SET_DOG_NOTE, UPDATE_DOG_NOTE, DELETE_DOG_NOTE } from '../../graphql/dogNotes'
+import { usePracticeSetRatingChangedSubscription } from '../../hooks/useSubscription'
 import { SetDisplayBase } from './SetDisplayBase'
 import DogNotes from '../DogNotes'
 
@@ -21,6 +22,31 @@ interface SetRecapViewProps {
 export function SetRecapView({ sets, practiceId, clubId, onRatingChange }: SetRecapViewProps) {
   const [updateSetRating] = useMutation(UPDATE_SET_RATING)
   const [savingRatings, setSavingRatings] = useState<Record<string, SetRating>>({})
+  const [localSets, setLocalSets] = useState<Set[]>(sets)
+
+  useEffect(() => {
+    setLocalSets(sets)
+  }, [sets])
+
+  // Subscribe to rating changes
+  const { data: ratingData } = usePracticeSetRatingChangedSubscription(practiceId, {
+    onError: (error) => {
+      console.error('Error in practice set rating subscription:', error)
+    }
+  })
+
+  useEffect(() => {
+    if (ratingData?.practiceSetRatingChanged) {
+      const { setId, rating } = ratingData.practiceSetRatingChanged
+      setLocalSets(prevSets =>
+        prevSets.map(set =>
+          set.id === setId
+            ? { ...set, rating: rating as SetRating | null }
+            : set
+        )
+      )
+    }
+  }, [ratingData])
 
   const { data: notesData, loading: notesLoading, error: notesError, refetch: refetchNotes } = useQuery(GET_DOG_NOTES_BY_PRACTICE, {
     variables: { practiceId, orderBy: 'createdAt_DESC' },
@@ -33,7 +59,7 @@ export function SetRecapView({ sets, practiceId, clubId, onRatingChange }: SetRe
   const notesBySet = useMemo(() => {
     const notesBySet: Record<string, DogNote[]> = {}
 
-    sets.forEach(set => {
+    localSets.forEach(set => {
       notesBySet[set.id] = []
     })
 
@@ -41,7 +67,7 @@ export function SetRecapView({ sets, practiceId, clubId, onRatingChange }: SetRe
       notesData.dogNotesByPractice.forEach((note) => {
         const setId = note.setId
         if (notesBySet[setId]) {
-          const set = sets.find(s => s.id === setId)
+          const set = localSets.find(s => s.id === setId)
           notesBySet[setId].push({
             id: note.id,
             content: note.content,
@@ -66,7 +92,7 @@ export function SetRecapView({ sets, practiceId, clubId, onRatingChange }: SetRe
     }
 
     return notesBySet
-  }, [notesData?.dogNotesByPractice, sets, clubId])
+  }, [notesData?.dogNotesByPractice, localSets, clubId])
 
   // Create note mutation
   const [createNote] = useMutation(CREATE_SET_DOG_NOTE, {
@@ -248,11 +274,11 @@ export function SetRecapView({ sets, practiceId, clubId, onRatingChange }: SetRe
 
   return (
     <SetDisplayBase
-      sets={sets}
+      sets={localSets}
       twoColumns={false}
       showTrainingLevels
       clickableDogBadges
-      defaultLocationName={sets[0]?.location?.name}
+      defaultLocationName={localSets[0]?.location?.name}
     >
       {renderSetContent}
     </SetDisplayBase>

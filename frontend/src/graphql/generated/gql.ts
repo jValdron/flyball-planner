@@ -65,6 +65,7 @@ type Documents = {
     "\n  subscription PracticeAttendanceChanged($practiceId: String!) {\n    practiceAttendanceChanged(practiceId: $practiceId) {\n      attendance {\n        id\n        attending\n        dogId\n        practiceId\n        createdAt\n        updatedAt\n      }\n      eventType\n    }\n  }\n": typeof types.PracticeAttendanceChangedDocument,
     "\n  subscription PracticeSetChanged($practiceId: String!) {\n    practiceSetChanged(practiceId: $practiceId) {\n      set {\n        id\n        index\n        notes\n        type\n        typeCustom\n        isWarmup\n        practiceId\n        locationId\n        createdAt\n        updatedAt\n        dogs {\n          id\n          index\n          lane\n          dogId\n        }\n      }\n      eventType\n    }\n  }\n": typeof types.PracticeSetChangedDocument,
     "\n  subscription PracticeSummaryChanged($clubId: String!) {\n    practiceSummaryChanged(clubId: $clubId) {\n      practice {\n        id\n        scheduledAt\n        status\n        setsCount\n        attendingCount\n        notAttendingCount\n        unconfirmedCount\n        plannedBy {\n          id\n          firstName\n          lastName\n          username\n        }\n      }\n      eventType\n    }\n  }\n": typeof types.PracticeSummaryChangedDocument,
+    "\n  subscription PracticeSetRatingChanged($practiceId: String!) {\n    practiceSetRatingChanged(practiceId: $practiceId) {\n      setId\n      practiceId\n      rating\n      eventType\n    }\n  }\n": typeof types.PracticeSetRatingChangedDocument,
 };
 const documents: Documents = {
     "\n  query GetPracticeAttendances($practiceId: String!) {\n    practiceAttendances(practiceId: $practiceId) {\n      id\n      dogId\n      attending\n      dog {\n        id\n        name\n        ownerId\n        trainingLevel\n        owner {\n          givenName\n          surname\n        }\n      }\n    }\n  }\n": types.GetPracticeAttendancesDocument,
@@ -118,6 +119,7 @@ const documents: Documents = {
     "\n  subscription PracticeAttendanceChanged($practiceId: String!) {\n    practiceAttendanceChanged(practiceId: $practiceId) {\n      attendance {\n        id\n        attending\n        dogId\n        practiceId\n        createdAt\n        updatedAt\n      }\n      eventType\n    }\n  }\n": types.PracticeAttendanceChangedDocument,
     "\n  subscription PracticeSetChanged($practiceId: String!) {\n    practiceSetChanged(practiceId: $practiceId) {\n      set {\n        id\n        index\n        notes\n        type\n        typeCustom\n        isWarmup\n        practiceId\n        locationId\n        createdAt\n        updatedAt\n        dogs {\n          id\n          index\n          lane\n          dogId\n        }\n      }\n      eventType\n    }\n  }\n": types.PracticeSetChangedDocument,
     "\n  subscription PracticeSummaryChanged($clubId: String!) {\n    practiceSummaryChanged(clubId: $clubId) {\n      practice {\n        id\n        scheduledAt\n        status\n        setsCount\n        attendingCount\n        notAttendingCount\n        unconfirmedCount\n        plannedBy {\n          id\n          firstName\n          lastName\n          username\n        }\n      }\n      eventType\n    }\n  }\n": types.PracticeSummaryChangedDocument,
+    "\n  subscription PracticeSetRatingChanged($practiceId: String!) {\n    practiceSetRatingChanged(practiceId: $practiceId) {\n      setId\n      practiceId\n      rating\n      eventType\n    }\n  }\n": types.PracticeSetRatingChangedDocument,
 };
 
 /**
@@ -338,6 +340,10 @@ export function graphql(source: "\n  subscription PracticeSetChanged($practiceId
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  subscription PracticeSummaryChanged($clubId: String!) {\n    practiceSummaryChanged(clubId: $clubId) {\n      practice {\n        id\n        scheduledAt\n        status\n        setsCount\n        attendingCount\n        notAttendingCount\n        unconfirmedCount\n        plannedBy {\n          id\n          firstName\n          lastName\n          username\n        }\n      }\n      eventType\n    }\n  }\n"): (typeof documents)["\n  subscription PracticeSummaryChanged($clubId: String!) {\n    practiceSummaryChanged(clubId: $clubId) {\n      practice {\n        id\n        scheduledAt\n        status\n        setsCount\n        attendingCount\n        notAttendingCount\n        unconfirmedCount\n        plannedBy {\n          id\n          firstName\n          lastName\n          username\n        }\n      }\n      eventType\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  subscription PracticeSetRatingChanged($practiceId: String!) {\n    practiceSetRatingChanged(practiceId: $practiceId) {\n      setId\n      practiceId\n      rating\n      eventType\n    }\n  }\n"): (typeof documents)["\n  subscription PracticeSetRatingChanged($practiceId: String!) {\n    practiceSetRatingChanged(practiceId: $practiceId) {\n      setId\n      practiceId\n      rating\n      eventType\n    }\n  }\n"];
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};
