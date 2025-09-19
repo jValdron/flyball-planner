@@ -18,10 +18,11 @@ interface SetDisplayBaseProps {
   practiceScheduledAt?: string | null
   clickableSets?: boolean
   practiceId?: string
+  cardClassName?: string
   children?: (set: Set, setIndex: number) => React.ReactNode
 }
 
-export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, showTrainingLevels = false, clickableDogBadges = false, smallHeader = false, hideNotes = false, practiceScheduledAt, clickableSets = false, practiceId, children }: SetDisplayBaseProps) {
+export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, showTrainingLevels = false, clickableDogBadges = false, smallHeader = false, hideNotes = false, practiceScheduledAt, clickableSets = false, practiceId, cardClassName, children }: SetDisplayBaseProps) {
   const navigate = useNavigate()
 
   const handleDogBadgeClick = (dog: Dog, event: React.MouseEvent) => {
@@ -57,7 +58,7 @@ export function SetDisplayBase({ sets, twoColumns = false, defaultLocationName, 
       ).map(([index, sets]) => (
         <Card
           key={index}
-          className={`w-100 ${clickableSets ? 'clickable-card cur-point' : ''}`}
+          className={`w-100 ${clickableSets ? 'clickable-card cur-point' : ''} ${cardClassName || ''}`}
           onClick={clickableSets ? () => handleSetClick(sets[0]) : undefined}
         >
           <Card.Header className="d-flex justify-content-between align-items-center">

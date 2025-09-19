@@ -86,6 +86,15 @@ type DogNote {
   updatedAt: DateTimeISO!
 }
 
+type DogNoteEvent {
+  content: String!
+  createdAt: DateTimeISO!
+  dogId: String!
+  eventType: EventType!
+  id: String!
+  updatedAt: DateTimeISO!
+}
+
 """The status of a dog"""
 enum DogStatus {
   Active
@@ -257,7 +266,7 @@ type Query {
   currentUser: User!
   dog(id: String!): Dog
   dogNotes(dogId: ID!): [DogNote!]!
-  dogNotesByPractice(practiceId: ID!): [PracticeDogNote!]!
+  dogNotesByPractice(orderBy: String! = "createdAt_DESC", practiceId: ID!): [PracticeDogNote!]!
   dogs: [Dog!]!
   dogsByHandlersInClub(clubId: ID!): [Handler!]
   handler(id: String!): Handler
@@ -359,6 +368,7 @@ type Subscription {
   clubById(clubId: String): ClubEvent!
   clubChanged: ClubEvent!
   dogChanged(clubId: String): DogEvent!
+  dogNoteChanged(dogId: String!): DogNoteEvent!
   handlerChanged(clubId: String): HandlerEvent!
   locationChanged(clubId: String): LocationEvent!
   practiceAttendanceChanged(practiceId: String!): PracticeAttendanceEvent!

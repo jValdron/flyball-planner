@@ -12,9 +12,22 @@ interface SetViewOnlyProps {
   showTrainingLevels?: boolean
   clickableSets?: boolean
   practiceId?: string
+  cardClassName?: string
 }
 
-export function SetViewOnly({ sets, twoColumns = false, defaultLocationName, smallHeader = false, hideNotes = false, practiceScheduledAt, clickableDogBadges = false, showTrainingLevels = false, clickableSets = false, practiceId }: SetViewOnlyProps) {
+export function SetViewOnly({
+  sets,
+  twoColumns = false,
+  defaultLocationName,
+  smallHeader = false,
+  hideNotes = false,
+  practiceScheduledAt,
+  clickableDogBadges = false,
+  showTrainingLevels = false,
+  clickableSets = false,
+  practiceId,
+  cardClassName
+}: SetViewOnlyProps) {
   return (
     <SetDisplayBase
       sets={sets}
@@ -27,6 +40,7 @@ export function SetViewOnly({ sets, twoColumns = false, defaultLocationName, sma
       showTrainingLevels={showTrainingLevels}
       clickableSets={clickableSets}
       practiceId={practiceId}
+      cardClassName={cardClassName}
     />
   )
 }

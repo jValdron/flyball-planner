@@ -61,7 +61,7 @@ export function SaveSpinner({
         transition: `opacity ${transitionDuration}ms ease-in-out`
       }}
     >
-      <Toast show={true}>
+      <Toast show>
         <Toast.Body className="d-flex align-items-center">
           <Spinner animation="border" size="sm" className="me-2" />
           {message || 'Saving...'}

@@ -158,3 +158,24 @@ export class PracticeDogNote {
   @Field(() => [String])
   dogIds!: string[];
 }
+
+@ObjectType()
+export class DogNoteEvent {
+  @Field(() => String)
+  id!: string;
+
+  @Field(() => String)
+  content!: string;
+
+  @Field(() => String)
+  dogId!: string;
+
+  @Field(() => EventType)
+  eventType!: EventType;
+
+  @Field(() => Date)
+  createdAt!: Date;
+
+  @Field(() => Date)
+  updatedAt!: Date;
+}

@@ -15,6 +15,10 @@ export enum SubscriptionEvents {
   LOCATION_UPDATED = 'LOCATION_UPDATED',
   LOCATION_DELETED = 'LOCATION_DELETED',
 
+  DOG_NOTE_CREATED = 'DOG_NOTE_CREATED',
+  DOG_NOTE_UPDATED = 'DOG_NOTE_UPDATED',
+  DOG_NOTE_DELETED = 'DOG_NOTE_DELETED',
+
   PRACTICE_CREATED = 'PRACTICE_CREATED',
   PRACTICE_UPDATED = 'PRACTICE_UPDATED',
   PRACTICE_DELETED = 'PRACTICE_DELETED',
@@ -125,6 +129,23 @@ export class PubSubService {
       await this.publish(summaryEvent, payload);
     } catch (error) {
       console.error(`Error publishing practice summary event ${event}:`, error);
+    }
+  }
+
+  static async publishDogNoteEvent(event: SubscriptionEvents, dogNote: any): Promise<void> {
+    try {
+      const payload = {
+        id: dogNote.id,
+        content: dogNote.content,
+        dogId: dogNote.dogId,
+        createdAt: dogNote.createdAt,
+        updatedAt: dogNote.updatedAt,
+        eventType: getEventType(event)
+      };
+
+      await this.publish(event, payload);
+    } catch (error) {
+      console.error(`Error publishing dog note event ${event}:`, error);
     }
   }
 

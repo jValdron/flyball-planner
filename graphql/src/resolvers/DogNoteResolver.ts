@@ -1,11 +1,11 @@
-import { Resolver, Query, Mutation, Arg, ID, UseMiddleware, Ctx, InputType, Field, FieldResolver, Root } from 'type-graphql';
+import { Resolver, Query, Mutation, Arg, ID, UseMiddleware, Ctx, InputType, Field, FieldResolver, Root, Subscription } from 'type-graphql';
 import { DogNote } from '../models/DogNote';
 import { SetDogNote } from '../models/SetDogNote';
 import { SetDog } from '../models/SetDog';
 import { AppDataSource } from '../db';
 import { AuthContext, isAuth, hasClubAccess, createClubFilter } from '../middleware/auth';
 import { PubSubService, SubscriptionEvents } from '../services/PubSubService';
-import { PracticeDogNote } from '../types/SubscriptionTypes';
+import { PracticeDogNote, DogNoteEvent } from '../types/SubscriptionTypes';
 
 @InputType()
 export class CreateDogNoteInput {
@@ -68,8 +68,19 @@ export class DogNoteResolver {
 
   @Query(() => [PracticeDogNote])
   @UseMiddleware(isAuth)
-  async dogNotesByPractice(@Arg('practiceId', () => ID) practiceId: string, @Ctx() { user }: AuthContext): Promise<PracticeDogNote[]> {
+  async dogNotesByPractice(
+    @Arg('practiceId', () => ID) practiceId: string,
+    @Arg('orderBy', () => String, { defaultValue: 'createdAt_DESC' }) orderBy: string,
+    @Ctx() { user }: AuthContext
+  ): Promise<PracticeDogNote[]> {
     if (!createClubFilter(user)) return [];
+
+    const [field, direction] = orderBy.split('_');
+    const validFields = ['createdAt', 'updatedAt'];
+    const validDirections = ['ASC', 'DESC'];
+
+    const sortField = validFields.includes(field) ? field : 'createdAt';
+    const sortDirection = validDirections.includes(direction) ? direction : 'DESC';
 
     const setDogNotes = await this.setDogNoteRepository
       .createQueryBuilder('setDogNote')
@@ -81,6 +92,7 @@ export class DogNoteResolver {
       .leftJoin('dog.club', 'club')
       .where('practice.id = :practiceId', { practiceId })
       .andWhere('club.id IN (:...clubIds)', { clubIds: user?.clubIds || [] })
+      .orderBy(`dogNote.${sortField}`, sortDirection as 'ASC' | 'DESC')
       .getMany();
 
     const groupedNotes = new Map<string, PracticeDogNote>();
@@ -124,6 +136,8 @@ export class DogNoteResolver {
     });
 
     if (dogNoteWithRelations) {
+      await PubSubService.publishDogNoteEvent(SubscriptionEvents.DOG_NOTE_CREATED, dogNoteWithRelations);
+
       const practiceId = dogNoteWithRelations.setDogNotes?.[0]?.setDog?.set?.practiceId;
       if (practiceId) {
         await PubSubService.publishPracticeDogNoteEvent(SubscriptionEvents.PRACTICE_DOG_NOTE_CREATED, dogNoteWithRelations, practiceId);
@@ -177,6 +191,8 @@ export class DogNoteResolver {
     });
 
     if (dogNoteWithRelations) {
+      await PubSubService.publishDogNoteEvent(SubscriptionEvents.DOG_NOTE_CREATED, dogNoteWithRelations);
+
       const practiceId = dogNoteWithRelations.setDogNotes?.[0]?.setDog?.set?.practiceId;
       if (practiceId) {
         await PubSubService.publishPracticeDogNoteEvent(SubscriptionEvents.PRACTICE_DOG_NOTE_CREATED, dogNoteWithRelations, practiceId);
@@ -214,6 +230,8 @@ export class DogNoteResolver {
     });
 
     if (dogNoteWithRelations) {
+      await PubSubService.publishDogNoteEvent(SubscriptionEvents.DOG_NOTE_UPDATED, dogNoteWithRelations);
+
       const practiceId = dogNoteWithRelations.setDogNotes?.[0]?.setDog?.set?.practiceId;
       if (practiceId) {
         await PubSubService.publishPracticeDogNoteEvent(SubscriptionEvents.PRACTICE_DOG_NOTE_UPDATED, dogNoteWithRelations, practiceId);
@@ -242,6 +260,8 @@ export class DogNoteResolver {
     const result = await this.dogNoteRepository.delete(id);
 
     if (result.affected !== 0) {
+      await PubSubService.publishDogNoteEvent(SubscriptionEvents.DOG_NOTE_DELETED, dogNote);
+
       const practiceId = dogNote.setDogNotes?.[0]?.setDog?.set?.practiceId;
       if (practiceId) {
         await PubSubService.publishPracticeDogNoteEvent(SubscriptionEvents.PRACTICE_DOG_NOTE_DELETED, dogNote, practiceId);
@@ -263,5 +283,19 @@ export class DogNoteResolver {
     }
 
     return setDogNotes.map(setDogNote => setDogNote.setDog);
+  }
+
+  @Subscription(() => DogNoteEvent, {
+    topics: [SubscriptionEvents.DOG_NOTE_CREATED, SubscriptionEvents.DOG_NOTE_UPDATED, SubscriptionEvents.DOG_NOTE_DELETED],
+    filter: ({ payload, context, args }) => {
+      return payload.dogId === args.dogId;
+    }
+  })
+  @UseMiddleware(isAuth)
+  dogNoteChanged(
+    @Root() payload: DogNoteEvent,
+    @Arg('dogId') dogId: string
+  ): DogNoteEvent {
+    return payload;
   }
 }

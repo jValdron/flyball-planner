@@ -35,7 +35,7 @@ export const WebSocketStatus: React.FC = () => {
         show={showToast}
         onClose={() => setShowToast(false)}
         delay={3000}
-        autohide={true}
+        autohide
         bg={isDark ? 'dark' : 'light'}
         className={isDark ? 'text-white' : ''}
       >

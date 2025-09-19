@@ -174,7 +174,7 @@ export default function PublicPracticeView() {
       <SetViewOnly
         sets={practice.sets}
         defaultLocationName={practice.club.locations?.find((l: any) => l.isDefault)?.name}
-        twoColumns={true}
+        twoColumns
       />
     </Container>
   )

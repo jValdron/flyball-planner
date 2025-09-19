@@ -7,6 +7,7 @@ export const GET_DOG_NOTES = graphql(`
       content
       createdAt
       updatedAt
+      dogId
       setDogNotes {
         id
         setDog {
@@ -46,8 +47,8 @@ export const GET_DOG_NOTES = graphql(`
 `)
 
 export const GET_DOG_NOTES_BY_PRACTICE = graphql(`
-  query GetDogNotesByPractice($practiceId: ID!) {
-    dogNotesByPractice(practiceId: $practiceId) {
+  query GetDogNotesByPractice($practiceId: ID!, $orderBy: String) {
+    dogNotesByPractice(practiceId: $practiceId, orderBy: $orderBy) {
       id
       content
       createdAt
@@ -101,5 +102,31 @@ export const CREATE_SET_DOG_NOTE = graphql(`
 export const DELETE_DOG_NOTE = graphql(`
   mutation DeleteDogNote($id: ID!) {
     deleteDogNote(id: $id)
+  }
+`)
+
+export const DOG_NOTE_CHANGED = graphql(`
+  subscription DogNoteChanged($dogId: String!) {
+    dogNoteChanged(dogId: $dogId) {
+      id
+      content
+      dogId
+      eventType
+      createdAt
+      updatedAt
+    }
+  }
+`)
+
+export const PRACTICE_DOG_NOTE_CHANGED = graphql(`
+  subscription PracticeDogNoteChanged($practiceId: String!) {
+    practiceDogNoteChanged(practiceId: $practiceId) {
+      id
+      content
+      practiceId
+      setId
+      dogIds
+      eventType
+    }
   }
 `)

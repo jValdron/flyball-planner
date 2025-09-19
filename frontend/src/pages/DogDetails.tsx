@@ -7,10 +7,13 @@ import DogNotes from '../components/DogNotes'
 import DogModal from '../components/DogModal'
 import { useQuery, useMutation } from '@apollo/client'
 import { GetDogById, DeleteDog } from '../graphql/dogs'
+import { GET_DOG_NOTES, CREATE_DOG_NOTE, UPDATE_DOG_NOTE, DELETE_DOG_NOTE } from '../graphql/dogNotes'
+import type { DogNote } from '../graphql/generated/graphql'
 import { formatFullDateTime } from '../utils/dateUtils'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import TrainingLevelBadge from '../components/TrainingLevelBadge'
 import { useClub } from '../contexts/ClubContext'
+import { enrichDogs } from '../utils/dogsUtils'
 
 function DogDetails() {
   const navigate = useNavigate()
@@ -18,7 +21,7 @@ function DogDetails() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { handlers } = useClub()
+  const { handlers, dogs } = useClub()
 
   const { data: dogData, loading: loadingDog, refetch } = useQuery(GetDogById, {
     variables: { id: dogId || '' },
@@ -32,7 +35,74 @@ function DogDetails() {
   const title = dogId ? `${dogData?.dog?.name} - Dog Details` : 'Dog Details'
   useDocumentTitle(title)
 
-  const [deleteDog, { loading: deleting }] = useMutation(DeleteDog, {
+  const { data: notesData, loading: notesLoading, error: notesError, refetch: refetchNotes } = useQuery(GET_DOG_NOTES, {
+    variables: { dogId: dogId || '' },
+    skip: !dogId,
+    onError: (error) => {
+      console.error('Error loading notes:', error)
+    }
+  })
+
+  const notes = enrichDogs(notesData?.dogNotes || [], dogs) as DogNote[]
+
+  const [createNote] = useMutation(CREATE_DOG_NOTE, {
+    onError: (error) => {
+      console.error('Error creating note:', error)
+    }
+  })
+
+  const [updateNote] = useMutation(UPDATE_DOG_NOTE, {
+    onError: (error) => {
+      console.error('Error updating note:', error)
+    }
+  })
+
+  const [deleteNote] = useMutation(DELETE_DOG_NOTE, {
+    onError: (error) => {
+      console.error('Error deleting note:', error)
+    }
+  })
+
+  const handleCreateNote = async (content: string, clubId: string) => {
+    try {
+      await createNote({
+        variables: {
+          input: {
+            content: content.trim(),
+            dogId: dogId || '',
+            clubId
+          }
+        }
+      })
+    } catch (err) {
+      // Error handled in onError
+    }
+  }
+
+  const handleUpdateNote = async (id: string, content: string) => {
+    try {
+      await updateNote({
+        variables: {
+          id,
+          content: content.trim()
+        }
+      })
+    } catch (err) {
+      // Error handled in onError
+    }
+  }
+
+  const handleDeleteNote = async (id: string) => {
+    try {
+      await deleteNote({
+        variables: { id }
+      })
+    } catch (err) {
+      // Error handled in onError
+    }
+  }
+
+  const [deleteDog] = useMutation(DeleteDog, {
     onCompleted: () => navigate('/dogs'),
     onError: (error) => {
       setError('Failed to delete dog. Please try again later.')
@@ -60,7 +130,7 @@ function DogDetails() {
   const owner = handlers.find(handler => handler.id === dogData?.dog?.ownerId)
 
   const loading = loadingDog
-  const saving = deleting
+  const saving = false
 
   if (loading) {
     return (
@@ -172,7 +242,16 @@ function DogDetails() {
         </div>
       </div>
 
-      <DogNotes dog={dog} />
+      <DogNotes
+        notes={notes}
+        dog={dog}
+        onCreateNote={(content, clubId) => handleCreateNote(content, clubId)}
+        onEditNote={(note) => handleUpdateNote(note.id, note.content)}
+        onDeleteNote={handleDeleteNote}
+        onNoteChanged={() => refetchNotes()}
+        loading={notesLoading}
+        error={notesError?.message || null}
+      />
 
       <DeleteConfirmationModal
         show={showDeleteConfirm}
